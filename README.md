@@ -9,7 +9,9 @@ a planet in a small solar system.
 
 It only **watches**. It never starts, stops or prompts an agent, and it never reads your messages.
 
-![A short tour of the hall](docs/media/tour.webp)
+[![A short tour of the hall - click to watch the 50-second trailer](docs/media/tour.webp)](https://github.com/viraj2121/agent-factory-3d/releases/download/v0.1.0/agent-factory-3d-trailer.mp4)
+
+**[Watch the 50-second trailer](https://github.com/viraj2121/agent-factory-3d/releases/download/v0.1.0/agent-factory-3d-trailer.mp4)** (with narration; click the picture above too).
 
 ![The hall](docs/media/hall.png)
 
