@@ -9,6 +9,8 @@ a planet in a small solar system.
 
 It only **watches**. It never starts, stops or prompts an agent, and it never reads your messages.
 
+![A short tour of the hall](docs/media/tour.webp)
+
 ![The hall](docs/media/hall.png)
 
 > The pictures on this page use the built-in **demo data**, which the page labels "LOOK TEST - not real agent data".
