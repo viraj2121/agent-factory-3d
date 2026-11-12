@@ -1,0 +1,18 @@
+{
+  "name": "agent-factory-3d",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A local 3D dashboard that shows your real AI coding agents (Claude Code, Codex, GitHub Copilot) as robots in a factory. Read-only.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.15"
+  },
+  "scripts": {
+    "start": "node scripts/dev.mjs",
+    "install:all": "npm --prefix apps/agent-service install && npm --prefix apps/dashboard install",
+    "test": "cd apps/agent-service && npm test && cd ../dashboard && npm test",
+    "typecheck": "cd apps/agent-service && npm run typecheck && cd ../dashboard && npx tsc -b",
+    "smoke": "cd apps/dashboard && npm run smoke"
+  }
+}

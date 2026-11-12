@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Screen layout: sorting the controls</title>
+<style>
+  :root { --bg: #08090d; --card: rgba(20, 22, 31, 0.86); --line: #2a2f3f; --text: #ebeef5; --dim: #98a0b5; --amber: #ffb347; --green: #5df0a8; --cyan: #74d8ff; --glass: rgba(14, 16, 24, 0.68); }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.6 system-ui, -apple-system, Segoe UI, sans-serif; }
+  .wrap { max-width: 1320px; margin: 0 auto; padding: 28px 32px 60px; }
+  h1 { margin: 0; font-size: 28px; }
+  h2 { margin: 38px 0 10px; font-size: 20px; }
+  h3 { margin: 0 0 4px; font-size: 16px; }
+  p { margin: 6px 0; }
+  .lead { color: var(--dim); max-width: 940px; }
+  .muted { color: var(--dim); font-size: 13px; }
+  .tabs { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-top: 14px; }
+  .tabs button { cursor: pointer; padding: 7px 14px; border: 0; background: transparent; color: var(--text); font: inherit; font-size: 13px; }
+  .tabs button + button { border-left: 1px solid var(--line); }
+  .tabs button.on { background: var(--amber); color: #1b1004; font-weight: 600; }
+
+  /* the mock screen */
+  .screen { position: relative; margin-top: 12px; aspect-ratio: 16 / 9; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: #000 url('img/hall-backdrop.jpg') center / cover; font-size: 12px; user-select: none; }
+  .screen::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.35)); pointer-events: none; }
+  .glass { background: var(--glass); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 12px; z-index: 5; }
+  .abs { position: absolute; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; border: 1px solid rgba(93, 240, 168, 0.5); color: var(--green); background: rgba(6, 20, 14, 0.6); letter-spacing: 0.06em; font-size: 11.5px; }
+  .seg { display: inline-flex; border-radius: 9px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.18); }
+  .seg button { cursor: pointer; padding: 5px 12px; border: 0; background: transparent; color: var(--text); font: inherit; }
+  .seg button.on { background: var(--amber); color: #1b1004; font-weight: 600; }
+  .ibtn { position: relative; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 9px; border: 1px solid transparent; background: transparent; color: var(--text); cursor: pointer; font-size: 16px; }
+  .ibtn:hover { background: rgba(255, 255, 255, 0.1); }
+  .ibtn.on { background: rgba(255, 179, 71, 0.22); border-color: rgba(255, 179, 71, 0.6); color: var(--amber); }
+  .ibtn[data-tip]:hover::after { content: attr(data-tip); position: absolute; top: 40px; right: 0; white-space: nowrap; padding: 4px 9px; border-radius: 7px; background: #000; border: 1px solid var(--line); font-size: 11.5px; z-index: 20; }
+  kbd { padding: 0 6px; border: 1px solid #3a4054; border-bottom-width: 2px; border-radius: 5px; font-size: 11px; color: #cfd6e8; background: rgba(255, 255, 255, 0.05); }
+  .rail { left: 12px; top: 56px; width: 168px; padding: 8px; }
+  .rail b { display: block; padding: 2px 6px 6px; color: var(--amber); font-size: 10.5px; letter-spacing: 0.12em; }
+  .rail div { padding: 4px 6px; border-radius: 7px; display: flex; gap: 7px; align-items: center; }
+  .rail div.on { background: rgba(255, 255, 255, 0.1); outline: 1px solid rgba(116, 216, 255, 0.6); }
+  .rail i { width: 7px; height: 7px; border-radius: 50%; background: #6b7286; }
+  .rail i.w { background: var(--green); } .rail i.n { background: var(--amber); }
+  .minimap { left: 12px; bottom: 12px; width: 190px; height: 190px; padding: 0; }
+  .minimap svg { width: 100%; height: 100%; }
+  .minimap .dot { cursor: pointer; transition: transform 0.15s; transform-box: fill-box; transform-origin: center; }
+  .minimap .dot:hover { transform: scale(1.35); }
+  .minimap .dot.on { fill: var(--amber); }
+  .minimap .lbl { position: absolute; left: 0; right: 0; bottom: 6px; text-align: center; color: var(--dim); font-size: 11px; pointer-events: none; }
+  .tabstrip { right: 0; top: 120px; display: flex; flex-direction: column; gap: 6px; padding: 8px 6px; border-radius: 12px 0 0 12px; border-right: 0; }
+  .tabstrip .ibtn { width: 38px; height: 38px; }
+  .side { right: 56px; top: 70px; bottom: 70px; width: 270px; padding: 14px; overflow: hidden; display: none; }
+  .side.open { display: block; }
+  .side h4 { margin: 0 0 8px; font-size: 15px; }
+  .side .row { padding: 6px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1); display: flex; justify-content: space-between; gap: 8px; }
+  .side .row span { color: var(--dim); }
+  .side .link { display: block; margin-top: 8px; padding: 6px 9px; border: 1px solid #5a4028; border-radius: 7px; font-size: 11.5px; }
+  .tabstrip .ibtn[data-tip]:hover::after { right: 46px; top: 8px; }
+  .hintline { left: 50%; bottom: 14px; transform: translateX(-50%); padding: 6px 14px; border-radius: 999px; color: var(--dim); font-size: 11.5px; animation: fade 8s ease forwards; }
+  @keyframes fade { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
+  .help { right: 12px; bottom: 12px; display: flex; gap: 8px; align-items: center; padding: 4px 6px 4px 10px; font-size: 11px; color: var(--dim); }
+  .sheet { inset: 0; z-index: 30; display: none; place-items: center; background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(4px); }
+  .sheet.open { display: grid; }
+  .sheet .card { width: 78%; max-width: 760px; padding: 18px 22px; border-radius: 14px; background: rgba(16, 18, 26, 0.96); border: 1px solid var(--line); }
+  .sheet .cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; font-size: 12.5px; }
+  .sheet .cols div { display: flex; justify-content: space-between; padding: 3px 0; }
+  .sheet h5 { margin: 0 0 6px; color: var(--amber); font-size: 11px; letter-spacing: 0.12em; }
+  /* today */
+  .today-bar { left: 50%; transform: translateX(-50%); bottom: 14px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 10px; width: 94%; }
+  .today-bar button { padding: 4px 10px; border-radius: 6px; border: 1px solid #5a4028; background: transparent; color: var(--text); font-size: 11.5px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .card { padding: 16px 18px; border-radius: 14px; border: 1px solid var(--line); background: var(--card); }
+  .card ul { margin: 6px 0 0; padding-left: 18px; color: var(--dim); }
+  .card li { margin: 3px 0; }
+  .tagz { display: inline-block; padding: 1px 9px; margin-right: 6px; border-radius: 99px; font-size: 11px; border: 1px solid var(--line); color: var(--cyan); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--dim); font-weight: 500; font-size: 12.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Sorting the controls <span class="muted">one row of everything → six clear homes</span></h1>
+  <p class="lead">Today one bottom bar holds seven different kinds of thing: places to fly to, the level switch, panels, toggles, settings, help text and the quality chip. The idea below gives each kind its own corner of the screen, and the bottom of the screen becomes free so the 3D view is not covered. Click around: the icons toggle, the map dots fly (here they just light up), the right-hand tabs open panels, and <b>?</b> opens the shortcut sheet.</p>
+
+  <div class="tabs" id="mode"><button data-v="after" class="on">Proposed</button><button data-v="before">Today</button></div>
+  <div class="screen" id="screen"></div>
+
+  <h2>Where each kind of control goes</h2>
+  <div class="grid">
+    <div class="card"><h3><span class="tagz">places</span> Mini-map, bottom left</h3><p class="muted">A small top-down drawing of the hall. The core, the four bays, the studio, the launch pad, the library and the cart are dots; click one to fly there, hover to see its name. It replaces six text buttons, and it shows <i>where</i> things are, which words cannot.</p></div>
+    <div class="card"><h3><span class="tagz">level</span> Hall | System, top centre</h3><p class="muted">The two levels are a switch, not a button among others, so they sit next to the LIVE banner as a two-way control. It also shows where you are.</p></div>
+    <div class="card"><h3><span class="tagz">toggles</span> Icon row, top right</h3><p class="muted">Sound, tour, picture mode and settings are things you switch on or off, so they are small icons that light up when on, with a tooltip and the key. Quality becomes a setting; it only appears next to them as a chip when you are not on Auto.</p></div>
+    <div class="card"><h3><span class="tagz">panels</span> Tab strip, right edge</h3><p class="muted">Project info, the crew list, the library (the project's markdown files) and recent activity are tabs on the right edge. One click opens the panel beside it; the same place for every panel, instead of buttons scattered about.</p></div>
+    <div class="card"><h3><span class="tagz">projects</span> Rail, left</h3><p class="muted">Stays as it is. It is the one thing that is about <i>which</i> project, not <i>how</i> you look.</p></div>
+    <div class="card"><h3><span class="tagz">help</span> ? button and a fading hint</h3><p class="muted">"Drag to turn · wheel to zoom · right-drag to move" shows once for a few seconds, then fades. All keys live on the <b>?</b> sheet. The bottom of the screen is empty again.</p></div>
+  </div>
+
+  <h2>Keys (a suggestion)</h2>
+  <table>
+    <tr><th>Kind</th><th>Keys</th><th>Notes</th></tr>
+    <tr><td>Places</td><td><kbd>1</kbd> Core · <kbd>2</kbd> Studio · <kbd>3</kbd> Launch pad · <kbd>4</kbd> Library · <kbd>5</kbd> Cart · <kbd>R</kbd> Overview</td><td>One key per place, in the order of the map</td></tr>
+    <tr><td>Level</td><td><kbd>G</kbd> Hall ⇄ System</td><td>As today</td></tr>
+    <tr><td>Toggles</td><td><kbd>M</kbd> Sound · <kbd>T</kbd> Tour · <kbd>H</kbd> Picture · <kbd>,</kbd> Settings</td><td>M for mute, T for tour; H stays</td></tr>
+    <tr><td>Panels</td><td><kbd>I</kbd> Info · <kbd>L</kbd> Library · <kbd>[</kbd> Project rail · <kbd>Esc</kbd> close</td><td>Esc closes whatever is open, as today</td></tr>
+    <tr><td>Help</td><td><kbd>?</kbd> This sheet</td><td></td></tr>
+  </table>
+
+  <h2>Two other options</h2>
+  <div class="grid">
+    <div class="card"><h3>B · Command palette</h3><p class="muted">Press <kbd>Ctrl</kbd>+<kbd>K</kbd> and type: "studio", "sound", "settings", "ledger api". Nothing is on screen until you ask. Great for people who live on the keyboard, but nobody discovers it by looking, so it works best <i>with</i> the proposal above, not instead of it.</p></div>
+    <div class="card"><h3>C · Radial menu on right-click</h3><p class="muted">Right-click in empty space and a ring of places opens around the cursor. Very fast and uses no permanent space. It conflicts with right-drag to move the view today, so it would need a different key (hold <kbd>Space</kbd>).</p></div>
+  </div>
+  <p class="muted">My recommendation: the proposal (mini-map, level switch, icon row, right tabs, help sheet), with the command palette added later. Nothing is built yet; tell me what to change.</p>
+</div>
+
+<script>
+const screen = document.getElementById('screen')
+const PLACES = [['Core', 100, 100], ['Planning', 100, 52], ['Development', 148, 100], ['Review & QA', 100, 148], ['Integration', 52, 100], ['Studio', 166, 52], ['Launch pad', 166, 150], ['Library', 34, 52], ['Cart', 34, 150]]
+
+function after() {
+  const dots = PLACES.map(([n, x, y], i) => `<circle class="dot${i === 0 ? ' on' : ''}" data-n="${n}" cx="${x}" cy="${y}" r="${i === 0 ? 9 : 6}" fill="${i === 0 ? '#ffb347' : '#9fb6d8'}"><title>${n}</title></circle>`).join('')
+  return `
+  <div class="abs glass rail"><b>PROJECTS</b><div class="on"><i class="w"></i>agent-factory-3d</div><div><i class="n"></i>Beacon Metrics</div><div><i class="w"></i>Ledger API</div><div><i></i>Orbit Lab</div><div><i></i>Pocket Kit</div></div>
+  <div class="abs" style="left:50%;top:12px;transform:translateX(-50%);width:max-content;display:flex;gap:10px;align-items:center;z-index:5"><span class="chip">LIVE · read-only view of agents on this computer</span><span class="seg" id="lvl"><button class="on">Hall</button><button>System</button></span></div>
+  <div class="abs glass" style="right:12px;top:10px;display:flex;gap:2px;padding:3px;align-items:center;z-index:6">
+    <button class="ibtn" data-tip="Sound (M)" data-t>🔊</button>
+    <button class="ibtn on" data-tip="Tour (T)" data-t>🎬</button>
+    <button class="ibtn" data-tip="Picture mode (H)" data-t>📷</button>
+    <button class="ibtn" data-tip="Settings (,)">⚙</button>
+  </div>
+  <div class="abs glass minimap"><svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="86" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="1.5"/><circle cx="100" cy="100" r="50" fill="none" stroke="rgba(255,255,255,.12)" stroke-dasharray="3 4"/>${dots}</svg><div class="lbl" id="maplbl">Click a place to fly there · <kbd>R</kbd> overview</div></div>
+  <div class="abs glass tabstrip">
+    <button class="ibtn" data-tip="Project info (I)" data-p="info">ⓘ</button>
+    <button class="ibtn" data-tip="Crew" data-p="crew">👥</button>
+    <button class="ibtn" data-tip="Library: markdown files (L)" data-p="lib">📚</button>
+    <button class="ibtn" data-tip="Activity" data-p="act">⏱</button>
+  </div>
+  <div class="abs glass side" id="side"></div>
+  <div class="abs glass hintline">Drag to turn · wheel to zoom · right-drag to move</div>
+  <div class="abs glass help"><span>FPS 60</span><button class="ibtn" style="width:28px;height:28px" id="qm">?</button></div>
+  <div class="abs sheet" id="sheet"><div class="card"><h3 style="margin-bottom:10px">Keyboard</h3><div class="cols">
+    <section><h5>PLACES</h5><div><span>Core</span><kbd>1</kbd></div><div><span>Studio</span><kbd>2</kbd></div><div><span>Launch pad</span><kbd>3</kbd></div><div><span>Library</span><kbd>4</kbd></div><div><span>Cart</span><kbd>5</kbd></div><div><span>Overview</span><kbd>R</kbd></div></section>
+    <section><h5>VIEW</h5><div><span>Hall ⇄ System</span><kbd>G</kbd></div><div><span>Sound</span><kbd>M</kbd></div><div><span>Tour</span><kbd>T</kbd></div><div><span>Picture mode</span><kbd>H</kbd></div><div><span>Settings</span><kbd>,</kbd></div></section>
+    <section><h5>PANELS</h5><div><span>Project info</span><kbd>I</kbd></div><div><span>Library</span><kbd>L</kbd></div><div><span>Project rail</span><kbd>[</kbd></div><div><span>Close</span><kbd>Esc</kbd></div><div><span>This sheet</span><kbd>?</kbd></div></section>
+  </div><p class="muted" style="margin-top:10px">Click anywhere to close.</p></div></div>`
+}
+function before() {
+  return `
+  <div class="abs glass rail"><b>PROJECTS</b><div class="on"><i class="w"></i>agent-factory-3d</div><div><i class="n"></i>Beacon Metrics</div><div><i class="w"></i>Ledger API</div></div>
+  <div class="abs" style="left:50%;top:12px;transform:translateX(-50%);width:max-content;z-index:5"><span class="chip">LIVE · read-only view of agents on this computer</span></div>
+  <div class="abs glass today-bar"><button>Reset view (R)</button><button>Core</button><button>Studio</button><button>Launch pad</button><button>Library</button><button>Cart</button><button>System (G)</button><button>Project info</button><button>Sound: off</button><button>Tour: on</button><button>Picture (H)</button><button>⚙ Settings</button><span class="muted">Drag to turn · wheel to zoom · right-drag to move</span></div>
+  <div class="abs glass" style="right:12px;bottom:64px;padding:5px 10px">Quality: high</div>`
+}
+
+function render(mode) {
+  screen.innerHTML = mode === 'after' ? after() : before()
+  document.querySelectorAll('#mode button').forEach((b) => b.classList.toggle('on', b.dataset.v === mode))
+  if (mode !== 'after') return
+  screen.querySelectorAll('[data-t]').forEach((b) => b.addEventListener('click', () => b.classList.toggle('on')))
+  screen.querySelectorAll('#lvl button').forEach((b) => b.addEventListener('click', () => { screen.querySelectorAll('#lvl button').forEach((x) => x.classList.toggle('on', x === b)) }))
+  const lbl = screen.querySelector('#maplbl')
+  screen.querySelectorAll('.dot').forEach((d) => { d.addEventListener('click', () => { screen.querySelectorAll('.dot').forEach((x) => { x.classList.toggle('on', x === d); x.setAttribute('fill', x === d ? '#ffb347' : '#9fb6d8') }); lbl.textContent = 'Flying to ' + d.dataset.n + '…' }); d.addEventListener('mouseenter', () => { lbl.textContent = d.dataset.n }) })
+  const side = screen.querySelector('#side')
+  const PANELS = {
+    info: ['Project info', [['Folder', 'E:\\work\\agent-factory-3d'], ['Status', 'Running'], ['Agents', '1 working'], ['Plan', 'unknown']], null],
+    crew: ['Crew', [['Claude Code', 'working'], ['3d-ui-builder', 'standing by'], ['reviewer', 'asleep']], null],
+    lib: ['Library', [['README.md', '2 KB'], ['docs/design.md', '9 KB'], ['docs/plan.md', '4 KB'], ['CHANGELOG.md', '6 KB']], 'Open in VS Code ↗'],
+    act: ['Recent activity', [['12:54', 'tool call: Bash'], ['12:51', 'tool call: Edit'], ['12:40', 'session started']], null],
+  }
+  screen.querySelectorAll('[data-p]').forEach((b) => b.addEventListener('click', () => {
+    const open = b.classList.contains('on')
+    screen.querySelectorAll('[data-p]').forEach((x) => x.classList.remove('on'))
+    if (open) { side.classList.remove('open'); return }
+    b.classList.add('on'); const [t, rows, link] = PANELS[b.dataset.p]
+    side.innerHTML = `<h4>${t}</h4>` + rows.map(([a, c]) => `<div class="row"><b>${a}</b><span>${c}</span></div>`).join('') + (link ? `<span class="link">${link}</span>` : '')
+    side.classList.add('open')
+  }))
+  const sheet = screen.querySelector('#sheet')
+  screen.querySelector('#qm').addEventListener('click', () => sheet.classList.add('open'))
+  sheet.addEventListener('click', () => sheet.classList.remove('open'))
+}
+document.querySelectorAll('#mode button').forEach((b) => b.addEventListener('click', () => render(b.dataset.v)))
+window.addEventListener('keydown', (e) => { if (e.key === '?') screen.querySelector('#sheet')?.classList.add('open'); if (e.key === 'Escape') screen.querySelector('#sheet')?.classList.remove('open') })
+render('after')
+</script>
+</body>
+</html>

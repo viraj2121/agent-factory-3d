@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Space view redesign: mockup</title>
+<style>
+  :root { --bg: #06070b; --card: rgba(18, 20, 29, 0.82); --line: #252a39; --text: #e8ebf3; --dim: #969db2; --amber: #ffb347; --green: #5df0a8; --cyan: #74d8ff; --violet: #b994ff; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.6 system-ui, -apple-system, Segoe UI, sans-serif; }
+  .wrap { max-width: 1320px; margin: 0 auto; padding: 28px 32px 60px; }
+  h1 { margin: 0; font-size: 30px; letter-spacing: 0.01em; }
+  h2 { margin: 44px 0 10px; font-size: 20px; }
+  h3 { margin: 0 0 6px; font-size: 16px; }
+  p { margin: 6px 0; }
+  .lead { color: var(--dim); max-width: 900px; }
+  .pill { display: inline-block; margin-left: 10px; padding: 2px 10px; border-radius: 99px; border: 1px solid var(--amber); color: var(--amber); font-size: 12px; vertical-align: middle; }
+  .stage { position: relative; margin-top: 18px; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: #000; aspect-ratio: 16 / 9; }
+  canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
+  .hud { position: absolute; inset: 0; pointer-events: none; transition: opacity 0.4s; }
+  .hud.off { opacity: 0; }
+  .hud .chip { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); padding: 5px 14px; border-radius: 99px; border: 1px solid rgba(93, 240, 168, 0.45); background: rgba(6, 14, 12, 0.55); color: var(--green); font-size: 12px; letter-spacing: 0.08em; backdrop-filter: blur(6px); }
+  .hud .note { position: absolute; right: 14px; bottom: 12px; padding: 4px 10px; border-radius: 8px; background: rgba(0, 0, 0, 0.45); color: var(--dim); font-size: 11px; }
+  .hud .rail { position: absolute; top: 14px; left: 14px; width: 168px; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(14, 16, 24, 0.5); backdrop-filter: blur(8px); font-size: 12px; color: var(--dim); }
+  .hud .rail b { display: block; color: var(--amber); font-size: 11px; letter-spacing: 0.12em; margin-bottom: 6px; }
+  .hud .rail div { display: flex; align-items: center; gap: 7px; padding: 2px 0; }
+  .hud .rail i { width: 7px; height: 7px; border-radius: 50%; background: #6b7286; }
+  .hud .rail i.w { background: var(--green); } .hud .rail i.n { background: var(--amber); }
+  .controls { display: flex; flex-wrap: wrap; gap: 18px 26px; align-items: center; margin-top: 14px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line); background: var(--card); }
+  .group { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--dim); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+  .seg button, .btn { cursor: pointer; padding: 6px 12px; border: 0; background: transparent; color: var(--text); font: inherit; font-size: 13px; }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button.on { background: var(--amber); color: #1b1004; font-weight: 600; }
+  .btn { border: 1px solid var(--line); border-radius: 9px; }
+  .btn:hover { border-color: var(--amber); }
+  .btn.warp { border-color: var(--cyan); color: var(--cyan); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 14px; }
+  .card { padding: 16px 18px; border-radius: 14px; border: 1px solid var(--line); background: var(--card); }
+  .card .num { display: inline-grid; place-items: center; width: 26px; height: 26px; margin-right: 8px; border-radius: 8px; background: rgba(255, 179, 71, 0.14); color: var(--amber); font-size: 13px; font-weight: 700; }
+  .card ul { margin: 6px 0 0; padding-left: 18px; color: var(--dim); }
+  .card li { margin: 3px 0; }
+  .card .cost { margin-top: 10px; font-size: 12.5px; color: var(--dim); border-top: 1px dashed var(--line); padding-top: 8px; }
+  .card .cost b { color: var(--green); font-weight: 600; }
+  .stage-tag { font-size: 11px; letter-spacing: 0.1em; color: var(--cyan); text-transform: uppercase; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--dim); font-weight: 500; font-size: 12.5px; letter-spacing: 0.04em; }
+  .dot { display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 50%; }
+  .before { border-left: 3px solid #5a3a2a; }
+  .after { border-left: 3px solid var(--green); }
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  @media (max-width: 900px) { .steps { grid-template-columns: 1fr; } }
+  .muted { color: var(--dim); font-size: 13px; }
+  kbd { padding: 1px 6px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Space view redesign <span class="pill">design mockup</span></h1>
+  <p class="lead">A drawn 2D sketch of the target look for the sky view, not the real 3D scene. Switch <b>Today</b> and <b>Target</b> to compare.
+    Move the mouse to feel the depth, hover an island for its name, try the three themes, the project status, and <b>Warp</b>. Press <kbd>H</kbd> for picture mode.</p>
+
+  <div class="stage">
+    <canvas id="scene" width="1280" height="720"></canvas>
+    <div class="hud" id="hud">
+      <div class="chip">LIVE · read-only view of agents on this computer</div>
+      <div class="rail"><b>PROJECTS</b>
+        <div><i class="n"></i>Nimbus Portal</div>
+        <div><i class="w"></i>Ledger API</div>
+        <div><i class="w"></i>Sample E</div>
+        <div><i></i>Aurora Shop</div>
+        <div><i></i>Orbit Lab</div>
+      </div>
+      <div class="note">Mockup drawn in 2D · shuttles and filaments are decoration</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="group">View <span class="seg" data-key="view"><button data-v="today">Today</button><button data-v="target" class="on">Target</button></span></div>
+    <div class="group">Theme <span class="seg" data-key="theme"><button data-v="deep" class="on">Deep space</button><button data-v="nebula">Nebula</button><button data-v="aurora">Aurora planet</button></span></div>
+    <div class="group">Current project <span class="seg" data-key="status"><button data-v="working" class="on">Working</button><button data-v="needs">Needs you</button><button data-v="idle">Idle</button></span></div>
+    <div class="group"><button class="btn warp" id="warp">Warp to next project ➜</button><button class="btn" id="pic">Picture mode (H)</button></div>
+  </div>
+
+  <h2>What holds the sky view back today</h2>
+  <div class="grid">
+    <div class="card before"><h3>The sky is drawn by code</h3><p class="muted">Noise and dots never read as real space. It ends up a flat dark blue with snow on it.</p></div>
+    <div class="card before"><h3>Flat light</h3><p class="muted">Every island is lit evenly from all sides: no bright side, no night side, no shape.</p></div>
+    <div class="card before"><h3>Blurry brown disks</h3><p class="muted">The "rocks" are flat pictures facing the camera, so they look like smudges, not stone.</p></div>
+    <div class="card before"><h3>Thick lines with white dots</h3><p class="muted">The links look like a chart drawn over the picture, not something that exists in space.</p></div>
+  </div>
+
+  <h2>Six upgrades</h2>
+  <div class="grid">
+    <div class="card after"><span class="stage-tag">Stage A</span>
+      <h3><span class="num">1</span>A real sky photo</h3>
+      <ul>
+        <li>A real high-resolution Milky Way panorama wrapped around the scene: true star colours, dust lanes, depth.</li>
+        <li>A nearby star as the sun, a ringed gas giant as the big anchor, one or two moons.</li>
+        <li>The three themes stay as three sky photos plus their own planet: Deep space, Nebula, Aurora planet.</li>
+      </ul>
+      <div class="cost">Speed: <b>about the same or faster</b>. One image on one sphere, in place of today's star shader. Size: one 4K image, compressed for the graphics card.</div>
+    </div>
+    <div class="card after"><span class="stage-tag">Stage A</span>
+      <h3><span class="num">2</span>Film lighting</h3>
+      <ul>
+        <li>One hard sunlight: every island gets a lit side, a night side and a rim of light from the planet.</li>
+        <li>Film-like colour, a lens flare from the sun, fine grain, darker corners.</li>
+        <li>Far islands fade a little into the dark, so near and far read at a glance.</li>
+      </ul>
+      <div class="cost">Speed: <b>small</b>. One extra screen pass; shadows already exist. Lite keeps the light but drops flare, grain and fade.</div>
+    </div>
+    <div class="card after"><span class="stage-tag">Stage B</span>
+      <h3><span class="num">3</span>Islands become stations</h3>
+      <ul>
+        <li>New bases built in Blender: cracked rock chunks with strata and a metal docking ring, not round blobs.</li>
+        <li>Real debris: small rocks orbiting each island, real shapes lit by the sun.</li>
+        <li>Status as behaviour: thrusters and blinking docking lights while agents work, a beacon beam when it needs you, dim and drifting when idle.</li>
+      </ul>
+      <div class="cost">Speed: <b>neutral</b>. One merged model per island, and all debris drawn in one call (instancing).</div>
+    </div>
+    <div class="card after"><span class="stage-tag">Stage B</span>
+      <h3><span class="num">5</span>Orbit layout with depth</h3>
+      <ul>
+        <li>The current project is the central station. Others ride tilted orbits around it at different distances and heights.</li>
+        <li>Busier projects sit on the inner orbit, closer and bigger; resting ones further out.</li>
+        <li>Clean labels: thin hologram names for the current project, anything that needs you, and whatever you hover. No boxes.</li>
+      </ul>
+      <div class="cost">Speed: <b>none</b>. Only positions change. Also removes the 8-island cap: far orbits can hold more.</div>
+    </div>
+    <div class="card after"><span class="stage-tag">Stage C</span>
+      <h3><span class="num">4</span>Space traffic</h3>
+      <ul>
+        <li>Thin glowing energy filaments that branch like a tree from the current station, replacing thick lines.</li>
+        <li>Small shuttles fly along the filaments, more when that project's agents are busy, none when it rests.</li>
+        <li>A filament to a project that needs you pulses amber toward you.</li>
+      </ul>
+      <div class="cost">Speed: <b>small</b>. All shuttles drawn in one call. Decoration only: a shuttle carries no real task.</div>
+    </div>
+    <div class="card after"><span class="stage-tag">Stage C</span>
+      <h3><span class="num">6</span>Warp jump and camera</h3>
+      <ul>
+        <li>Picking a project: stars stretch into streaks, a flash, and you arrive at the other station.</li>
+        <li>The sky view drifts slowly like a film camera; the mouse adds a little parallax.</li>
+        <li>Picture mode becomes a proper wallpaper shot of this view.</li>
+      </ul>
+      <div class="cost">Speed: <b>none at rest</b>. The streak effect runs only during the 1.5 s jump. Reduced motion skips it for a plain fade.</div>
+    </div>
+  </div>
+
+  <h2>What each status looks like</h2>
+  <table>
+    <tr><th>Project status (real, from the agent service)</th><th>Station</th><th>Filament and traffic</th><th>Space weather</th></tr>
+    <tr><td><span class="dot" style="background:var(--green)"></span>Agents working</td><td>Thrusters glow under the rock, green docking lights blink, veins in the rock glow</td><td>Cyan filament, shuttles flying (more when busier)</td><td>Meteor shower</td></tr>
+    <tr><td><span class="dot" style="background:var(--amber)"></span>Needs you</td><td>Amber beacon beam straight up into space, rings pulse on the deck</td><td>Amber filament pulsing toward the current station</td><td>Ion storm over the dome</td></tr>
+    <tr><td><span class="dot" style="background:#6b7286"></span>Idle / resting</td><td>Lights dimmed, slow drift, no thrusters</td><td>Faint grey filament, no shuttles</td><td>Drifting dust</td></tr>
+  </table>
+  <p class="muted">Same rule as today: status comes from real sessions, and every moving part (shuttles, debris, beams) is decoration that shows the status, never invented work.</p>
+
+  <h2>How we would build it</h2>
+  <div class="steps">
+    <div class="card"><span class="stage-tag">Stage A · sky and light</span><h3>Biggest jump, no Blender</h3><p class="muted">Sky photo per theme, sun, gas giant with rings, film lighting, flare, grain, distance fade. You check it in the browser before Stage B.</p></div>
+    <div class="card"><span class="stage-tag">Stage B · stations and orbits</span><h3>Blender work</h3><p class="muted">New rock-and-ring station bases and debris built in Blender, status behaviour (thrusters, beacon, dim), orbit layout, hover labels.</p></div>
+    <div class="card"><span class="stage-tag">Stage C · traffic and warp</span><h3>The motion</h3><p class="muted">Branching filaments, shuttles, the warp jump between projects, the drifting sky camera.</p></div>
+  </div>
+
+  <h2>Notes</h2>
+  <ul class="muted">
+    <li>Sky photos would come from free sources, with credit in Settings › About. Candidates: NASA Goddard SVS "Deep Star Maps" and ESO's Milky Way panorama (CC BY 4.0). The licence is confirmed before anything is downloaded.</li>
+    <li>Frame rate is checked on the GTX 1650 after each stage. Lite quality keeps the sky photo (it is cheap) but drops flare, grain, debris and shuttles.</li>
+    <li>This page is a drawing to agree on the look. The real scene will look sharper (true 3D, real shadows) but follows the same layout and colours.</li>
+  </ul>
+</div>
+
+<script>
+(() => {
+  const cv = document.getElementById('scene')
+  const ctx = cv.getContext('2d')
+  const W = 1280, H = 720
+  const DPR = Math.min(2, window.devicePixelRatio || 1)
+  cv.width = W * DPR; cv.height = H * DPR; ctx.scale(DPR, DPR)
+
+  const state = { view: 'target', theme: 'deep', status: 'working', picture: false }
+  const THEMES = {
+    deep: { band: [205, 214, 255], bandStrength: 1, neb: [[120, 70, 210, 0.07], [50, 120, 210, 0.06]], planet: 'giant', p1: [205, 150, 100], p2: [110, 70, 45], ring: [225, 200, 170], sun: [255, 244, 220], rim: [255, 210, 160] },
+    nebula: { band: [230, 200, 255], bandStrength: 0.75, neb: [[210, 60, 190, 0.3], [40, 190, 215, 0.24], [130, 70, 230, 0.2]], planet: 'giant', p1: [150, 120, 220], p2: [55, 40, 110], ring: [210, 190, 255], sun: [255, 228, 246], rim: [220, 170, 255] },
+    aurora: { band: [195, 240, 230], bandStrength: 0.6, neb: [[40, 170, 130, 0.08]], planet: 'world', p1: [24, 36, 52], p2: [6, 10, 16], ring: [0, 0, 0], sun: [232, 255, 246], rim: [90, 255, 170] },
+  }
+
+  // seeded random so the sky is the same every load
+  const rng = (seed) => () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296 }
+  const gauss = (r) => Math.sqrt(-2 * Math.log(r() + 1e-9)) * Math.cos(2 * Math.PI * r())
+  const rgba = (c, a = 1) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`
+  let FOG = 0
+  const FOG_C = [5, 7, 14]
+  const fc = (c, a = 1) => rgba([c[0] + (FOG_C[0] - c[0]) * FOG, c[1] + (FOG_C[1] - c[1]) * FOG, c[2] + (FOG_C[2] - c[2]) * FOG], a)
+
+  // ---------- sky, drawn once per theme ----------
+  const PAD = 90
+  const skyCache = {}
+  function starColor(r) { const k = r(); return k < 0.15 ? [200, 215, 255] : k < 0.75 ? [255, 250, 242] : k < 0.92 ? [255, 228, 190] : [255, 196, 150] }
+  function makeSky(key) {
+    const c = document.createElement('canvas'); c.width = W + PAD * 2; c.height = H + PAD * 2
+    const g = c.getContext('2d'); const r = rng(11)
+    if (key === 'today') {
+      const bg = g.createLinearGradient(0, 0, 0, c.height); bg.addColorStop(0, '#0b1533'); bg.addColorStop(1, '#070b1c')
+      g.fillStyle = bg; g.fillRect(0, 0, c.width, c.height)
+      for (let i = 0; i < 70; i++) { const x = r() * c.width, y = r() * c.height, rad = 60 + r() * 170; const gr = g.createRadialGradient(x, y, 0, x, y, rad); gr.addColorStop(0, 'rgba(50,75,140,0.16)'); gr.addColorStop(1, 'rgba(50,75,140,0)'); g.fillStyle = gr; g.fillRect(x - rad, y - rad, rad * 2, rad * 2) }
+      for (let i = 0; i < 1100; i++) { g.fillStyle = `rgba(205,215,255,${0.25 + r() * 0.5})`; g.fillRect(r() * c.width, r() * c.height, 1.6, 1.6) }
+      return c
+    }
+    const T = THEMES[key]
+    g.fillStyle = '#010103'; g.fillRect(0, 0, c.width, c.height)
+    const ax = -0.05 * c.width, ay = 0.98 * c.height, bx = 1.05 * c.width, by = -0.05 * c.height
+    const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy), nx = -dy / len, ny = dx / len
+    const at = (t, o) => [ax + dx * t + nx * o, ay + dy * t + ny * o]
+    // Milky Way glow, brightest around the galactic centre
+    g.save(); g.globalCompositeOperation = 'lighter'; g.filter = 'blur(28px)'
+    for (let i = 0; i < 90; i++) {
+      const t = r(), o = gauss(r) * 46, [x, y] = at(t, o), rad = 70 + r() * 150
+      const core = Math.exp(-((t - 0.38) ** 2) / 0.02)
+      const a = T.bandStrength * (0.035 + r() * 0.05) * (0.5 + Math.sin(t * Math.PI) * 0.7) + core * 0.05
+      const col = core > 0.4 ? [255, 222, 185] : T.band
+      const gr = g.createRadialGradient(x, y, 0, x, y, rad); gr.addColorStop(0, rgba(col, a)); gr.addColorStop(1, rgba(col, 0))
+      g.fillStyle = gr; g.beginPath(); g.arc(x, y, rad, 0, 7); g.fill()
+    }
+    g.restore()
+    // nebula gas, clustered
+    g.save(); g.globalCompositeOperation = 'lighter'; g.filter = 'blur(38px)'
+    T.neb.forEach(([cr, cg, cb, a], k) => {
+      const cx = c.width * (0.2 + 0.3 * k + r() * 0.2), cy = c.height * (0.15 + r() * 0.45)
+      for (let i = 0; i < 16; i++) {
+        const x = cx + gauss(r) * 160, y = cy + gauss(r) * 90, rad = 70 + r() * 200
+        const gr = g.createRadialGradient(x, y, 0, x, y, rad); gr.addColorStop(0, `rgba(${cr},${cg},${cb},${a * (0.4 + r() * 0.6)})`); gr.addColorStop(1, `rgba(${cr},${cg},${cb},0)`)
+        g.fillStyle = gr; g.beginPath(); g.arc(x, y, rad, 0, 7); g.fill()
+      }
+    })
+    g.restore()
+    // stars: dense in the band, sparse elsewhere
+    for (let i = 0; i < 16000; i++) {
+      const t = r(), o = gauss(r) * (55 + 70 * r()), [x, y] = at(t, o), b = r()
+      const s = b > 0.996 ? 1.9 : b > 0.97 ? 1.25 : 0.75
+      g.fillStyle = rgba(starColor(r), 0.22 + r() * 0.6); g.fillRect(x, y, s, s)
+    }
+    for (let i = 0; i < 3800; i++) { const b = r(); g.fillStyle = rgba(starColor(r), 0.25 + r() * 0.65); const s = b > 0.99 ? 1.8 : b > 0.94 ? 1.2 : 0.8; g.fillRect(r() * c.width, r() * c.height, s, s) }
+    // dark dust lanes through the band
+    g.save(); g.filter = 'blur(12px)'
+    const ang = Math.atan2(dy, dx)
+    for (let i = 0; i < 60; i++) {
+      const t = 0.08 + r() * 0.84, o = gauss(r) * 12 + 4, [x, y] = at(t, o)
+      g.fillStyle = `rgba(1,1,3,${0.35 + r() * 0.4})`; g.beginPath(); g.ellipse(x, y, 35 + r() * 100, 6 + r() * 16, ang + (r() - 0.5) * 0.5, 0, 7); g.fill()
+    }
+    g.restore()
+    // bright foreground stars with a soft glow and faint spikes
+    for (let i = 0; i < 46; i++) {
+      const x = r() * c.width, y = r() * c.height, col = starColor(r), rad = 4 + r() * 7
+      const gr = g.createRadialGradient(x, y, 0, x, y, rad); gr.addColorStop(0, rgba(col, 0.9)); gr.addColorStop(0.25, rgba(col, 0.25)); gr.addColorStop(1, rgba(col, 0))
+      g.fillStyle = gr; g.fillRect(x - rad, y - rad, rad * 2, rad * 2)
+      if (r() > 0.6) { g.strokeStyle = rgba(col, 0.18); g.lineWidth = 0.7; g.beginPath(); g.moveTo(x - rad * 2.2, y); g.lineTo(x + rad * 2.2, y); g.moveTo(x, y - rad * 2.2); g.lineTo(x, y + rad * 2.2); g.stroke() }
+    }
+    for (let i = 0; i < 700; i++) { g.fillStyle = rgba(starColor(r), 0.3 + r() * 0.5); g.fillRect(r() * c.width, r() * c.height, 0.9, 0.9) }
+    return c
+  }
+  const sky = (key) => skyCache[key] || (skyCache[key] = makeSky(key))
+
+  // film grain, drawn once and slid around
+  const grain = document.createElement('canvas'); grain.width = grain.height = 256
+  { const g = grain.getContext('2d'), d = g.createImageData(256, 256), r = rng(3); for (let i = 0; i < d.data.length; i += 4) { const v = r() * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255 } g.putImageData(d, 0, 0) }
+  const grainPattern = ctx.createPattern(grain, 'repeat')
+
+  // ---------- stations ----------
+  const NAMES = ['agent-factory-3d', 'Ledger API', 'Nimbus Portal', 'Sample E', 'Aurora Shop', 'Orbit Lab', 'Sample F', 'Sample C']
+  const STATUS = { 'Ledger API': 'working', 'Nimbus Portal': 'needs', 'Sample E': 'working', 'Aurora Shop': 'idle', 'Orbit Lab': 'idle', 'Sample F': 'idle', 'Sample C': 'idle', 'agent-factory-3d': 'idle' }
+  let names = NAMES.slice()
+  function rockShape(seed) {
+    const r = rng(seed), pts = [], n = 11
+    for (let i = 0; i <= n; i++) { const u = i / n, d = Math.sin(u * Math.PI); pts.push([(-1 + 2 * u) * (1 - d * 0.5) + (r() - 0.5) * 0.16, 0.08 + d * (1.15 + (r() - 0.5) * 0.45)]) }
+    const strata = [0.3, 0.55, 0.8].map((y) => Array.from({ length: 9 }, (_, i) => [-1 + i / 4, y + (r() - 0.5) * 0.08]))
+    const debris = Array.from({ length: 9 }, () => ({ a: r() * 6.28, rad: 1.25 + r() * 0.6, sp: (0.08 + r() * 0.12) * (r() > 0.5 ? 1 : -1), size: 0.05 + r() * 0.07, h: (r() - 0.3) * 0.5, rot: r() * 6 }))
+    const fuzz = Array.from({ length: 5 }, () => ({ x: (r() - 0.5) * 4, y: (r() - 0.2) * 2, s: 0.25 + r() * 0.35 }))
+    return { pts, strata, debris, fuzz }
+  }
+  const SHAPES = NAMES.map((_, i) => rockShape(100 + i * 17))
+  // orbit slots: index 0 is the centre, 1-3 inner orbit, 4-7 outer orbit
+  const SLOTS = [null, { orbit: 0, a: 0.3 }, { orbit: 0, a: 2.4 }, { orbit: 0, a: 4.4 }, { orbit: 1, a: 1.0 }, { orbit: 1, a: 2.7 }, { orbit: 1, a: 4.0 }, { orbit: 1, a: 5.4 }]
+  const ORBITS = [{ R: 330, k: 0.36, sp: 0.018 }, { R: 560, k: 0.34, sp: 0.011 }]
+  const TODAY_POS = [[0.62, 0.86, 1.25], [0.32, 0.36, 0.7], [0.12, 0.62, 0.7], [0.36, 0.48, 0.6], [0.72, 0.3, 0.55], [0.06, 0.4, 0.5], [0.52, 0.24, 0.45], [0.95, 0.44, 0.6]]
+
+  let mouse = { x: W / 2, y: H / 2, in: false }, hovered = -1
+  cv.addEventListener('mousemove', (e) => { const b = cv.getBoundingClientRect(); mouse = { x: ((e.clientX - b.left) / b.width) * W, y: ((e.clientY - b.top) / b.height) * H, in: true } })
+  cv.addEventListener('mouseleave', () => { mouse.in = false })
+
+  function statusOf(i) { return i === 0 ? state.status : STATUS[names[i]] }
+
+  function layout(t, ox, oy) {
+    const cx = W * 0.5 + ox, cy = H * 0.5 + oy, list = []
+    if (state.view === 'today') {
+      TODAY_POS.forEach(([x, y, s], i) => list.push({ i, x: x * W, y: y * H, s, depth: 1, fog: 0 }))
+      return list
+    }
+    list.push({ i: 0, x: cx, y: cy, s: 1.05, depth: 1, fog: 0 })
+    for (let i = 1; i < 8; i++) {
+      const sl = SLOTS[i], o = ORBITS[sl.orbit], a = sl.a + t * o.sp, d = (Math.sin(a) + 1) / 2
+      list.push({ i, x: cx + Math.cos(a) * o.R, y: cy + Math.sin(a) * o.R * o.k - 20 - sl.orbit * 30, s: (sl.orbit ? 0.32 : 0.45) + d * (sl.orbit ? 0.28 : 0.3), depth: d, fog: (1 - d) * 0.55 + sl.orbit * 0.15, orbit: sl.orbit, a })
+    }
+    return list
+  }
+
+  function drawSun(sx, sy, T) {
+    const g1 = ctx.createRadialGradient(sx, sy, 0, sx, sy, 260); g1.addColorStop(0, rgba(T.sun, 0.55)); g1.addColorStop(0.08, rgba(T.sun, 0.22)); g1.addColorStop(1, rgba(T.sun, 0))
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = g1; ctx.fillRect(sx - 260, sy - 260, 520, 520)
+    ctx.fillStyle = rgba([255, 255, 255], 1); ctx.beginPath(); ctx.arc(sx, sy, 5, 0, 7); ctx.fill()
+    const st = ctx.createLinearGradient(sx - 340, sy, sx + 340, sy); st.addColorStop(0, rgba(T.sun, 0)); st.addColorStop(0.5, rgba(T.sun, 0.45)); st.addColorStop(1, rgba(T.sun, 0))
+    ctx.fillStyle = st; ctx.fillRect(sx - 340, sy - 1, 680, 2); ctx.restore()
+  }
+
+  function drawPlanet(px, py, T, t) {
+    const sun = [W * 0.84, H * 0.13]
+    if (T.planet === 'giant') {
+      const R = 330, rx = R * 1.95, ry = R * 0.3, rot = -0.22
+      const ringPass = (a0, a1) => { for (let k = 0; k < 7; k++) { ctx.strokeStyle = rgba(T.ring, [0.18, 0.32, 0.12, 0.28, 0.06, 0.2, 0.1][k]); ctx.lineWidth = [5, 9, 3, 7, 2, 6, 4][k]; ctx.beginPath(); ctx.ellipse(px, py, rx * (0.78 + k * 0.035), ry * (0.78 + k * 0.035), rot, a0, a1); ctx.stroke() } }
+      ringPass(Math.PI, Math.PI * 2)
+      ctx.save(); ctx.beginPath(); ctx.arc(px, py, R, 0, 7); ctx.clip()
+      for (let k = 0; k < 22; k++) { const y = py - R + (k / 22) * R * 2, m = 0.5 + 0.5 * Math.sin(k * 1.7) * Math.cos(k * 0.6); ctx.fillStyle = rgba([T.p1[0] * m + T.p2[0] * (1 - m), T.p1[1] * m + T.p2[1] * (1 - m), T.p1[2] * m + T.p2[2] * (1 - m)]); ctx.save(); ctx.translate(px, py); ctx.rotate(rot); ctx.fillRect(-R, y - py, R * 2, (R * 2) / 22 + 1); ctx.restore() }
+      const L = norm(sun[0] - px, sun[1] - py)
+      const sh = ctx.createLinearGradient(px + L[0] * R, py + L[1] * R, px - L[0] * R * 0.2, py - L[1] * R * 0.2); sh.addColorStop(0, 'rgba(0,0,0,0)'); sh.addColorStop(0.35, 'rgba(0,0,0,0.25)'); sh.addColorStop(1, 'rgba(0,0,0,0.94)')
+      ctx.fillStyle = sh; ctx.fillRect(px - R, py - R, R * 2, R * 2); ctx.restore()
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = rgba(T.rim, 0.5); ctx.lineWidth = 2.5; ctx.shadowColor = rgba(T.rim, 0.9); ctx.shadowBlur = 18
+      const la = Math.atan2(L[1], L[0]); ctx.beginPath(); ctx.arc(px, py, R, la - 0.9, la + 0.9); ctx.stroke(); ctx.restore()
+      ringPass(0, Math.PI)
+    } else {
+      const R = W * 1.6, cx = px + W * 0.4, cy = py + R + H * 0.05
+      const body = ctx.createRadialGradient(cx, cy - R, 0, cx, cy - R, 500); body.addColorStop(0, rgba(T.p1)); body.addColorStop(1, rgba(T.p2))
+      ctx.fillStyle = body; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.fill()
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'
+      ctx.strokeStyle = rgba(T.rim, 0.55); ctx.lineWidth = 3; ctx.shadowColor = rgba(T.rim, 1); ctx.shadowBlur = 24; ctx.beginPath(); ctx.arc(cx, cy, R, -Math.PI / 2 - 0.5, -Math.PI / 2 + 0.5); ctx.stroke(); ctx.shadowBlur = 0
+      for (let i = 0; i < 120; i++) {
+        const a = -Math.PI / 2 + (i / 120 - 0.5) * 0.7, ex = cx + Math.cos(a) * R, ey = cy + Math.sin(a) * R
+        const h = 50 + 38 * Math.sin(i * 0.31 + t * 0.7) + 26 * Math.sin(i * 0.13 - t * 0.45) + 18 * Math.sin(i * 0.05 + t * 0.2)
+        const gr = ctx.createLinearGradient(ex, ey, ex + Math.cos(a) * h, ey + Math.sin(a) * h)
+        gr.addColorStop(0, rgba([80, 255, 170], 0.13)); gr.addColorStop(0.6, rgba([70, 220, 200], 0.06)); gr.addColorStop(1, rgba([150, 90, 255], 0))
+        ctx.strokeStyle = gr; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(ex, ey - 4); ctx.lineTo(ex + Math.cos(a) * h, ey + Math.sin(a) * h); ctx.stroke()
+      }
+      ctx.restore()
+    }
+  }
+  const norm = (x, y) => { const l = Math.hypot(x, y) || 1; return [x / l, y / l] }
+
+  function drawLink(a, b, st, t, today) {
+    const mx = (a.x + b.x) / 2, my = Math.min(a.y, b.y) - 70 - Math.abs(a.x - b.x) * 0.08
+    const P = (u) => [(1 - u) ** 2 * a.x + 2 * (1 - u) * u * mx + u * u * b.x, (1 - u) ** 2 * a.y + 2 * (1 - u) * u * my + u * u * b.y]
+    if (today) {
+      ctx.strokeStyle = st === 'idle' ? '#3d78c8' : '#2fb36e'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.quadraticCurveTo(mx, my, b.x, b.y); ctx.stroke()
+      ctx.fillStyle = '#fff'; for (const u of [0.2, 0.5, 0.8]) { const [x, y] = P(u); ctx.beginPath(); ctx.arc(x, y, 5, 0, 7); ctx.fill() }
+      return
+    }
+    const col = st === 'working' ? [116, 216, 255] : st === 'needs' ? [255, 179, 71] : [120, 130, 160]
+    const base = st === 'idle' ? 0.18 : 0.42
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'
+    ctx.strokeStyle = rgba(col, base * 0.35); ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.quadraticCurveTo(mx, my, b.x, b.y); ctx.stroke()
+    ctx.strokeStyle = rgba(col, base); ctx.lineWidth = 1.1; ctx.stroke()
+    if (st === 'needs') { // a pulse that runs toward the current station
+      for (let k = 0; k < 3; k++) { const u = 1 - ((t * 0.5 + k / 3) % 1), [x, y] = P(u); const gr = ctx.createRadialGradient(x, y, 0, x, y, 14); gr.addColorStop(0, rgba(col, 0.8)); gr.addColorStop(1, rgba(col, 0)); ctx.fillStyle = gr; ctx.fillRect(x - 14, y - 14, 28, 28) }
+    }
+    if (st === 'working') { // shuttles with short trails
+      for (let k = 0; k < 3; k++) {
+        const dir = k % 2 ? -1 : 1, u0 = (t * 0.09 * (1 + k * 0.2) + k / 3) % 1, u = dir > 0 ? u0 : 1 - u0
+        for (let j = 0; j < 10; j++) { const [x, y] = P(Math.min(1, Math.max(0, u - dir * j * 0.008))); ctx.fillStyle = rgba([210, 240, 255], 0.5 * (1 - j / 10)); ctx.fillRect(x - 1, y - 1, 2, 2) }
+        const [x, y] = P(u); const gr = ctx.createRadialGradient(x, y, 0, x, y, 7); gr.addColorStop(0, 'rgba(255,255,255,0.95)'); gr.addColorStop(0.3, rgba(col, 0.5)); gr.addColorStop(1, rgba(col, 0)); ctx.fillStyle = gr; ctx.fillRect(x - 7, y - 7, 14, 14)
+      }
+    }
+    ctx.restore()
+  }
+
+  function drawDebris(n, R, sh, t, front, sun) {
+    for (const d of sh.debris) {
+      const a = d.a + t * d.sp, s = Math.sin(a); if ((s > 0) !== front) continue
+      const x = n.x + Math.cos(a) * d.rad * R * 1.3, y = n.y + R * 0.35 + s * d.rad * R * 0.38 + d.h * R, size = d.size * R * (0.8 + 0.3 * s)
+      const L = norm(sun[0] - x, sun[1] - y), rot = d.rot + t * 0.3
+      ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.beginPath()
+      for (let k = 0; k < 6; k++) { const aa = (k / 6) * 6.28, rr = size * (0.7 + 0.3 * Math.sin(k * 2.3 + d.rot)); k ? ctx.lineTo(Math.cos(aa) * rr, Math.sin(aa) * rr * 0.8) : ctx.moveTo(Math.cos(aa) * rr, Math.sin(aa) * rr * 0.8) }
+      ctx.closePath(); ctx.rotate(-rot)
+      const gr = ctx.createLinearGradient(L[0] * size, L[1] * size, -L[0] * size, -L[1] * size); gr.addColorStop(0, fc([150, 132, 116])); gr.addColorStop(1, fc([18, 15, 16]))
+      ctx.fillStyle = gr; ctx.fill(); ctx.restore()
+    }
+  }
+
+  function drawStation(n, t, sun, isHover) {
+    const today = state.view === 'today', st = statusOf(n.i), sh = SHAPES[n.i]
+    const R = (n.i === 0 && !today ? 112 : 95) * n.s, x = n.x, y = n.y
+    FOG = n.fog
+    const L = norm(sun[0] - x, sun[1] - y)
+    const dimK = st === 'idle' ? 0.45 : 1
+    if (!today) drawDebris(n, R, sh, t, false, sun)
+    // thrusters under the rock while agents work
+    if (!today && st === 'working') {
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'
+      for (const [u, k] of [[-0.35, 0.8], [0.1, 1], [0.42, 0.7]]) {
+        const fx = x + u * R, fy = y + R * (0.95 - Math.abs(u) * 0.6), fl = R * (0.35 + 0.08 * Math.sin(t * 23 + u * 9)) * k
+        const gr = ctx.createRadialGradient(fx, fy, 0, fx, fy + fl * 0.6, fl); gr.addColorStop(0, 'rgba(230,250,255,0.9)'); gr.addColorStop(0.25, 'rgba(120,210,255,0.45)'); gr.addColorStop(1, 'rgba(60,120,255,0)')
+        ctx.fillStyle = gr; ctx.beginPath(); ctx.ellipse(fx, fy + fl * 0.5, fl * 0.22, fl, 0, 0, 7); ctx.fill()
+      }
+      ctx.restore()
+    }
+    // rock underside
+    ctx.beginPath(); ctx.moveTo(x - R, y)
+    for (const [px, py] of sh.pts) ctx.lineTo(x + px * R, y + py * R)
+    ctx.lineTo(x + R, y); ctx.ellipse(x, y, R, R * 0.3, 0, 0, Math.PI); ctx.closePath()
+    if (today) {
+      const gr = ctx.createLinearGradient(x, y, x, y + R * 1.2); gr.addColorStop(0, '#4a3a30'); gr.addColorStop(1, '#2a1f1a'); ctx.fillStyle = gr; ctx.fill()
+      ctx.save(); ctx.clip(); ctx.strokeStyle = 'rgba(80,190,255,0.75)'; ctx.lineWidth = 4 * n.s
+      for (const line of sh.strata) { ctx.beginPath(); line.forEach(([px, py], k) => (k ? ctx.lineTo(x + px * R, y + py * R) : ctx.moveTo(x + px * R, y + py * R))); ctx.stroke() }
+      ctx.restore()
+    } else {
+      const gr = ctx.createLinearGradient(x + L[0] * R, y + L[1] * R * 0.6, x - L[0] * R * 0.9, y + R * 0.9)
+      gr.addColorStop(0, fc([168, 146, 124])); gr.addColorStop(0.28, fc([96, 80, 70])); gr.addColorStop(0.65, fc([30, 25, 26])); gr.addColorStop(1, fc([10, 9, 12]))
+      ctx.fillStyle = gr; ctx.fill()
+      ctx.save(); ctx.clip()
+      ctx.strokeStyle = fc([0, 0, 0], 0.45); ctx.lineWidth = 1.4
+      for (const line of sh.strata) { ctx.beginPath(); line.forEach(([px, py], k) => (k ? ctx.lineTo(x + px * R, y + py * R) : ctx.moveTo(x + px * R, y + py * R))); ctx.stroke() }
+      const vein = st === 'needs' ? [255, 170, 60] : [90, 210, 255], va = st === 'idle' ? 0.12 : 0.35 + 0.15 * Math.sin(t * 2 + n.i)
+      ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = fc(vein, va * (1 - FOG)); ctx.lineWidth = 1.2
+      ctx.beginPath(); const v = sh.strata[1]; v.forEach(([px, py], k) => (k ? ctx.lineTo(x + px * R * 0.8, y + (py + 0.1) * R) : ctx.moveTo(x + px * R * 0.8, y + (py + 0.1) * R))); ctx.stroke()
+      ctx.restore()
+      // lit edge toward the sun
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = fc([255, 214, 170], 0.12 * (1 - FOG)); ctx.lineWidth = 1; ctx.stroke(); ctx.restore()
+    }
+    // deck
+    ctx.beginPath(); ctx.ellipse(x, y, R, R * 0.3, 0, 0, 7)
+    ctx.fillStyle = today ? '#2a2a33' : fc([30, 34, 44]); ctx.fill()
+    if (!today) {
+      const rg = ctx.createLinearGradient(x + L[0] * R, y + L[1] * R * 0.3, x - L[0] * R, y - L[1] * R * 0.3); rg.addColorStop(0, fc([225, 232, 242])); rg.addColorStop(0.5, fc([110, 120, 138])); rg.addColorStop(1, fc([40, 46, 58]))
+      ctx.strokeStyle = rg; ctx.lineWidth = Math.max(1.2, 3 * n.s); ctx.stroke()
+      ctx.strokeStyle = fc([70, 78, 96], 0.8); ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(x, y, R * 0.66, R * 0.2, 0, 0, 7); ctx.stroke()
+      // little bay blocks, back to front
+      const blocks = [0.4, 1.9, 3.3, 4.6, 5.6].map((a) => ({ a, s: Math.sin(a) })).sort((p, q) => p.s - q.s)
+      for (const b of blocks) {
+        const bx = x + Math.cos(b.a) * R * 0.62, by = y + b.s * R * 0.19, bw = R * 0.16, bh = R * 0.1
+        ctx.fillStyle = fc([44, 50, 64]); ctx.fillRect(bx - bw / 2, by - bh, bw, bh); ctx.fillStyle = fc([120, 132, 152]); ctx.fillRect(bx - bw / 2, by - bh, bw, bh * 0.25)
+        ctx.fillStyle = fc([255, 160, 70], 0.7 * dimK); ctx.fillRect(bx - bw * 0.3, by - bh * 0.6, bw * 0.6, bh * 0.18)
+      }
+    }
+    // core glow
+    { const cr = R * 0.22, gr = ctx.createRadialGradient(x, y - R * 0.08, 0, x, y - R * 0.08, cr * 2.2); gr.addColorStop(0, `rgba(210,245,255,${0.95 * dimK})`); gr.addColorStop(0.3, `rgba(90,200,255,${0.45 * dimK})`); gr.addColorStop(1, 'rgba(90,200,255,0)')
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = gr; ctx.fillRect(x - cr * 2.2, y - R * 0.08 - cr * 2.2, cr * 4.4, cr * 4.4); ctx.restore() }
+    // rim lights
+    if (!today) {
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'
+      for (let k = 0; k < 14; k++) {
+        const a = (k / 14) * 6.28, lx = x + Math.cos(a) * R, ly = y + Math.sin(a) * R * 0.3
+        const on = st === 'working' ? (Math.sin(t * 3 - k * 0.7) > 0.2 ? 1 : 0.2) : st === 'needs' ? 0.5 + 0.5 * Math.sin(t * 7) : 0.25
+        const c = st === 'needs' ? [255, 179, 71] : st === 'working' ? [93, 240, 168] : [110, 150, 220]
+        ctx.fillStyle = rgba(c, on * (1 - FOG * 0.7)); ctx.beginPath(); ctx.arc(lx, ly, Math.max(1, 1.8 * n.s), 0, 7); ctx.fill()
+      }
+      ctx.restore()
+    }
+    // dome
+    ctx.beginPath(); ctx.ellipse(x, y, R * 0.97, R * 0.82, 0, Math.PI, Math.PI * 2)
+    if (today) { ctx.fillStyle = 'rgba(70,200,255,0.16)'; ctx.fill(); ctx.strokeStyle = 'rgba(90,220,255,0.75)'; ctx.lineWidth = 2; ctx.stroke() }
+    else {
+      const dg = ctx.createRadialGradient(x, y - R * 0.3, R * 0.2, x, y - R * 0.3, R); dg.addColorStop(0, 'rgba(150,210,255,0.02)'); dg.addColorStop(1, `rgba(150,210,255,${0.09 * (1 - FOG)})`)
+      ctx.fillStyle = dg; ctx.fill(); ctx.strokeStyle = `rgba(175,220,255,${0.2 * (1 - FOG)})`; ctx.lineWidth = 1; ctx.stroke()
+      const la = Math.atan2(L[1], L[0]); ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = `rgba(255,250,235,${0.45 * (1 - FOG)})`; ctx.lineWidth = Math.max(1, 2.2 * n.s)
+      ctx.beginPath(); ctx.ellipse(x, y, R * 0.9, R * 0.76, 0, Math.max(Math.PI + 0.15, la - 0.35), Math.min(Math.PI * 2 - 0.15, la + 0.35)); ctx.stroke(); ctx.restore()
+    }
+    // beacon when it needs you
+    if (!today && st === 'needs') {
+      const p = 0.55 + 0.45 * Math.sin(t * 3)
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'
+      const bw = R * 0.5, bg = ctx.createLinearGradient(0, y - R * 0.1, 0, 0); bg.addColorStop(0, `rgba(255,190,90,${0.5 * p})`); bg.addColorStop(1, 'rgba(255,170,60,0)')
+      ctx.fillStyle = bg; ctx.beginPath(); ctx.moveTo(x - bw * 0.18, y - R * 0.1); ctx.lineTo(x - bw, 0); ctx.lineTo(x + bw, 0); ctx.lineTo(x + bw * 0.18, y - R * 0.1); ctx.fill()
+      ctx.fillStyle = `rgba(255,236,200,${0.85 * p})`; ctx.fillRect(x - 1.2, 0, 2.4, y - R * 0.1)
+      for (let k = 0; k < 2; k++) { const q = (t * 0.6 + k / 2) % 1; ctx.strokeStyle = `rgba(255,179,71,${0.6 * (1 - q)})`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(x, y, R * (0.3 + q * 0.9), R * (0.09 + q * 0.27), 0, 0, 7); ctx.stroke() }
+      ctx.restore()
+    }
+    if (!today) drawDebris(n, R, sh, t, true, sun)
+    // today: the blurry brown disks
+    if (today) for (const f of sh.fuzz) { const fx = x + f.x * R, fy = y + f.y * R, fr = f.s * R; const gr = ctx.createRadialGradient(fx, fy, 0, fx, fy, fr); gr.addColorStop(0, 'rgba(110,80,60,0.85)'); gr.addColorStop(0.7, 'rgba(90,65,50,0.6)'); gr.addColorStop(1, 'rgba(90,65,50,0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(fx, fy, fr, 0, 7); ctx.fill() }
+    n.R = R
+    FOG = 0
+  }
+
+  function drawLabel(n) {
+    const today = state.view === 'today', st = statusOf(n.i), name = names[n.i]
+    const ty = n.y - n.R * 0.92 - 16
+    ctx.save(); ctx.font = (n.i === 0 && !today ? '600 14px' : '500 12px') + ' system-ui, sans-serif'
+    const w = ctx.measureText(name).width
+    if (today) {
+      ctx.fillStyle = 'rgba(20,14,10,0.88)'; ctx.strokeStyle = 'rgba(90,220,255,0.8)'; ctx.lineWidth = 1
+      roundRect(n.x - w / 2 - 20, ty - 13, w + 32, 24, 12); ctx.fill(); ctx.stroke()
+      ctx.fillStyle = '#7a6650'; ctx.beginPath(); ctx.arc(n.x - w / 2 - 8, ty - 1, 3.5, 0, 7); ctx.fill()
+      ctx.fillStyle = '#f3e6d4'; ctx.textBaseline = 'middle'; ctx.fillText(name, n.x - w / 2, ty)
+    } else {
+      const c = st === 'needs' ? [255, 179, 71] : st === 'working' ? [93, 240, 168] : [170, 180, 205]
+      // the current station's name sits out to the left so it never covers the orbit behind it
+      const side = n.i === 0
+      const lx = side ? n.x - n.R * 1.15 - w - 30 : n.x - w / 2, ly = side ? n.y - n.R * 0.55 : ty
+      ctx.strokeStyle = rgba(c, 0.5); ctx.lineWidth = 1; ctx.beginPath()
+      if (side) { ctx.moveTo(n.x - n.R * 0.8, n.y - n.R * 0.4); ctx.lineTo(lx + w + 18, ly + 9); ctx.lineTo(lx - 12, ly + 9) }
+      else { ctx.moveTo(n.x, n.y - n.R * 0.85); ctx.lineTo(n.x, ly + 9); ctx.lineTo(n.x + w / 2 + 6, ly + 9) }
+      ctx.stroke()
+      ctx.fillStyle = rgba(c, 1); ctx.beginPath(); ctx.arc(lx - 8, ly, 3, 0, 7); ctx.fill()
+      ctx.fillStyle = 'rgba(240,245,255,0.92)'; ctx.textBaseline = 'middle'; ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 6; ctx.fillText(name, lx, ly)
+      const sub = st === 'needs' ? '1 waiting for you' : st === 'working' ? '2 agents working' : 'resting'
+      ctx.font = '500 10.5px system-ui, sans-serif'; ctx.fillStyle = rgba(c, 0.85); ctx.fillText(sub.toUpperCase(), lx, ly + 18)
+    }
+    ctx.restore()
+  }
+  function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath() }
+
+  function drawOrbits(cx, cy, front) {
+    ctx.save(); ctx.strokeStyle = 'rgba(150,180,230,0.09)'; ctx.lineWidth = 1; ctx.setLineDash([2, 6])
+    ORBITS.forEach((o, k) => { ctx.beginPath(); ctx.ellipse(cx, cy - 20 - k * 30, o.R, o.R * o.k, 0, front ? 0 : Math.PI, front ? Math.PI : Math.PI * 2); ctx.stroke() })
+    ctx.restore()
+  }
+
+  // warp
+  const WARP = Array.from({ length: 520 }, (_, i) => { const r = rng(900 + i); return { a: r() * 6.28, d: 20 + r() * 700, c: starColor(r) } })
+  let warpAt = -1, swapped = false, warpCount = 0
+  function setSeg(key, v) { state[key] = v; document.querySelectorAll(`.seg[data-key="${key}"] button`).forEach((x) => x.classList.toggle('on', x.dataset.v === v)) }
+  document.getElementById('warp').onclick = () => { if (warpAt < 0) { warpAt = performance.now(); swapped = false } }
+
+  function frame(now) {
+    const t = now / 1000, today = state.view === 'today', T = THEMES[state.theme]
+    const mx = mouse.in ? (mouse.x / W - 0.5) : 0, my = mouse.in ? (mouse.y / H - 0.5) : 0
+    const ox = today ? 0 : Math.sin(t * 0.07) * 14 - mx * 26, oy = today ? 0 : Math.cos(t * 0.05) * 8 - my * 14
+    let wp = warpAt < 0 ? -1 : (now - warpAt) / 1600
+    if (wp > 1.35) { warpAt = -1; wp = -1 }
+    if (wp > 0.8 && !swapped) {
+      // arrive at the next project: it becomes the centre, the one we left goes onto its orbit slot
+      swapped = true
+      const next = 1 + (warpCount++ % 7)
+      STATUS[names[0]] = state.status
+      ;[names[0], names[next]] = [names[next], names[0]]
+      setSeg('status', STATUS[names[0]])
+    }
+
+    ctx.save()
+    if (wp > 0 && wp < 0.8) { const z = 1 + wp * wp * 0.5; ctx.translate(W / 2, H / 2); ctx.scale(z, z); ctx.translate(-W / 2, -H / 2) }
+    ctx.drawImage(sky(today ? 'today' : state.theme), -PAD + ox * 0.15, -PAD + oy * 0.15)
+    const sun = [W * 0.84 + ox * 0.1, H * 0.13 + oy * 0.1]
+    if (!today) {
+      drawSun(sun[0], sun[1], T)
+      drawPlanet(T.planet === 'giant' ? W * 0.06 + ox * 0.4 : -W * 0.4 + ox * 0.4, T.planet === 'giant' ? H * 1.02 + oy * 0.4 : H * 0.78 + oy * 0.4, T, t)
+    }
+    const nodes = layout(t, ox, oy)
+    const byI = (i) => nodes.find((n) => n.i === i)
+    if (!today) drawOrbits(W * 0.5 + ox, H * 0.5 + oy, false)
+    // links: a tree from the centre (today: everything wired to the centre)
+    const links = []
+    for (const n of nodes) {
+      if (n.i === 0) continue
+      let parent = byI(0)
+      if (!today && n.orbit === 1) { let best = null; for (const m of nodes) if (m.orbit === 0) { const d = Math.abs(Math.atan2(Math.sin(m.a - n.a), Math.cos(m.a - n.a))); if (!best || d < best.d) best = { m, d } } parent = best.m }
+      links.push([parent, n])
+    }
+    for (const [p, c] of links) { const pp = { x: p.x, y: p.y - 6 }, cc = { x: c.x, y: c.y - 6 }; FOG = 0; drawLink(pp, cc, statusOf(c.i), t, today) }
+    // hover
+    hovered = -1
+    if (mouse.in) { let best = 1e9; for (const n of nodes) { const d = Math.hypot(mouse.x - n.x, mouse.y - n.y); if (d < (n.R || 60) * 1.1 && d < best) { best = d; hovered = n.i } } }
+    const order = nodes.slice().sort((a, b) => a.y - b.y)
+    for (const n of order) drawStation(n, t, sun, hovered === n.i)
+    if (!today) drawOrbits(W * 0.5 + ox, H * 0.5 + oy, true)
+    if (!state.picture) for (const n of order) { const st = statusOf(n.i); if (today || n.i === 0 || st === 'needs' || hovered === n.i) drawLabel(n) }
+
+    if (!today) {
+      // lens flare ghosts along the line from the sun through the middle
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'
+      const vx = W / 2 - sun[0], vy = H / 2 - sun[1]
+      for (const [k, r, a, c] of [[0.45, 26, 0.08, [255, 210, 150]], [0.75, 12, 0.12, [140, 200, 255]], [1.2, 48, 0.05, [180, 140, 255]], [1.55, 18, 0.09, [255, 180, 120]]]) {
+        const fx = sun[0] + vx * k, fy = sun[1] + vy * k, gr = ctx.createRadialGradient(fx, fy, r * 0.4, fx, fy, r); gr.addColorStop(0, rgba(c, a * 0.4)); gr.addColorStop(0.85, rgba(c, a)); gr.addColorStop(1, rgba(c, 0))
+        ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(fx, fy, r, 0, 7); ctx.fill()
+      }
+      ctx.restore()
+      // vignette and grain
+      const vg = ctx.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.95); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.6)')
+      ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H)
+      ctx.save(); ctx.globalAlpha = 0.045; ctx.globalCompositeOperation = 'overlay'; ctx.translate((Math.random() * 256) | 0, (Math.random() * 256) | 0); ctx.fillStyle = grainPattern; ctx.fillRect(-256, -256, W + 512, H + 512); ctx.restore()
+    }
+    ctx.restore()
+
+    // warp streaks and flash
+    if (wp > 0) {
+      const p = Math.min(wp, 0.8) / 0.8
+      ctx.save(); ctx.fillStyle = `rgba(2,3,8,${Math.min(0.85, p * 0.9) * (wp < 0.8 ? 1 : Math.max(0, 1 - (wp - 0.8) / 0.55))})`; ctx.fillRect(0, 0, W, H)
+      if (wp < 0.85) { ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round'
+        for (const s of WARP) { const d = s.d * (1 + p * p * 3), l = 8 + p * p * 300, x0 = W / 2 + Math.cos(s.a) * d, y0 = H / 2 + Math.sin(s.a) * d * 0.62; ctx.strokeStyle = rgba(s.c, 0.25 + p * 0.6); ctx.lineWidth = 0.6 + p * 1.6; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 + Math.cos(s.a) * l, y0 + Math.sin(s.a) * l * 0.62); ctx.stroke() } }
+      const flash = wp > 0.7 ? Math.max(0, 1 - Math.abs(wp - 0.82) / 0.14) : 0
+      if (flash > 0) { ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = `rgba(225,240,255,${flash * 0.9})`; ctx.fillRect(0, 0, W, H) }
+      ctx.restore()
+    }
+    requestAnimationFrame(frame)
+  }
+  requestAnimationFrame(frame)
+
+  // controls
+  document.querySelectorAll('.seg').forEach((seg) => seg.addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return
+    state[seg.dataset.key] = b.dataset.v
+    seg.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b))
+  }))
+  const hud = document.getElementById('hud')
+  const setPicture = (on) => { state.picture = on; hud.classList.toggle('off', on) }
+  document.getElementById('pic').onclick = () => setPicture(!state.picture)
+  window.addEventListener('keydown', (e) => { if (e.key === 'h' || e.key === 'H') setPicture(!state.picture); else if (e.key === 'Escape') setPicture(false) })
+})()
+</script>
+</body>
+</html>

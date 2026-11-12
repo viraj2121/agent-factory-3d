@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Solar system, in detail: a real sun, real-looking planets, and five kinds of cosmos</title>
+<style>
+  :root { --bg: #06070b; --card: rgba(18, 20, 29, 0.82); --line: #252a39; --text: #e8ebf3; --dim: #969db2; --amber: #ffb347; --green: #5df0a8; --cyan: #74d8ff; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.6 system-ui, -apple-system, Segoe UI, sans-serif; }
+  .wrap { max-width: 1320px; margin: 0 auto; padding: 28px 32px 60px; }
+  h1 { margin: 0; font-size: 28px; }
+  h2 { margin: 40px 0 10px; font-size: 20px; }
+  h3 { margin: 0 0 4px; font-size: 16px; }
+  p { margin: 6px 0; }
+  .lead { color: var(--dim); max-width: 940px; }
+  .stage { position: relative; margin-top: 16px; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: #000; aspect-ratio: 16 / 9; }
+  canvas { display: block; width: 100%; height: 100%; }
+  .cap { position: absolute; left: 16px; bottom: 14px; max-width: 620px; padding: 10px 14px; border-radius: 12px; background: rgba(6, 8, 14, 0.66); border: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(8px); pointer-events: none; }
+  .cap b { display: block; font-size: 15px; color: var(--cyan); }
+  .cap span { font-size: 13px; color: var(--dim); }
+  .legend { position: absolute; right: 14px; top: 12px; padding: 8px 12px; border-radius: 10px; background: rgba(6, 8, 14, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); font-size: 12px; color: var(--dim); pointer-events: none; line-height: 1.7; }
+  .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; }
+  .tag { position: absolute; right: 14px; bottom: 12px; padding: 4px 10px; border-radius: 8px; background: rgba(0, 0, 0, 0.45); color: var(--dim); font-size: 11px; pointer-events: none; }
+  .controls { display: flex; flex-wrap: wrap; gap: 14px 26px; align-items: center; margin-top: 12px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--card); }
+  .group { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--dim); flex-wrap: wrap; }
+  .seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+  .seg button { cursor: pointer; padding: 6px 12px; border: 0; background: transparent; color: var(--text); font: inherit; font-size: 13px; }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button.on { background: var(--amber); color: #1b1004; font-weight: 600; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(410px, 1fr)); gap: 14px; }
+  .card { padding: 16px 18px; border-radius: 14px; border: 1px solid var(--line); background: var(--card); }
+  .card.click { cursor: pointer; }
+  .card.click:hover { border-color: var(--amber); }
+  .card dl { margin: 8px 0 0; display: grid; grid-template-columns: 104px 1fr; gap: 3px 10px; font-size: 13.5px; }
+  .card dt { color: var(--dim); }
+  .card dd { margin: 0; }
+  .muted { color: var(--dim); font-size: 13px; }
+  .pill { display: inline-block; margin-left: 8px; padding: 1px 9px; border-radius: 99px; border: 1px solid var(--green); color: var(--green); font-size: 11.5px; vertical-align: middle; }
+  .levels { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 10px; }
+  .level { padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); text-align: center; }
+  .level b { display: block; color: var(--cyan); }
+  .level span { font-size: 12.5px; color: var(--dim); }
+  @media (max-width: 900px) { .levels { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>The Solar System, in detail <span class="muted">a real sun, real-looking worlds, five kinds of cosmos</span></h1>
+  <p class="lead">Two changes from the last page. <b>The sun is now a fixed, realistic star</b> (granulated surface, sunspots, a corona, prominences and flares). <b>The planets are the projects</b>, each its own kind of world with its own look. The current project is the planet marked "YOU ARE HERE". Pick a kind of cosmos below, change the scenario, hover a planet for its name, and in the <b>Galaxy</b> view click a star to dive in.</p>
+
+  <div class="stage">
+    <canvas id="c" width="1280" height="720"></canvas>
+    <div class="legend"><i style="background:#5df0a8"></i>agents working (green moons, lit cities)<br><i style="background:#ffb347"></i>waiting for you (amber flare)<br><i style="background:#828eac"></i>resting (dark, no moons)</div>
+    <div class="cap" id="cap"></div>
+    <div class="tag">Mockup in 2D · the star, the belt and the comets are decoration</div>
+  </div>
+
+  <div class="controls">
+    <div class="group">Cosmos <span class="seg" id="worlds"></span></div>
+    <div class="group">Look closer <span class="seg" id="focus"><button data-v="all" class="on">Overview</button><button data-v="star">The star</button><button data-v="planet">Your planet</button></span></div>
+    <div class="group">Scenario <span class="seg" id="scen"><button data-v="normal" class="on">Normal day</button><button data-v="busy">Everyone busy</button><button data-v="quiet">All quiet</button></span></div>
+  </div>
+
+  <h2>My answer on the sun</h2>
+  <div class="grid">
+    <div class="card"><h3>A static, real sun is better <span class="pill">recommended</span></h3>
+      <p class="muted">If the sun were the current project, it would swap every time you pick another project and the whole system would reshuffle. A fixed sun keeps the system stable: you learn where each project lives, and picking one just moves the "YOU ARE HERE" mark.</p>
+      <dl><dt>What the sun is</dt><dd><b>This computer.</b> Every agent the hub watches runs on it, so it is the one thing all projects truly share. That makes it honest, not just pretty.</dd>
+      <dt>What it shows</dt><dd>Nothing invented. It only flares more often when many agents are working at once (try "Everyone busy"), and the flare is decoration.</dd>
+      <dt>The current project</dt><dd>A planet you are standing on: bigger, with a white bracket and its orbit lit. Open it and you are in the hall, as today.</dd></dl></div>
+    <div class="card"><h3>How the cosmos could map to real data</h3>
+      <div class="levels">
+        <div class="level"><b>Galaxy</b><span>all your workspaces</span></div>
+        <div class="level"><b>Star system</b><span>one workspace (a parent folder)</span></div>
+        <div class="level"><b>Planet</b><span>one project</span></div>
+        <div class="level"><b>Moon</b><span>one running agent</span></div>
+        <div class="level"><b>Sun</b><span>this computer</span></div>
+      </div>
+      <p class="muted">Grouping by parent folder is real data the service already knows. Today most people would have one system; the galaxy only becomes useful with several workspaces. Pick the kind of star in Settings, as you pick the theme today.</p></div>
+  </div>
+
+  <h2>The cosmos, one by one</h2>
+  <div class="grid" id="cards"></div>
+</div>
+
+<script>
+(() => {
+  const cv = document.getElementById('c'), ctx = cv.getContext('2d'), W = 1280, H = 720
+  const DPR = Math.min(2, window.devicePixelRatio || 1)
+  cv.width = W * DPR; cv.height = H * DPR; ctx.scale(DPR, DPR)
+
+  const rng = (seed) => () => { seed |= 0; seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296 }
+  const gauss = (r) => Math.sqrt(-2 * Math.log(r() + 1e-9)) * Math.cos(6.2831853 * r())
+  const rgba = (c, a = 1) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`
+  const mix = (a, b, u) => [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, a[2] + (b[2] - a[2]) * u]
+  const COL = { working: [93, 240, 168], needs: [255, 179, 71], idle: [130, 142, 172] }
+  const NAMES = ['agent-factory-3d', 'Ledger API', 'Nimbus Portal', 'Sample E', 'Aurora Shop', 'Orbit Lab', 'Sample F', 'Sample C']
+  const SCEN = {
+    normal: ['working', 'working', 'needs', 'working', 'idle', 'idle', 'idle', 'needs'],
+    busy: ['working', 'working', 'working', 'working', 'working', 'working', 'working', 'working'],
+    quiet: ['idle', 'idle', 'idle', 'idle', 'idle', 'idle', 'idle', 'idle'],
+  }
+  const state = { world: 'sun', scen: 'normal', focus: 'all' }
+  const S = (i) => SCEN[state.scen][i]
+  const AG = (i) => (S(i) === 'working' ? 2 + (i % 3) : S(i) === 'needs' ? 1 : 0)
+  const STATUS_TEXT = { working: 'AGENTS WORKING', needs: 'WAITING FOR YOU', idle: 'RESTING' }
+  const glow = (x, y, r, c, a) => { const g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, rgba([255, 255, 255], a)); g.addColorStop(0.3, rgba(c, a * 0.55)); g.addColorStop(1, rgba(c, 0)); ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2) }
+
+  // ---------- backgrounds ----------
+  const fallback = document.createElement('canvas'); fallback.width = W; fallback.height = H
+  { const g = fallback.getContext('2d'), r = rng(5); g.fillStyle = '#010206'; g.fillRect(0, 0, W, H); for (let i = 0; i < 1800; i++) { const b = r(); g.fillStyle = `rgba(${b > 0.8 ? '255,225,190' : '215,225,255'},${0.2 + r() * 0.6})`; const s = b > 0.995 ? 1.9 : b > 0.96 ? 1.2 : 0.8; g.fillRect(r() * W, r() * H, s, s) } }
+  const photo = new Image(); let photoOk = false; photo.onload = () => { photoOk = true }; photo.src = '../../../apps/dashboard/public/textures/milkyway-4k.jpg'
+  const CROPS = [[1250, 640, 1500, 844], [1900, 560, 1500, 844], [700, 880, 1400, 788], [2500, 700, 1400, 788]]
+  function bg(k) { ctx.drawImage(fallback, 0, 0); if (photoOk && k >= 0) { const c = CROPS[k % CROPS.length]; ctx.drawImage(photo, c[0], c[1], c[2], c[3], 0, 0, W, H) } }
+
+  // ---------- hits and labels ----------
+  let hits = [], hover = -1, mouse = { x: -1, y: -1 }
+  cv.addEventListener('mousemove', (e) => { const b = cv.getBoundingClientRect(); mouse = { x: ((e.clientX - b.left) / b.width) * W, y: ((e.clientY - b.top) / b.height) * H } })
+  cv.addEventListener('mouseleave', () => { mouse = { x: -1, y: -1 } })
+  function label(h) {
+    const st = h.status || S(h.i), c = COL[st]
+    ctx.save(); ctx.textAlign = 'center'; ctx.shadowColor = '#000'; ctx.shadowBlur = 7
+    ctx.font = (h.i === 0 ? '600 14px' : '500 12px') + ' system-ui'; ctx.fillStyle = 'rgba(240,245,255,0.96)'; ctx.fillText(h.name || NAMES[h.i], h.x, h.ly)
+    ctx.font = '500 10.5px system-ui'; ctx.fillStyle = rgba(c, 0.95); ctx.fillText(h.sub || STATUS_TEXT[st], h.x, h.ly + 14); ctx.restore()
+  }
+
+  // =====================================================================
+  // The star and the globes: textures are baked once, then lit, turned and crowned every frame
+  // =====================================================================
+  // ---------- noise, textures and sphere mapping ----------
+  const hash2 = (x, y, s) => { let n = (Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(s, 1442695041)) | 0; n = Math.imul(n ^ (n >>> 13), 1274126177); return ((n ^ (n >>> 16)) >>> 0) / 4294967296 }
+  const vnoise = (x, y, per, s) => { const xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi, u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy), m = (a) => ((a % per) + per) % per; const a = hash2(m(xi), yi, s), b = hash2(m(xi + 1), yi, s), c = hash2(m(xi), yi + 1, s), d = hash2(m(xi + 1), yi + 1, s); return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v }
+  const fbm = (x, y, per, s, oct = 5) => { let v = 0, a = 0.5, f = 1, n = 0; for (let o = 0; o < oct; o++) { v += a * vnoise(x * f, y * f, per * f, s + o * 17); n += a; a *= 0.5; f *= 2 } return v / n }
+  const clamp01 = (v) => Math.min(1, Math.max(0, v))
+  const view = { s: 1, x: 640, y: 360 }
+  function bakeTexture(w, h, fn) { const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'), d = g.createImageData(w, h); for (let py = 0; py < h; py++) for (let px = 0; px < w; px++) { const o = fn(px / w, py / h), i = (py * w + px) * 4; d.data[i] = o[0]; d.data[i + 1] = o[1]; d.data[i + 2] = o[2]; d.data[i + 3] = o[3] === undefined ? 255 : o[3] } g.putImageData(d, 0, 0); return c }
+  /** A flat picture wrapped round a ball: columns of the picture are squeezed toward the edge, so it turns like a globe. */
+  function sphere(texture, x, y, r, rot) {
+    const tw = texture.width, th = texture.height, step = Math.max(0.22, 0.85 / view.s)
+    for (let px = -r; px < r; px += step) {
+      const a0 = Math.asin(Math.max(-1, Math.min(1, px / r))), a1 = Math.asin(Math.max(-1, Math.min(1, (px + step) / r)))
+      const u = ((((a0 / Math.PI + 0.5 + rot) % 1) + 1) % 1) * tw, sw = Math.max(1, ((a1 - a0) / Math.PI) * tw)
+      ctx.drawImage(texture, u, 0, Math.min(sw, tw - u), th, x + px, y - r, step + 0.35, 2 * r)
+    }
+  }
+
+  // ---------- the star: convection cells with dark lanes, starspots, faculae, baked once ----------
+  const tex = {}
+  function starTexture(key, pal) {
+    if (tex[key]) return tex[key]
+    const w = 1024, h = 512, gx = pal.cells, gy = gx / 2, cw = w / gx, ch = h / gy
+    const c = bakeTexture(w, h, (u, v) => {
+      const px = u * w, py = v * h, ci = Math.floor(px / cw), cj = Math.floor(py / ch)
+      let f1 = 1e9, f2 = 1e9, bv = 0
+      for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+        const nj = cj + dj; if (nj < 0 || nj >= gy) continue
+        const ni = ci + di, wi = ((ni % gx) + gx) % gx, sx = (ni + hash2(wi, nj, 1)) * cw, sy = (nj + hash2(wi, nj, 2)) * ch, d = Math.hypot(px - sx, py - sy)
+        if (d < f1) { f2 = f1; f1 = d; bv = hash2(wi, nj, 3) } else if (d < f2) f2 = d
+      }
+      const ln = clamp01((f2 - f1) / (cw * 0.3)), lane = ln * ln * (3 - 2 * ln), mott = fbm(u * 4, v * 2, 4, 77, 4), fine = fbm(u * 64, v * 32, 64, 91, 3), k = (0.8 + 0.2 * bv) * (0.62 + 0.38 * lane) * (0.8 + 0.4 * mott) * (0.9 + 0.2 * fine), col = mix(pal.cool, pal.hot, clamp01(bv * 0.8 + mott * 0.4 - 0.15))
+      return [col[0] * k, col[1] * k, col[2] * k, 255]
+    })
+    const g = c.getContext('2d'), r = rng(900 + pal.cells)
+    for (let n = 0; n < pal.spots; n++) {
+      const x = r() * w, y = (0.3 + r() * 0.4) * h, rad = (pal.bigSpot && n < 2 ? 34 : 10) + r() * 14
+      g.fillStyle = `rgba(${pal.dark},.5)`; g.beginPath(); g.ellipse(x, y, rad * 1.9, rad * 1.5, 0, 0, 7); g.fill(); g.fillStyle = `rgba(${pal.dark},.4)`; g.beginPath(); g.ellipse(x, y, rad * 1.4, rad * 1.1, 0, 0, 7); g.fill()
+      g.fillStyle = 'rgba(28,10,6,.82)'; g.beginPath(); g.ellipse(x, y, rad, rad * 0.75, 0, 0, 7); g.fill()
+      for (let q = 0; q < 5; q++) { g.fillStyle = 'rgba(255,245,210,.18)'; g.beginPath(); g.ellipse(x + (r() - 0.5) * rad * 5, y + (r() - 0.5) * rad * 3, 3 + r() * 6, 2 + r() * 3, 0, 0, 7); g.fill() }
+    }
+    return (tex[key] = c)
+  }
+  const PALS = {
+    sun: { hot: [255, 236, 160], cool: [255, 150, 40], dark: '170,60,0', corona: [255, 210, 130], chromo: [255, 120, 70], cells: 84, spots: 5 },
+    dwarf: { hot: [255, 150, 100], cool: [200, 50, 20], dark: '110,15,0', corona: [255, 90, 50], chromo: [255, 100, 90], cells: 64, spots: 8, bigSpot: true, detail: true },
+    orange: { hot: [255, 205, 125], cool: [225, 112, 30], dark: '140,50,0', corona: [255, 160, 80], chromo: [255, 130, 70], cells: 76, spots: 4 },
+    blue: { hot: [240, 248, 255], cool: [140, 185, 255], dark: '30,60,150', corona: [130, 175, 255], chromo: [150, 190, 255], cells: 96, spots: 0 },
+  }
+  const flareState = () => (state.scen === 'busy' ? 5 : state.scen === 'quiet' ? 22 : 10)
+  function drawStar(cx, cy, R, pal, key, t, withFlares) {
+    const cr = pal.corona
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'
+    let g = ctx.createRadialGradient(cx, cy, R * 0.9, cx, cy, R * 5); g.addColorStop(0, rgba(cr, 0.5)); g.addColorStop(0.25, rgba(cr, 0.16)); g.addColorStop(1, rgba(cr, 0)); ctx.fillStyle = g; ctx.fillRect(cx - R * 5, cy - R * 5, R * 10, R * 10)
+    const r = rng(404)
+    for (let n = 0; n < 34; n++) {
+      const a = r() * 6.283 + Math.sin(t * 0.05 + n) * 0.02, len = R * (1.5 + r() * 2.1) * (0.92 + 0.08 * Math.sin(t * 0.7 + n * 1.7)), w = R * (0.05 + r() * 0.09)
+      const x0 = cx + Math.cos(a) * R * 0.95, y0 = cy + Math.sin(a) * R * 0.95, x1 = cx + Math.cos(a) * (R + len), y1 = cy + Math.sin(a) * (R + len)
+      const lg = ctx.createLinearGradient(x0, y0, x1, y1); lg.addColorStop(0, rgba(cr, 0.22)); lg.addColorStop(1, rgba(cr, 0)); ctx.strokeStyle = lg; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke()
+    }
+    ctx.restore()
+    ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.clip()
+    sphere(starTexture(key, pal), cx, cy, R, t * 0.004)
+    g = ctx.createRadialGradient(cx, cy, R * 0.25, cx, cy, R); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.7, `rgba(${pal.dark},.12)`); g.addColorStop(1, `rgba(${pal.dark},.72)`); ctx.fillStyle = g; ctx.fillRect(cx - R, cy - R, 2 * R, 2 * R)
+    ctx.restore()
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.shadowColor = rgba(pal.chromo, 0.9); ctx.shadowBlur = R * 0.3; ctx.strokeStyle = rgba(pal.chromo, 0.5); ctx.lineWidth = Math.max(1.2, R * 0.045); ctx.beginPath(); ctx.arc(cx, cy, R + 0.5, 0, 7); ctx.stroke(); ctx.restore()
+    if (!withFlares) return
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round'
+    // magnetic loops: bright arcs along the edge, plasma sliding along them
+    const nl = pal.detail ? 5 : 3
+    for (let k = 0; k < nl; k++) {
+      const a = 0.4 + k * (6.283 / nl) + Math.sin(t * 0.03 + k * 1.7) * 0.25, span = pal.detail ? 0.12 + 0.05 * (k % 3) : 0.1, hgt = R * ((pal.detail ? 0.46 : 0.22) + 0.1 * Math.sin(t * 0.5 + k * 2))
+      const p0 = [cx + Math.cos(a - span) * R * 0.99, cy + Math.sin(a - span) * R * 0.99], p1 = [cx + Math.cos(a + span) * R * 0.99, cy + Math.sin(a + span) * R * 0.99], q = [cx + Math.cos(a) * (R + hgt * 2), cy + Math.sin(a) * (R + hgt * 2)]
+      for (const [w, al] of [[Math.max(1.5, R * 0.08), pal.detail ? 0.1 : 0.2], [Math.max(1, R * 0.022), pal.detail ? 0.42 : 0.75]]) { ctx.strokeStyle = rgba(pal.detail ? [255, 120, 80] : cr, al); ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.quadraticCurveTo(q[0], q[1], p1[0], p1[1]); ctx.stroke() }
+      if (pal.detail) for (let b = 0; b < 2; b++) { const u = (t * 0.2 + b * 0.5 + k * 0.13) % 1, x = (1 - u) ** 2 * p0[0] + 2 * (1 - u) * u * q[0] + u * u * p1[0], y = (1 - u) ** 2 * p0[1] + 2 * (1 - u) * u * q[1] + u * u * p1[1]; glow(x, y, R * 0.14, [255, 190, 150], 0.9) }
+    }
+    // a flare now and then, more often when many agents work; on the red dwarf it throws out a coronal ejection
+    const P = flareState(), nIdx = Math.floor(t / P), ph = (t % P) / (pal.detail ? 3.6 : 2.4)
+    if (ph < 1) {
+      const rr = rng(nIdx * 17 + 3), a = rr() * 6.283, k = Math.sin(ph * Math.PI), bx = cx + Math.cos(a) * R, by = cy + Math.sin(a) * R
+      glow(bx, by, R * (0.5 + 0.9 * k), [255, 240, 200], 0.9 * k)
+      ctx.strokeStyle = rgba([255, 230, 170], 0.75 * k); ctx.lineWidth = Math.max(2, R * 0.07); ctx.beginPath(); ctx.moveTo(cx + Math.cos(a - 0.14) * R, cy + Math.sin(a - 0.14) * R); ctx.quadraticCurveTo(cx + Math.cos(a) * (R + R * 1.1 * ph), cy + Math.sin(a) * (R + R * 1.1 * ph), cx + Math.cos(a + 0.14) * R, cy + Math.sin(a + 0.14) * R); ctx.stroke()
+      if (pal.detail) {
+        const ex = R * (0.2 + ph * 4.2)
+        ctx.strokeStyle = rgba([255, 150, 110], 0.5 * (1 - ph)); ctx.lineWidth = Math.max(2, R * 0.08); ctx.beginPath(); ctx.arc(cx, cy, R + ex, a - 0.55, a + 0.55); ctx.stroke()
+        ctx.strokeStyle = rgba([255, 220, 190], 0.7 * (1 - ph)); ctx.lineWidth = Math.max(1, R * 0.03); ctx.stroke()
+        for (let b = 0; b < 16; b++) { const aa = a + (rr() - 0.5) * 0.9, d = R + ex * (0.6 + rr() * 0.7); glow(cx + Math.cos(aa) * d, cy + Math.sin(aa) * d, 5 + rr() * 5, [255, 170, 120], 0.8 * (1 - ph)) }
+      }
+    }
+    ctx.restore()
+  }
+
+  // ---------- black hole ----------
+  function drawHole(cx, cy, t, part) {
+    const tilt = 0.24, R = 46
+    const disk = (front) => {
+      for (let rad = 60; rad <= 200; rad += 2) {
+        const u = (rad - 60) / 140, col = u < 0.3 ? mix([255, 245, 215], [255, 175, 70], u / 0.3) : mix([255, 175, 70], [150, 35, 8], (u - 0.3) / 0.7), a = Math.pow(1 - u, 0.9) * 0.55
+        const g = ctx.createLinearGradient(cx - rad, 0, cx + rad, 0); g.addColorStop(0, rgba(col, a)); g.addColorStop(1, rgba(col, a * 0.3))
+        ctx.strokeStyle = g; ctx.lineWidth = 3; if (rad % 8 === 0) { ctx.setLineDash([26 + rad * 0.15, 40]); ctx.lineDashOffset = -t * 90 * Math.pow(60 / rad, 1.5) } else ctx.setLineDash([])
+        ctx.beginPath(); ctx.ellipse(cx, cy, rad, rad * tilt, 0, front ? 0 : Math.PI, front ? Math.PI : Math.PI * 2); ctx.stroke()
+      }
+      ctx.setLineDash([])
+    }
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'
+    if (part === 'back') {
+      disk(false)
+      for (let rad = 60; rad < 150; rad += 4) { const u = (rad - 60) / 90; ctx.strokeStyle = rgba(mix([255, 230, 170], [255, 140, 50], u), 0.32 * (1 - u)); ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(cx, cy - 6, rad * 0.64, rad * 0.64, 0, Math.PI + 0.3, Math.PI * 2 - 0.3); ctx.stroke(); ctx.beginPath(); ctx.ellipse(cx, cy + 6, rad * 0.5, rad * 0.46, 0, 0.4, Math.PI - 0.4); ctx.globalAlpha = 0.45; ctx.stroke(); ctx.globalAlpha = 1 }
+      ctx.restore(); return
+    }
+    ctx.restore()
+    ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.fill()
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.shadowColor = 'rgba(255,200,120,.9)'; ctx.shadowBlur = 22; ctx.strokeStyle = 'rgba(255,232,190,.9)'; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.arc(cx, cy, R + 2, 0, 7); ctx.stroke(); ctx.restore()
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; disk(true); ctx.restore()
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; glow(cx, cy, 240, [255, 150, 60], 0.18); ctx.restore()
+  }
+
+  // =====================================================================
+  // Planets: every project is its own kind of world
+  // =====================================================================
+  const PAL = {
+    ocean: { city: true, atmo: [110, 170, 255] },
+    lava: {},
+    desert: { city: true },
+    rocky: { city: true, atmo: [200, 120, 90] },
+    gasring: { bands: [[212, 170, 118], [168, 118, 78], [236, 206, 160], [190, 140, 96]], ring: [225, 205, 170], atmo: [220, 200, 160] },
+    gas: { bands: [[150, 170, 200], [112, 134, 172], [190, 205, 225], [96, 112, 152]], atmo: [150, 180, 220] },
+    ice: { bands: [[140, 210, 222], [124, 196, 212], [158, 222, 230]], atmo: [150, 220, 230] },
+    barren: {},
+  }
+  const TYPES = ['lava', 'desert', 'ocean', 'rocky', 'gasring', 'gas', 'ice', 'barren']
+  const SIZES = { lava: 14, desert: 16, ocean: 19, rocky: 15, gasring: 31, gas: 26, ice: 21, barren: 12 }
+  const projectAt = (o) => (o === 2 ? 0 : o < 2 ? o + 1 : o)
+
+  // surfaces baked once: continents and ice caps, craters, lava cracks, dunes, banded gas with streaks
+  const ptex = {}, PW = 512, PH = 256, PER = 4
+  function planetTexture(type, seed) {
+    const key = type + seed; if (ptex[key]) return ptex[key]
+    const pal = PAL[type], P = PER, lerpC = (a, b, u) => mix(a, b, clamp01(u))
+    const c = bakeTexture(PW, PH, (u, v) => {
+      const x = u * P, y = v * P * 0.5, lat = Math.abs(v - 0.5) * 2
+      if (type === 'ocean') {
+        const h = fbm(x, y, P, seed, 6)
+        if (lat > 0.87 + (fbm(x * 3, y * 3, P * 3, seed + 9, 3) - 0.5) * 0.12) return [236, 243, 250, 255]
+        if (h < 0.5) return [...lerpC([8, 30, 88], [34, 110, 168], (h - 0.3) / 0.2), 255]
+        const e = (h - 0.5) / 0.2, cc = e < 0.2 ? lerpC([196, 180, 120], [74, 118, 58], e / 0.2) : e < 0.6 ? lerpC([74, 118, 58], [118, 96, 66], (e - 0.2) / 0.4) : lerpC([118, 96, 66], [214, 214, 208], (e - 0.6) / 0.4)
+        return [...cc, 255]
+      }
+      if (type === 'lava') {
+        const n = fbm(x, y, P, seed, 5), r2 = fbm(x * 2, y * 2, P * 2, seed + 5, 4), ridge = 1 - Math.abs(2 * r2 - 1), crack = clamp01((ridge - 0.88) / 0.12), k = 0.6 + n * 0.9
+        return [Math.min(255, 34 * k + crack * 255 + (n < 0.35 ? 70 : 0)), Math.min(255, 24 * k + crack * 120), Math.min(255, 22 * k + crack * 30), 255]
+      }
+      if (type === 'desert') {
+        const b = fbm(x, y * 3, P, seed, 5), patch = fbm(x * 2, y * 2, P * 2, seed + 3, 4); let cc = lerpC([214, 174, 114], [176, 126, 78], b * 1.3 - 0.15)
+        if (patch > 0.6) cc = lerpC(cc, [118, 82, 56], (patch - 0.6) * 4); return [...cc, 255]
+      }
+      if (type === 'rocky') {
+        const n = fbm(x * 2, y * 2, P * 2, seed, 5), maria = fbm(x, y, P, seed + 4, 4); let cc = [168 * (0.65 + n * 0.7), 84 * (0.65 + n * 0.7), 56 * (0.65 + n * 0.7)]
+        if (maria > 0.56) cc = lerpC(cc, [86, 52, 42], (maria - 0.56) * 5); if (lat > 0.91) cc = [236, 236, 242]; return [...cc, 255]
+      }
+      if (type === 'barren') {
+        const n = fbm(x * 2, y * 2, P * 2, seed, 5), maria = fbm(x, y, P, seed + 4, 4); let g = 95 + n * 95; if (maria > 0.55) g *= 0.62; return [g, g * 0.98, g * 0.94, 255]
+      }
+      const colors = pal.bands, d = fbm(x, y * 2, P, seed, 4), b = Math.sin((v + (d - 0.5) * 0.2) * Math.PI * (type === 'ice' ? 7 : 15)) * 0.5 + 0.5, f = b * (colors.length - 1), i0 = Math.floor(f), streak = fbm(x * 4, y * 24, P * 4, seed + 7, 3)
+      let cc = lerpC(colors[i0], colors[Math.min(colors.length - 1, i0 + 1)], f - i0); const k = 0.82 + streak * 0.36; cc = [cc[0] * k, cc[1] * k, cc[2] * k]
+      if (type === 'ice') cc = lerpC(cc, [140, 210, 222], 0.5); return [...cc, 255]
+    })
+    const n = type === 'barren' ? 70 : type === 'rocky' ? 40 : type === 'desert' ? 12 : 0
+    if (n) { const g = c.getContext('2d'), r = rng(seed * 13 + 5); for (let k = 0; k < n; k++) { const x = r() * PW, y = (0.1 + r() * 0.8) * PH, rad = 2 + Math.pow(r(), 2.2) * 12; g.fillStyle = 'rgba(0,0,0,.26)'; g.beginPath(); g.arc(x, y, rad, 0, 7); g.fill(); g.strokeStyle = 'rgba(255,255,255,.2)'; g.lineWidth = 1.2; g.beginPath(); g.arc(x, y, rad, Math.PI * 0.9, Math.PI * 1.6); g.stroke() } }
+    return (ptex[key] = c)
+  }
+  function cloudTexture(seed) {
+    const key = 'cloud' + seed; if (ptex[key]) return ptex[key]
+    return (ptex[key] = bakeTexture(PW, PH, (u, v) => { const x = u * PER, y = v * PER * 0.5, n = fbm(x * 2, y * 2, PER * 2, seed + 50, 5), belt = 0.5 + 0.5 * Math.cos((v - 0.5) * 6.2832 * 1.5); return [255, 255, 255, clamp01((n - 0.5 + belt * 0.06) * 4.2) * 215] }))
+  }
+
+  function body(p, t, lx, ly) {
+    const { x, y, r } = p, pal = PAL[p.type], st = S(p.i), lc = p.lc || [255, 240, 210]
+    // locked to its star (red dwarf): the same face always looks at the sun. Otherwise it spins slowly.
+    const phi = Math.atan2(-Math.cos(p.a), -Math.sin(p.a)), rot = p.tidal ? -phi / 6.2832 : t * 0.006 * (1 + (p.i % 3)) + p.i * 0.37
+    const ringArc = (front) => { ctx.save(); ctx.translate(x, y); ctx.rotate(-0.28); for (const [k, w, a] of [[2.3, 4, 0.3], [2.05, 7, 0.5], [1.8, 3, 0.3], [1.62, 6, 0.4]]) { ctx.strokeStyle = rgba(pal.ring, a); ctx.lineWidth = w * r / 28; ctx.beginPath(); ctx.ellipse(0, 0, r * k, r * k * 0.27, 0, front ? 0 : Math.PI, front ? Math.PI : Math.PI * 2); ctx.stroke() } ctx.restore() }
+    if (pal.ring) ringArc(false)
+    ctx.save(); ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.clip()
+    sphere(planetTexture(p.type, 11 + p.i), x, y, r, rot)
+    if (p.type === 'ocean') { ctx.globalAlpha = 0.92; sphere(cloudTexture(p.i), x, y, r, rot + t * 0.004); ctx.globalAlpha = 1 }
+    // light: a warm day side, a soft terminator, an almost black night side
+    const gx = x + lx * r * 0.5, gy = y + ly * r * 0.5, g = ctx.createRadialGradient(gx, gy, r * 0.1, gx, gy, r * 1.75)
+    g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.5, 'rgba(0,0,6,.14)'); g.addColorStop(0.78, 'rgba(0,0,6,.62)'); g.addColorStop(1, 'rgba(0,0,6,.96)'); ctx.fillStyle = g; ctx.fillRect(x - r, y - r, 2 * r, 2 * r)
+    ctx.globalCompositeOperation = 'lighter'
+    const tg = ctx.createRadialGradient(gx, gy, 0, gx, gy, r * 1.2); tg.addColorStop(0, rgba(lc, 0.2)); tg.addColorStop(1, rgba(lc, 0)); ctx.fillStyle = tg; ctx.fillRect(x - r, y - r, 2 * r, 2 * r)
+    if (p.type === 'ocean') { const sx = x + lx * r * 0.42, sy = y + ly * r * 0.42, sg = ctx.createRadialGradient(sx, sy, 0, sx, sy, r * 0.3); sg.addColorStop(0, 'rgba(255,255,255,.35)'); sg.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = sg; ctx.fillRect(x - r, y - r, 2 * r, 2 * r) }
+    if (p.type === 'lava') { ctx.globalAlpha = 0.3; sphere(planetTexture(p.type, 11 + p.i), x, y, r, rot); ctx.globalAlpha = 1 }
+    if (pal.city && st !== 'idle') {
+      const n = st === 'working' ? 18 : 10, rc = rng(500 + p.i)
+      for (let k = 0; k < n; k++) { const a = rc() * 6.283, d = Math.sqrt(rc()) * 0.92, px = Math.cos(a) * d, py = Math.sin(a) * d; if (px * lx + py * ly > -0.25) continue; const on = st === 'needs' ? (Math.sin(t * 7) > 0 ? 1 : 0.15) : 0.5 + 0.5 * Math.sin(t * 2 + k * 1.3); ctx.fillStyle = st === 'needs' ? rgba(COL.needs, on) : rgba([255, 226, 150], on); ctx.beginPath(); ctx.arc(x + px * r, y + py * r, Math.max(0.6, r * 0.045), 0, 7); ctx.fill() }
+    }
+    ctx.restore()
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'
+    if (pal.atmo) { ctx.strokeStyle = rgba(pal.atmo, 0.22); ctx.lineWidth = Math.max(1.5, r * 0.12); ctx.beginPath(); ctx.arc(x, y, r + r * 0.04, 0, 7); ctx.stroke() }
+    const la = Math.atan2(ly, lx), rim = st === 'idle' ? [150, 175, 220] : COL[st]
+    ctx.strokeStyle = rgba(rim, st === 'idle' ? 0.3 : 0.75); ctx.lineWidth = Math.max(1.5, r * 0.09); ctx.beginPath(); ctx.arc(x, y, r + 0.5, la - 1, la + 1); ctx.stroke(); ctx.restore()
+    if (pal.ring) ringArc(true)
+    // the agents: moons
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'
+    for (let n = 0; n < (st === 'working' ? AG(p.i) : 0); n++) { const a = t * (1.5 + n * 0.5) + n * 2.4, d = r * (1.9 + n * 0.3) + (pal.ring ? r * 0.9 : 0); glow(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.5, 5, COL.working, 0.95) }
+    if (st === 'needs') { const d = r * 2 + (pal.ring ? r : 0), a = 0.9, b = 0.5 + 0.5 * Math.sin(t * 6); glow(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.5, 8, COL.needs, b); const f = (t * 0.55) % 1; ctx.strokeStyle = rgba(COL.needs, 1 - f); ctx.lineWidth = 1.6; ctx.beginPath(); ctx.ellipse(x, y, r * (1.3 + f * 2.4), r * (1.3 + f * 2.4) * 0.5, 0, 0, 7); ctx.stroke() }
+    ctx.restore()
+    if (p.i === 0) { ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1.4; const b = r * 2.1, l = 8; for (const [dx, dy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { ctx.beginPath(); ctx.moveTo(x + dx * b, y + dy * b - dy * l); ctx.lineTo(x + dx * b, y + dy * b); ctx.lineTo(x + dx * b - dx * l, y + dy * b); ctx.stroke() } ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.font = `600 ${(10.5 / Math.max(1, view.s)).toFixed(1)}px system-ui`; ctx.textAlign = 'center'; ctx.fillText('YOU ARE HERE', x, y + r * 2.1 + 20 / Math.max(1, view.s)) }
+    hits.push({ i: p.i, x, y, r: r * 1.8, ly: y - r * (pal.ring ? 1.6 : 1.5) - 12 })
+  }
+
+  // =====================================================================
+  // The five kinds of cosmos
+  // =====================================================================
+  const K = 0.36
+  const SYS = {
+    sun: { radii: [105, 150, 205, 265, 330, 400, 470, 545], scale: 1, bgk: 3, belt: 298, comet: true, light: [255, 240, 210], hz: 20 },
+    dwarf: { radii: [78, 108, 140, 174, 210, 248, 290, 335], scale: 0.85, bgk: 0, light: [255, 140, 90], tidal: true, hz: 15 },
+    binary: { radii: [190, 240, 296, 354, 415, 475, 525, 572], scale: 1, bgk: 2, light: [255, 225, 190] },
+    hole: { radii: [175, 220, 270, 322, 378, 436, 494, 552], scale: 0.95, bgk: 1, light: [255, 170, 90] },
+    blue: { radii: [120, 170, 225, 285, 350, 420, 490, 555], scale: 1, bgk: -1, light: [190, 215, 255] },
+  }
+  const curPos = { x: 640, y: 372 }
+  let skipBg = false
+  function system(id, t) {
+    const cfg = SYS[id], cx = 640, cy = 372
+    if (id === 'blue') {
+      bg(-1); ctx.save(); ctx.globalCompositeOperation = 'lighter'; const r = rng(88)
+      for (let n = 0; n < 34; n++) { const x = r() * W, y = r() * H, rad = 80 + r() * 190, c = n % 3 === 0 ? [255, 90, 160] : n % 3 === 1 ? [60, 180, 220] : [140, 90, 255]; const g = ctx.createRadialGradient(x, y, 0, x, y, rad); g.addColorStop(0, rgba(c, 0.11)); g.addColorStop(1, rgba(c, 0)); ctx.fillStyle = g; ctx.fillRect(x - rad, y - rad, rad * 2, rad * 2) }
+      for (let k = 0; k < 3; k++) { const f = ((t * 0.04 + k / 3) % 1); ctx.strokeStyle = `rgba(130,180,255,${0.22 * (1 - f)})`; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(cx, cy, 160 + f * 560, (160 + f * 560) * K, 0, 0, 7); ctx.stroke() }
+      ctx.restore()
+    } else if (!skipBg) bg(cfg.bgk)
+    ctx.lineWidth = 1; cfg.radii.forEach((R) => { ctx.strokeStyle = 'rgba(140,170,220,.13)'; ctx.beginPath(); ctx.ellipse(cx, cy, R, R * K, 0, 0, 7); ctx.stroke() })
+    if (cfg.hz) {
+      const Ro = cfg.radii[2] + cfg.hz, Ri = cfg.radii[2] - cfg.hz
+      ctx.save(); ctx.fillStyle = 'rgba(93,240,168,.06)'; ctx.beginPath(); ctx.ellipse(cx, cy, Ro, Ro * K, 0, 0, 6.2832); ctx.ellipse(cx, cy, Ri, Ri * K, 0, 0, 6.2832, true); ctx.fill()
+      ctx.strokeStyle = 'rgba(93,240,168,.28)'; ctx.setLineDash([4, 6]); for (const R of [Ro, Ri]) { ctx.beginPath(); ctx.ellipse(cx, cy, R, R * K, 0, 0, 6.2832); ctx.stroke() } ctx.setLineDash([])
+      ctx.fillStyle = 'rgba(93,240,168,.7)'; ctx.font = `500 ${(9.5 / Math.max(1, view.s)).toFixed(1)}px system-ui`; ctx.textAlign = 'center'; ctx.fillText('LIQUID-WATER ZONE (ILLUSTRATION)', cx, cy + Ro * K + 12); ctx.restore()
+    }
+    if (cfg.belt) { const r = rng(61); ctx.fillStyle = 'rgba(190,175,160,.7)'; for (let n = 0; n < 380; n++) { const a = r() * 6.283 + t * 0.02, d = cfg.belt + (r() - 0.5) * 24; ctx.fillRect(cx + Math.cos(a) * d, cy + Math.sin(a) * d * K, 1.4, 1.4) } }
+    const PL = cfg.radii.map((R, o) => { const type = TYPES[o], a = o * 0.95 + t * 0.4 * Math.pow(cfg.radii[0] / R, 1.5), i = projectAt(o); return { i, o, type, R, a, x: cx + Math.cos(a) * R, y: cy + Math.sin(a) * R * K, r: SIZES[type] * cfg.scale * (i === 0 ? 1.18 : 1), tidal: !!cfg.tidal, lc: cfg.light } })
+    const me = PL.find((p) => p.i === 0); curPos.x = me.x; curPos.y = me.y
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineWidth = 2
+    PL.forEach((p) => { const st = S(p.i), c = COL[st]; if (st === 'idle' && p.i !== 0) return; const base = p.i === 0 ? 0.9 : 0.55; for (let q = 0; q < 26; q++) { const a0 = p.a - q * 0.03, a1 = p.a - (q + 1) * 0.03; ctx.strokeStyle = rgba(p.i === 0 && st === 'idle' ? [255, 255, 255] : c, base * (1 - q / 26)); ctx.beginPath(); ctx.moveTo(cx + Math.cos(a0) * p.R, cy + Math.sin(a0) * p.R * K); ctx.lineTo(cx + Math.cos(a1) * p.R, cy + Math.sin(a1) * p.R * K); ctx.stroke() } })
+    ctx.restore()
+    if (id === 'hole') drawHole(cx, cy, t, 'back')
+    const light = (p, sx, sy) => { const dx = sx - p.x, dy = sy - p.y, l = Math.hypot(dx, dy) || 1; return [dx / l, dy / l] }
+    const draw = (p) => { const [lx, ly] = light(p, cx, cy); body(p, t, lx, ly) }
+    const center = () => {
+      if (id === 'sun') drawStar(cx, cy, 54, PALS.sun, 'sun', t, true)
+      else if (id === 'dwarf') drawStar(cx, cy, 30, PALS.dwarf, 'dwarf', t, true)
+      else if (id === 'blue') drawStar(cx, cy, 46, PALS.blue, 'blue', t, true)
+      else if (id === 'hole') drawHole(cx, cy, t, 'front')
+      else { const a = t * 0.35, A = [cx + Math.cos(a) * 62, cy + Math.sin(a) * 62 * 0.55], B = [cx - Math.cos(a) * 96, cy - Math.sin(a) * 96 * 0.55]; const stars = [[A, 40, PALS.sun, 'bin1'], [B, 27, PALS.orange, 'bin2']].sort((p, q) => p[0][1] - q[0][1]); stars.forEach(([pos, R, pal, key]) => drawStar(pos[0], pos[1], R, pal, key, t, false)) }
+      hits.push({ i: 99, x: cx, y: cy, r: 60, ly: cy - 74, name: id === 'hole' ? 'THE BLACK HOLE' : id === 'binary' ? 'TWO SUNS' : id === 'dwarf' ? 'RED DWARF' : id === 'blue' ? 'BLUE GIANT' : 'THE SUN', sub: 'THIS COMPUTER (DECORATION)', status: 'idle' })
+    }
+    PL.filter((p) => p.y < cy).forEach(draw); center(); PL.filter((p) => p.y >= cy).forEach(draw)
+    if (cfg.comet) { const u = ((t * 0.035) % 1), x = -100 + u * (W + 300), y = 90 + u * 120 + Math.sin(u * 5) * 14, dx = x - cx, dy = y - cy, l = Math.hypot(dx, dy) || 1; ctx.save(); ctx.globalCompositeOperation = 'lighter'; const g = ctx.createLinearGradient(x, y, x + (dx / l) * 200, y + (dy / l) * 200); g.addColorStop(0, 'rgba(190,225,255,.6)'); g.addColorStop(1, 'rgba(190,225,255,0)'); ctx.strokeStyle = g; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + (dx / l) * 200, y + (dy / l) * 200); ctx.stroke(); glow(x, y, 12, [190, 225, 255], 0.9); ctx.restore() }
+  }
+
+  // =====================================================================
+  // Galaxy: each workspace is a star system; click one to dive in
+  // =====================================================================
+  const gal = document.createElement('canvas'); gal.width = gal.height = 1100
+  { const g = gal.getContext('2d'), r = rng(21); g.globalCompositeOperation = 'lighter'
+    let gr = g.createRadialGradient(550, 550, 0, 550, 550, 170); gr.addColorStop(0, 'rgba(255,228,175,.95)'); gr.addColorStop(0.22, 'rgba(255,190,120,.4)'); gr.addColorStop(1, 'rgba(255,150,80,0)'); g.fillStyle = gr; g.fillRect(0, 0, 1100, 1100)
+    g.filter = 'blur(16px)'
+    for (let n = 0; n < 300; n++) { const arm = n % 2, rr = 40 + Math.pow(r(), 0.8) * 490, th = arm * Math.PI + 2.6 * Math.log(rr / 28) + (r() - 0.5) * 0.35, x = 550 + Math.cos(th) * rr, y = 550 + Math.sin(th) * rr, rad = 18 + rr * 0.07, col = rr < 150 ? '255,210,150' : rr < 300 ? '170,190,255' : '110,150,255'; gr = g.createRadialGradient(x, y, 0, x, y, rad); gr.addColorStop(0, `rgba(${col},.11)`); gr.addColorStop(1, `rgba(${col},0)`); g.fillStyle = gr; g.beginPath(); g.arc(x, y, rad, 0, 7); g.fill() }
+    for (let n = 0; n < 90; n++) { const arm = n % 2, rr = 120 + r() * 380, th = arm * Math.PI + 2.6 * Math.log(rr / 28) + (r() - 0.5) * 0.2, x = 550 + Math.cos(th) * rr, y = 550 + Math.sin(th) * rr, rad = 6 + r() * 10; gr = g.createRadialGradient(x, y, 0, x, y, rad); gr.addColorStop(0, 'rgba(255,90,160,.28)'); gr.addColorStop(1, 'rgba(255,90,160,0)'); g.fillStyle = gr; g.beginPath(); g.arc(x, y, rad, 0, 7); g.fill() }
+    g.filter = 'none'
+    for (let n = 0; n < 14000; n++) { const arm = n % 2, rr = 20 + Math.pow(r(), 0.75) * 530, th = arm * Math.PI + 2.6 * Math.log(rr / 28) + gauss(r) * (0.2 + rr / 2400), x = 550 + Math.cos(th) * rr, y = 550 + Math.sin(th) * rr, col = rr < 160 ? '255,226,190' : rr < 330 ? '205,220,255' : '160,190,255'; g.fillStyle = `rgba(${col},${0.2 + r() * 0.7})`; const s = r() > 0.985 ? 2 : 1; g.fillRect(x, y, s, s) }
+    for (let n = 0; n < 3200; n++) { const a = r() * 6.28, d = Math.abs(gauss(r)) * 70; g.fillStyle = `rgba(255,224,185,${0.2 + r() * 0.6})`; g.fillRect(550 + Math.cos(a) * d, 550 + Math.sin(a) * d, 1.2, 1.2) }
+  }
+  const WS = [
+    { id: 'sun', arm: 0, r: 215, name: 'Workspace · E:\\work', sub: '8 PROJECTS · YELLOW STAR', c: [255, 225, 160], size: 13 },
+    { id: 'dwarf', arm: 1, r: 170, name: 'Workspace · client work', sub: '8 PROJECTS · RED DWARF', c: [255, 120, 70], size: 9 },
+    { id: 'binary', arm: 1, r: 330, name: 'Workspace · shared repos', sub: '8 PROJECTS · TWO STARS', c: [255, 200, 140], size: 14 },
+    { id: 'hole', arm: 0, r: 395, name: 'Workspace · legacy', sub: '8 PROJECTS · BLACK HOLE', c: [255, 160, 70], size: 10 },
+    { id: 'blue', arm: 0, r: 120, name: 'Workspace · new ideas', sub: '8 PROJECTS · BLUE GIANT', c: [150, 190, 255], size: 12 },
+  ]
+  function galaxy(t) {
+    bg(-1)
+    const cx = 640, cy = 372, sx = 1.08, sy = 0.56, rot = t * 0.008
+    ctx.save(); ctx.translate(cx, cy); ctx.scale(sx, sy); ctx.rotate(rot); ctx.drawImage(gal, -550, -550); ctx.restore()
+    WS.forEach((w) => {
+      const th = w.arm * Math.PI + 2.6 * Math.log(w.r / 28) + rot, x = cx + Math.cos(th) * w.r * sx, y = cy + Math.sin(th) * w.r * sy
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; glow(x, y, w.size * 3.6, w.c, 0.95)
+      ctx.strokeStyle = rgba(w.c, 0.55); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x - w.size * 2.6, y); ctx.lineTo(x + w.size * 2.6, y); ctx.moveTo(x, y - w.size * 2.6); ctx.lineTo(x, y + w.size * 2.6); ctx.stroke()
+      if (w.id === 'binary') glow(x + 13, y + 3, 16, [255, 150, 80], 0.8)
+      if (w.id === 'hole') { ctx.strokeStyle = 'rgba(255,170,80,.7)'; ctx.beginPath(); ctx.ellipse(x, y, w.size * 2.2, w.size * 0.6, 0, 0, 7); ctx.stroke() }
+      ctx.restore()
+      const pr = 22 + w.size * 1.2; ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.setLineDash([3, 5]); ctx.beginPath(); ctx.ellipse(x, y, pr, pr * 0.56, 0, 0, 7); ctx.stroke(); ctx.setLineDash([])
+      hits.push({ i: 98, x, y, r: pr + 8, ly: y - pr * 0.56 - 16, name: w.name, sub: w.sub, status: 'idle', go: w.id })
+    })
+    ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.font = '500 12px system-ui'; ctx.textAlign = 'center'; ctx.fillText('Click a star to fly into that workspace', 640, 34)
+  }
+
+  const WORLDS = [
+    { id: 'sun', name: 'Our Sun', fn: (t) => system('sun', t), title: 'Our Sun', text: 'A yellow star with a granulated surface, sunspots, corona, prominences and flares. Eight kinds of world: lava, desert, ocean (you are here), rocky, ringed gas giant, gas giant, ice giant, barren. An asteroid belt and a comet.' },
+    { id: 'dwarf', name: 'Red dwarf', fn: (t) => system('dwarf', t), title: 'Red dwarf', text: 'A small deep-red star: boiling convection cells, big starspots, magnetic loops and frequent flares that throw out a coronal ejection. The planets are tidally locked (one face always to the star), lit red, and each has its own surface. Use Look closer to see the detail.' },
+    { id: 'binary', name: 'Two suns', fn: (t) => system('binary', t), title: 'Two suns', text: 'Two stars, one yellow and one orange, circling each other at the centre. The planets orbit both. A strong look for a workspace with two big repos.' },
+    { id: 'hole', name: 'Black hole', fn: (t) => system('hole', t), title: 'Black hole', text: 'A black hole with a glowing, bent accretion disk and a thin bright ring. The planets are lit warm from the disk. Dark, dramatic, a little menacing.' },
+    { id: 'blue', name: 'Blue giant', fn: (t) => system('blue', t), title: 'Blue giant in a nebula', text: 'A hot blue-white star inside its own gas cloud, with slow shock rings spreading out. The planets are lit cold.' },
+    { id: 'gal', name: 'Galaxy', fn: galaxy, title: 'Galaxy of workspaces', text: 'Zoom out: each star is a whole workspace (a parent folder with its projects). The five stars here are the five kinds of system above. Click one to dive in.' },
+  ]
+  const CARDS = [
+    ['sun', 'Our Sun', 'The default. Warm, familiar, easy to read.', 'Up to about 10 planets', 'Medium: a star texture, 8 planet looks, a belt'],
+    ['dwarf', 'Red dwarf', 'Compact and crowded; red light.', 'Up to about 12 tight orbits', 'Same as Our Sun with a different star'],
+    ['binary', 'Two suns', 'The two stars orbit each other.', 'Up to about 10 wide orbits', 'Same plus a small two-body orbit'],
+    ['hole', 'Black hole', 'The most dramatic and the darkest.', 'Up to about 10', 'Larger: the bent disk, a dash animation'],
+    ['blue', 'Blue giant', 'Pairs well with the Nebula sky theme.', 'Up to about 10', 'Same plus a few gas clouds'],
+    ['gal', 'Galaxy of workspaces', 'Only when there are several workspaces.', '50+ projects in 5+ systems', 'Larger: a galaxy texture and a dive transition'],
+  ]
+  const cap = document.getElementById('cap'), bar = document.getElementById('worlds'), cards = document.getElementById('cards')
+  function setWorld(id) { state.world = id; const w = WORLDS.find((x) => x.id === id); cap.innerHTML = `<b>${w.title}</b><span>${w.text}</span>`; document.querySelectorAll('#worlds button').forEach((b) => b.classList.toggle('on', b.dataset.v === id)) }
+  WORLDS.forEach((w) => { const b = document.createElement('button'); b.textContent = w.name; b.dataset.v = w.id; b.onclick = () => go(w.id); bar.appendChild(b) })
+  document.getElementById('scen').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; state.scen = b.dataset.v; document.querySelectorAll('#scen button').forEach((x) => x.classList.toggle('on', x === b)) })
+  document.getElementById('focus').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; state.focus = b.dataset.v; document.querySelectorAll('#focus button').forEach((x) => x.classList.toggle('on', x === b)) })
+  CARDS.forEach(([id, title, idea, fit, cost]) => {
+    const d = document.createElement('div'); d.className = 'card click'
+    d.innerHTML = `<h3>${title}${id === 'sun' ? '<span class="pill">default</span>' : ''}</h3><p class="muted">${idea}</p><dl><dt>How many fit</dt><dd>${fit}</dd><dt>Build size</dt><dd>${cost}</dd><dt>In Settings</dt><dd>Space › Star: ${title}</dd></dl>`
+    d.onclick = () => { go(id); window.scrollTo({ top: 0, behavior: 'smooth' }) }; cards.appendChild(d)
+  })
+
+  // a short dive: the old view zooms and goes dark, the new one comes out of the dark
+  let trans = null
+  function go(id, x = W / 2, y = H / 2) { if (trans || id === state.world) return; trans = { t0: performance.now(), to: id, x, y, swapped: false } }
+  cv.addEventListener('click', () => { const h = hits.find((q) => q.go && Math.hypot(mouse.x - q.x, mouse.y - q.y) < q.r); if (h) go(h.go, h.x, h.y) })
+
+  function frame(now) {
+    hits = []
+    ctx.clearRect(0, 0, W, H)
+    let p = 0, scale = 1, ox = W / 2, oy = H / 2, dark = 0
+    if (trans) {
+      p = (now - trans.t0) / 1100
+      if (p < 0.5) { const k = p / 0.5; scale = 1 + k * k * 4; ox = trans.x; oy = trans.y; dark = k * k }
+      else { if (!trans.swapped) { setWorld(trans.to); trans.swapped = true } const k = (p - 0.5) / 0.5; scale = 0.7 + 0.3 * k; dark = 1 - k }
+      if (p >= 1) trans = null
+    }
+    const sys = state.world !== 'gal', ZS = { sun: 3.4, dwarf: 4.4, binary: 2.6, hole: 2.0, blue: 3.4 }
+    const tgt = !sys || state.focus === 'all' ? { s: 1, x: 640, y: 360 } : state.focus === 'star' ? { s: ZS[state.world], x: 640, y: 372 } : { s: 4.6, x: curPos.x, y: curPos.y }
+    for (const k of ['s', 'x', 'y']) view[k] += (tgt[k] - view[k]) * 0.1
+    const zoomed = sys && view.s > 1.05
+    ctx.save(); ctx.translate(ox, oy); ctx.scale(scale, scale); ctx.translate(-ox, -oy)
+    skipBg = sys && view.s > 1.02; if (skipBg && state.world !== 'blue') bg(SYS[state.world].bgk)
+    if (sys) { ctx.translate(W / 2, H / 2); ctx.scale(view.s, view.s); ctx.translate(-view.x, -view.y) }
+    WORLDS.find((w) => w.id === state.world).fn(now / 1000)
+    ctx.restore()
+    hover = -1; let overGo = false
+    if (mouse.x >= 0 && !trans && !zoomed) { let best = 1e9; for (const h of hits) { const d = Math.hypot(mouse.x - h.x, mouse.y - h.y); if (d < h.r && d < best) { best = d; hover = h.i; overGo = !!h.go; h.hot = true } } }
+    cv.style.cursor = overGo ? 'pointer' : 'default'
+    if (!trans && !zoomed) for (const h of hits) if (h.hot || (state.world !== 'gal' && (h.i === 0 || (h.i < 90 && S(h.i) === 'needs')))) label(h)
+    const vg = ctx.createRadialGradient(W / 2, H / 2, H * 0.45, W / 2, H / 2, H); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.45)'); ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H)
+    if (dark > 0) { ctx.fillStyle = `rgba(2,3,8,${Math.min(1, dark)})`; ctx.fillRect(0, 0, W, H) }
+    requestAnimationFrame(frame)
+  }
+  setWorld('sun'); requestAnimationFrame(frame)
+})()
+</script>
+</body>
+</html>

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The core: from loud to quiet</title>
+<style>
+  :root { --bg: #07080c; --card: rgba(20, 22, 31, 0.86); --line: #2a2f3f; --text: #ebeef5; --dim: #98a0b5; --amber: #ffb347; --green: #5df0a8; --cyan: #74d8ff; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.6 system-ui, -apple-system, Segoe UI, sans-serif; }
+  .wrap { max-width: 1320px; margin: 0 auto; padding: 28px 32px 60px; }
+  h1 { margin: 0; font-size: 28px; }
+  h2 { margin: 38px 0 10px; font-size: 20px; }
+  h3 { margin: 0 0 4px; font-size: 16px; }
+  p { margin: 6px 0; }
+  .lead { color: var(--dim); max-width: 940px; }
+  .muted { color: var(--dim); font-size: 13px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 14px 26px; align-items: center; margin-top: 14px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--card); position: sticky; top: 8px; z-index: 10; backdrop-filter: blur(8px); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+  .seg button { cursor: pointer; padding: 6px 13px; border: 0; background: transparent; color: var(--text); font: inherit; font-size: 13px; }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button.on { background: var(--amber); color: #1b1004; font-weight: 600; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 16px; margin-top: 16px; }
+  .card { border-radius: 14px; border: 1px solid var(--line); background: var(--card); overflow: hidden; }
+  .card canvas { display: block; width: 100%; height: auto; background: #05060a; }
+  .card .body { padding: 12px 16px 14px; }
+  .card.rec { border-color: rgba(93, 240, 168, 0.6); }
+  .pill { display: inline-block; margin-left: 8px; padding: 1px 9px; border-radius: 99px; border: 1px solid var(--green); color: var(--green); font-size: 11.5px; vertical-align: middle; }
+  .pill.bad { border-color: #ff6b6b; color: #ff8a8a; }
+  dl { margin: 8px 0 0; display: grid; grid-template-columns: 82px 1fr; gap: 3px 10px; font-size: 13px; }
+  dt { color: var(--dim); } dd { margin: 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 8px; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--dim); font-weight: 500; font-size: 12.5px; }
+  .k { color: var(--green); } .r { color: #ff8a8a; } .c { color: var(--cyan); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>The core: from loud to quiet <span class="muted">and what to do with the rest of the scenery</span></h1>
+  <p class="lead">The centre orb today is the loudest thing in the hall: a white-hot ball, three spinning rings, electric arcs, drifting sparks and a beam to the sky, all moving whatever the agents do. It says "something is happening" all the time, which means it says nothing. Below is today's core and five calmer redesigns, driven by the <b>same real data</b> (which agents work, which one waits for you). Switch the situation and compare.</p>
+
+  <div class="controls">
+    <span class="muted">Situation</span>
+    <span class="seg" id="scen"><button data-v="idle">Nothing running</button><button data-v="work" class="on">3 agents working</button><button data-v="needs">One waits for you</button></span>
+    <span class="muted">Six agents exist in this example. The core must show who works and who waits, and otherwise be quiet.</span>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <h2>The rest of the scenery, in the same spirit</h2>
+  <p class="muted">The rule: <b>every moving thing must either mean something real, or be so quiet that you stop seeing it.</b></p>
+  <table>
+    <tr><th>Element today</th><th>What it says</th><th>Proposal</th></tr>
+    <tr><td>Four tool arms sweeping over the core</td><td>Nothing real (decoration)</td><td class="r">Remove. The core stands alone.</td></tr>
+    <tr><td>Rocket build, welding robot, drone, countdown and lift-off loop</td><td>Plan progress (when an agent wrote a plan), plus a lot of looping show</td><td class="c">Keep the rocket as a still monument whose sections show the plan's progress. No welding show, no drone, no loop.</td></tr>
+    <tr><td>Conveyor belt with two robots and moving crates</td><td>Development is working</td><td class="c">Keep, slower and smaller, and only moving while Development works. Remove the two belt robots.</td></tr>
+    <tr><td>Couriers and crawlers walking about</td><td>Nothing real</td><td class="r">Remove. Every walker looks like an agent and confuses the real ones.</td></tr>
+    <tr><td>Holograms, scanning screens, steam, sparks, floating dust</td><td>Nothing real</td><td class="c">Keep a few still, readable screens; remove steam, sparks and dust.</td></tr>
+    <tr><td>Ceiling light shaft, floor guide rings and emblems</td><td>Nothing real</td><td class="c">Thin, cool grey-blue lines; no shaft. Green and amber only for real status.</td></tr>
+    <tr><td>Space weather (meteors, ion storm)</td><td>Project status</td><td class="c">Keep, but only outside the dome and very faint. It is the project's mood, not its news.</td></tr>
+    <tr><td>Robots at desks, gems, tags, bubbles</td><td class="k">Real</td><td class="k">Keep and make the stars of the show.</td></tr>
+  </table>
+  <p class="muted">Next step if you like it: pick a core below, then I rebuild the core and strip the scenery in that order, checking each in the browser.</p>
+</div>
+
+<script>
+const TAU = Math.PI * 2
+const W = 420, H = 330, CX = 210, CY = 150
+const COL = { work: [93, 240, 168], needs: [255, 179, 71], idle: [140, 152, 182] }
+const rgba = (c, a) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`
+let scen = 'work'
+// six agents, their states for each situation
+const AGENTS = { idle: ['idle', 'idle', 'idle', 'idle', 'idle', 'idle'], work: ['work', 'work', 'work', 'idle', 'idle', 'idle'], needs: ['work', 'needs', 'idle', 'idle', 'idle', 'idle'] }
+const activity = () => (scen === 'idle' ? 0 : scen === 'work' ? 0.6 : 0.4)
+const tint = () => (scen === 'needs' ? COL.needs : COL.work)
+
+function dais(g, glow) {
+  const gr = g.createRadialGradient(CX, 262, 10, CX, 262, 170); gr.addColorStop(0, '#1b2029'); gr.addColorStop(1, '#07080c')
+  g.fillStyle = gr; g.beginPath(); g.ellipse(CX, 262, 170, 46, 0, 0, TAU); g.fill()
+  g.strokeStyle = 'rgba(160,175,200,.25)'; g.lineWidth = 1; g.beginPath(); g.ellipse(CX, 262, 150, 38, 0, 0, TAU); g.stroke()
+  g.beginPath(); g.ellipse(CX, 262, 70, 18, 0, 0, TAU); g.stroke()
+  if (glow) { const r = g.createRadialGradient(CX, 258, 0, CX, 258, 120); r.addColorStop(0, rgba(glow.c, glow.a)); r.addColorStop(1, rgba(glow.c, 0)); g.fillStyle = r; g.fillRect(CX - 140, 200, 280, 120) }
+}
+function glass(g, r, cx, cy, glowC, glowA) {
+  // a dark smoked sphere with a soft inner light and one small highlight
+  const base = g.createRadialGradient(cx - r * 0.35, cy - r * 0.4, r * 0.1, cx, cy, r)
+  base.addColorStop(0, '#2a3340'); base.addColorStop(0.6, '#0e1218'); base.addColorStop(1, '#050608')
+  g.fillStyle = base; g.beginPath(); g.arc(cx, cy, r, 0, TAU); g.fill()
+  const inner = g.createRadialGradient(cx, cy, 0, cx, cy, r * 0.95); inner.addColorStop(0, rgba(glowC, glowA)); inner.addColorStop(0.7, rgba(glowC, glowA * 0.25)); inner.addColorStop(1, rgba(glowC, 0))
+  g.fillStyle = inner; g.beginPath(); g.arc(cx, cy, r, 0, TAU); g.fill()
+  g.strokeStyle = 'rgba(190,205,230,.28)'; g.lineWidth = 1.2; g.beginPath(); g.arc(cx, cy, r, 0, TAU); g.stroke()
+  g.fillStyle = 'rgba(255,255,255,.35)'; g.beginPath(); g.ellipse(cx - r * 0.38, cy - r * 0.45, r * 0.16, r * 0.08, -0.7, 0, TAU); g.fill()
+}
+
+const OPTIONS = [
+  { id: 'today', name: 'Today', bad: true, summary: 'White-hot orb, three spinning rings with pods, electric arcs, sparks and a beam. All of it moves all the time.',
+    shows: 'Roughly how busy the project is, by how fast and bright it all is', hides: 'Which agent works and which one waits', cost: 'Heavy: glow, particles, beam, rings',
+    draw(g, t) {
+      const a = 0.35 + activity() * 0.65, c = tint()
+      g.save(); g.globalCompositeOperation = 'lighter'
+      let r = g.createRadialGradient(CX, CY, 0, CX, CY, 150); r.addColorStop(0, `rgba(255,255,255,${0.85 * a})`); r.addColorStop(0.25, rgba([120, 220, 255], 0.5 * a)); r.addColorStop(1, 'rgba(60,150,255,0)'); g.fillStyle = r; g.fillRect(0, 0, W, H)
+      const beam = g.createLinearGradient(0, CY, 0, 0); beam.addColorStop(0, rgba([120, 230, 255], 0.35 * a)); beam.addColorStop(1, 'rgba(120,230,255,0)'); g.fillStyle = beam; g.beginPath(); g.moveTo(CX - 18, CY); g.lineTo(CX - 55, 0); g.lineTo(CX + 55, 0); g.lineTo(CX + 18, CY); g.fill()
+      for (let k = 0; k < 3; k++) { g.strokeStyle = rgba(k === 1 ? c : [140, 230, 255], 0.8); g.lineWidth = 2; g.beginPath(); g.ellipse(CX, CY, 78 + k * 12, 24 + k * 6, t * (0.8 + k * 0.4) + k, 0, TAU); g.stroke(); const p = t * (1.4 + k * 0.5) + k * 2; g.fillStyle = '#fff'; g.beginPath(); g.arc(CX + Math.cos(p) * (78 + k * 12), CY + Math.sin(p) * (24 + k * 6), 3.5, 0, TAU); g.fill() }
+      for (let i = 0; i < 5; i++) { const ang = Math.random() * TAU; g.strokeStyle = 'rgba(190,240,255,.8)'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(CX, CY); let x = CX, y = CY; for (let s = 0; s < 5; s++) { x += Math.cos(ang) * 14 + (Math.random() - 0.5) * 12; y += Math.sin(ang) * 14 + (Math.random() - 0.5) * 12; g.lineTo(x, y) } g.stroke() }
+      for (let i = 0; i < 22; i++) { const p = t * 0.5 + i * 0.7; g.fillStyle = 'rgba(200,245,255,.8)'; g.fillRect(CX + Math.cos(p * 1.3 + i) * (40 + (i * 9) % 90), CY + Math.sin(p + i) * (30 + (i * 7) % 60) - 20, 2, 2) }
+      g.fillStyle = '#fff'; g.beginPath(); g.arc(CX, CY, 34, 0, TAU); g.fill()
+      g.restore()
+    } },
+  { id: 'a', name: 'A · Quiet breath', summary: 'A dark smoked-glass sphere with one soft inner light that breathes slowly. Nothing else.',
+    shows: 'Light level = how many agents work. The tint turns amber when someone waits.', hides: 'Which agent', cost: 'Tiny: one sphere, one gradient',
+    draw(g, t) {
+      const n = AGENTS[scen].filter((s) => s !== 'idle').length / 6
+      const breath = 0.5 + 0.5 * Math.sin(t * (scen === 'needs' ? 1.6 : 0.9))
+      dais(g, scen === 'idle' ? null : { c: tint(), a: 0.05 + 0.07 * n })
+      glass(g, 52, CX, CY, scen === 'idle' ? COL.idle : tint(), scen === 'idle' ? 0.1 : 0.18 + 0.45 * n * (0.75 + 0.25 * breath))
+    } },
+  { id: 'b', name: 'B · Roster ring', rec: true, summary: 'The same quiet sphere, with one thin ring of small lights around it: one light for every agent in the project.',
+    shows: 'Exactly which agents work (green), which one waits (amber, pulsing) and which sleep (dim)', hides: 'Nothing important', cost: 'Tiny: a ring and N small lights',
+    draw(g, t) {
+      const list = AGENTS[scen]
+      dais(g, null)
+      glass(g, 46, CX, CY, scen === 'needs' ? COL.needs : scen === 'idle' ? COL.idle : COL.work, scen === 'idle' ? 0.08 : 0.2)
+      const R = 92, k = 0.3, spin = t * 0.05
+      g.strokeStyle = 'rgba(170,185,210,.3)'; g.lineWidth = 1; g.beginPath(); g.ellipse(CX, CY + 6, R, R * k, 0, 0, TAU); g.stroke()
+      list.map((s, i) => ({ s, a: spin + (i / list.length) * TAU })).sort((p, q) => Math.sin(p.a) - Math.sin(q.a)).forEach(({ s, a }) => {
+        const x = CX + Math.cos(a) * R, y = CY + 6 + Math.sin(a) * R * k, front = Math.sin(a) > 0, c = COL[s], pulse = s === 'needs' ? 0.55 + 0.45 * Math.sin(t * 4) : 1
+        const al = (s === 'idle' ? 0.45 : 0.95 * pulse) * (front ? 1 : 0.55)
+        g.save(); g.globalCompositeOperation = 'lighter'
+        if (s !== 'idle') { const r2 = g.createRadialGradient(x, y, 0, x, y, 16); r2.addColorStop(0, rgba(c, 0.5 * pulse * (front ? 1 : 0.5))); r2.addColorStop(1, rgba(c, 0)); g.fillStyle = r2; g.fillRect(x - 16, y - 16, 32, 32) }
+        g.restore()
+        g.fillStyle = rgba(c, al); g.beginPath(); g.arc(x, y, s === 'idle' ? 3 : 4.4, 0, TAU); g.fill()
+      })
+    } },
+  { id: 'c', name: 'C · Level column', summary: 'A slim glass column. A liquid of light rises with the share of agents working and falls when they stop.',
+    shows: 'How much of the crew works, as a level you can read at a glance', hides: 'Which agent', cost: 'Small: a cylinder and a moving surface',
+    draw(g, t) {
+      dais(g, null)
+      const n = AGENTS[scen].filter((s) => s !== 'idle').length / 6, top = 70, bot = 252, h = bot - top, level = bot - h * (0.08 + 0.84 * n), c = tint()
+      g.fillStyle = 'rgba(20,26,34,.65)'; g.beginPath(); g.roundRect(CX - 34, top, 68, h, 30); g.fill()
+      g.save(); g.beginPath(); g.roundRect(CX - 32, top + 2, 64, h - 4, 28); g.clip()
+      const liq = g.createLinearGradient(0, level, 0, bot); liq.addColorStop(0, rgba(c, scen === 'idle' ? 0.25 : 0.7)); liq.addColorStop(1, rgba(c, 0.12)); g.fillStyle = liq
+      g.beginPath(); g.moveTo(CX - 34, bot); for (let x = -34; x <= 34; x += 4) g.lineTo(CX + x, level + Math.sin(t * 1.4 + x * 0.12) * 2); g.lineTo(CX + 34, bot); g.fill(); g.restore()
+      g.strokeStyle = 'rgba(190,205,230,.35)'; g.lineWidth = 1.2; g.beginPath(); g.roundRect(CX - 34, top, 68, h, 30); g.stroke()
+      g.fillStyle = 'rgba(255,255,255,.25)'; g.fillRect(CX - 22, top + 22, 3, h - 60)
+      for (let i = 0; i <= 6; i++) { g.fillStyle = 'rgba(190,205,230,.3)'; g.fillRect(CX + 40, bot - (h * i) / 6 - 1, 8, 1) }
+    } },
+  { id: 'd', name: 'D · Heartbeat ring', summary: 'A flat ring around a small dark core. A single pulse of light travels round it, faster when more agents work.',
+    shows: 'Activity as a rhythm. At rest the ring is still and dim. A waiting agent makes an amber pulse at the top.', hides: 'Which agent', cost: 'Tiny: one ring and a moving segment',
+    draw(g, t) {
+      dais(g, null)
+      glass(g, 30, CX, CY + 20, COL.idle, 0.08)
+      const R = 100, k = 0.3, cy = CY + 20, n = AGENTS[scen].filter((s) => s !== 'idle').length / 6, c = tint()
+      g.strokeStyle = 'rgba(170,185,210,.28)'; g.lineWidth = 2; g.beginPath(); g.ellipse(CX, cy, R, R * k, 0, 0, TAU); g.stroke()
+      if (scen === 'idle') return
+      const speed = 0.3 + n * 1.6, head = t * speed
+      g.save(); g.globalCompositeOperation = 'lighter'; g.lineCap = 'round'
+      for (let q = 0; q < 40; q++) { const a0 = head - q * 0.045, a1 = head - (q + 1) * 0.045; g.strokeStyle = rgba(c, 0.9 * (1 - q / 40) ** 1.6); g.lineWidth = 3.4; g.beginPath(); g.ellipse(CX, cy, R, R * k, 0, a0, a1, true); g.stroke() }
+      if (scen === 'needs') { const p = 0.5 + 0.5 * Math.sin(t * 4); const x = CX, y = cy - R * k; const r2 = g.createRadialGradient(x, y, 0, x, y, 26); r2.addColorStop(0, rgba(COL.needs, 0.9 * p)); r2.addColorStop(1, rgba(COL.needs, 0)); g.fillStyle = r2; g.fillRect(x - 26, y - 26, 52, 52) }
+      g.restore()
+    } },
+  { id: 'e', name: 'E · Calm orb', summary: 'Keep the orb, but tame it: a smaller, dimmer ball, one thin ring, one slow breath. No arcs, no sparks, no beam.',
+    shows: 'Busy or not, by brightness', hides: 'Which agent', cost: 'Small: sphere, one ring, one glow',
+    draw(g, t) {
+      const n = AGENTS[scen].filter((s) => s !== 'idle').length / 6, breath = 0.5 + 0.5 * Math.sin(t * 0.9), c = tint()
+      dais(g, scen === 'idle' ? null : { c, a: 0.06 })
+      g.save(); g.globalCompositeOperation = 'lighter'
+      const r = g.createRadialGradient(CX, CY, 0, CX, CY, 80); r.addColorStop(0, rgba(c, (scen === 'idle' ? 0.1 : 0.22 + 0.2 * n) * (0.8 + 0.2 * breath))); r.addColorStop(1, rgba(c, 0)); g.fillStyle = r; g.fillRect(CX - 90, CY - 90, 180, 180)
+      g.restore()
+      const ball = g.createRadialGradient(CX - 12, CY - 14, 4, CX, CY, 36); ball.addColorStop(0, scen === 'idle' ? '#5a6678' : rgba([230, 245, 240], 1)); ball.addColorStop(1, scen === 'idle' ? '#232a35' : rgba(c, 0.9)); g.fillStyle = ball; g.beginPath(); g.arc(CX, CY, 34, 0, TAU); g.fill()
+      g.strokeStyle = 'rgba(190,205,230,.35)'; g.lineWidth = 1.2; g.beginPath(); g.ellipse(CX, CY + 4, 70, 18, 0, 0, TAU); g.stroke()
+    } },
+]
+
+const grid = document.getElementById('grid')
+const cards = OPTIONS.map((o) => {
+  const el = document.createElement('div'); el.className = 'card' + (o.rec ? ' rec' : '')
+  el.innerHTML = `<canvas width="${W * 2}" height="${H * 2}"></canvas><div class="body"><h3>${o.name}${o.rec ? '<span class="pill">my pick</span>' : ''}${o.bad ? '<span class="pill bad">too loud</span>' : ''}</h3><p class="muted">${o.summary}</p><dl><dt>Shows</dt><dd>${o.shows}</dd><dt>Hides</dt><dd>${o.hides}</dd><dt>Cost</dt><dd>${o.cost}</dd></dl></div>`
+  grid.appendChild(el)
+  const cv = el.querySelector('canvas'); const g = cv.getContext('2d'); g.scale(2, 2)
+  return { o, g }
+})
+function frame(now) {
+  const t = now / 1000
+  for (const { o, g } of cards) { g.clearRect(0, 0, W, H); const bg = g.createRadialGradient(CX, 200, 20, CX, 200, 260); bg.addColorStop(0, '#0e121a'); bg.addColorStop(1, '#04050a'); g.fillStyle = bg; g.fillRect(0, 0, W, H); o.draw(g, t) }
+  requestAnimationFrame(frame)
+}
+document.getElementById('scen').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; scen = b.dataset.v; document.querySelectorAll('#scen button').forEach((x) => x.classList.toggle('on', x === b)) })
+requestAnimationFrame(frame)
+</script>
+</body>
+</html>

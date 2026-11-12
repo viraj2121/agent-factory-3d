@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rest section ideas for a round platform (design mockup, not the real app)</title>
+<style>
+  :root { --bg:#0b0e16; --panel:#121724; --line:#26304a; --txt:#e8edf7; --dim:#8c97b3; --amber:#ffb347; --green:#5df0a8; --claude:#ff8a5a; --codex:#6fa8ff; --copilot:#d28bff; --sleep:#9db6ff; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--txt); font:14px/1.5 system-ui, Segoe UI, sans-serif; }
+  header { padding:22px 28px 6px; }
+  h1 { margin:0 0 4px; font-size:22px; }
+  .sub { color:var(--dim); max-width:980px; }
+  .lesson { margin:12px 28px 0; padding:12px 16px; border-left:3px solid #ff8a1f; background:#15111a; border-radius:0 10px 10px 0; max-width:980px; }
+  .group { padding:14px 28px 0; color:var(--dim); font-size:11px; letter-spacing:.1em; text-transform:uppercase; }
+  .tabs { display:flex; gap:8px; padding:6px 28px 10px; flex-wrap:wrap; }
+  .tabs button { background:var(--panel); color:var(--txt); border:1px solid var(--line); border-radius:999px; padding:8px 14px; cursor:pointer; font-size:13px; }
+  .tabs button.old { opacity:.6; }
+  .tabs button.on { background:#ff8a1f; color:#1a0e04; border-color:#ff8a1f; font-weight:600; opacity:1; }
+  .grid { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:16px; padding:6px 28px 20px; }
+  @media (max-width: 1250px) { .grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px; }
+  .card h2 { margin:0 0 6px; font-size:14px; }
+  .tag { display:inline-block; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim); margin-bottom:4px; }
+  svg { width:100%; height:auto; display:block; }
+  ul { margin:6px 0 0; padding-left:18px; } li { margin:3px 0; }
+  .pro { color:var(--green); } .con { color:var(--amber); }
+  .legend { display:flex; gap:12px; flex-wrap:wrap; font-size:12px; color:var(--dim); margin-top:8px; }
+  .legend i { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; vertical-align:-1px; }
+  .row { display:flex; gap:10px; align-items:center; margin-top:10px; flex-wrap:wrap; }
+  .row button { background:transparent; color:var(--txt); border:1px solid #5a4028; border-radius:8px; padding:6px 12px; cursor:pointer; }
+  .row button:hover { background:#ff8a1f; color:#1a0e04; }
+  .score { display:flex; gap:6px; align-items:center; margin:6px 0; font-size:13px; }
+  .score b { color:var(--green); letter-spacing:2px; }
+  .verdict { margin:0 28px 14px; padding:14px 16px; border:1px solid #3a2a1c; background:#1a1410; border-radius:12px; max-width:1100px; }
+  .honest { margin:0 28px 28px; padding:14px 16px; border:1px dashed #5a4028; border-radius:12px; color:var(--dim); max-width:1100px; }
+  .honest b, .verdict b { color:var(--txt); }
+  @keyframes breathe { 50% { opacity:.45; } }
+  @keyframes zfloat { 0% { transform:translateY(0); opacity:0; } 30% { opacity:1; } 100% { transform:translateY(-14px); opacity:0; } }
+  @keyframes sway { 50% { transform: rotate(3deg); } }
+  .z { font-weight:700; fill:#9db6ff; animation: zfloat 3s infinite; }
+  .z2 { animation-delay:1s; } .z3 { animation-delay:2s; }
+  .glow { animation: breathe 3.5s infinite; }
+  .sway { transform-box: fill-box; transform-origin: 50% 0; animation: sway 4s ease-in-out infinite; }
+  .wake .lid { transform-box: fill-box; transform-origin:left center; animation: lidopen 1.6s forwards; }
+  @keyframes lidopen { to { transform: rotate(-70deg); } }
+</style>
+</head>
+<body>
+<header>
+  <h1>A rest section for a round platform</h1>
+  <div class="sub">Design ideas only (a mockup, nothing here is connected to real agents). Rule for every idea: <b>a pod, bed or hatch is occupied only by a real agent that really is asleep</b>. Working and waiting agents keep their desks and the spotlight; an agent that was never seen running ("standing by") gets an empty, dark spot.</div>
+</header>
+
+<div class="lesson"><b>What went wrong with the docks:</b> they face the core, and the default camera looks in from the front. So on the near half of the platform you see their <em>backs</em> (dark boxes, robot hidden), and they were tall and heavy. <b>New rules:</b> (1) look right from every side, so nothing depends on which way it faces; (2) keep it low or flush so it doesn't hide things; (3) the robot must be visible from the default angle, with no glass box to look through.</div>
+
+<div class="group">Make it feel like a pod (on top of the bunk ring you have now)</div>
+<div class="tabs" id="tabsPod"></div>
+<div class="group" style="padding-top:0">Where to put it (round platform ideas)</div>
+<div class="tabs" id="tabsNew"></div>
+<div class="group" style="padding-top:0">Earlier ideas (for comparison)</div>
+<div class="tabs" id="tabsOld"></div>
+
+<div class="grid">
+  <div class="card">
+    <span class="tag">Top view: where it sits</span>
+    <h2 id="mapTitle"></h2>
+    <svg id="map" viewBox="0 0 460 460"></svg>
+    <div class="legend">
+      <span><i style="background:#ff8a1f"></i>default camera</span>
+      <span><i style="background:var(--sleep)"></i>asleep</span>
+      <span><i style="background:#555"></i>standing by (dark)</span>
+    </div>
+  </div>
+  <div class="card">
+    <span class="tag">As the default camera sees it</span>
+    <h2 id="camTitle"></h2>
+    <svg id="cam" viewBox="0 0 460 300"></svg>
+    <div class="score"><span>Seen from the default angle:</span><b id="score"></b></div>
+    <p id="camNote" style="margin:4px 0 0;color:var(--dim)"></p>
+  </div>
+  <div class="card">
+    <span class="tag">Close up: one place to rest</span>
+    <h2 id="sideTitle"></h2>
+    <svg id="side" viewBox="0 0 460 300"></svg>
+    <div class="row" id="idleRow" style="display:none"><label for="idle" style="color:var(--dim)">Hours asleep:</label><input id="idle" type="range" min="0" max="8" step="0.5" value="3"><span id="idleVal">3 h</span></div>
+    <div class="row"><button id="wake">Agent starts working: wake up</button><button id="sleep">Agent goes idle: back to sleep</button></div>
+    <p id="why"></p>
+    <ul id="lists"></ul>
+  </div>
+</div>
+
+<div class="verdict" id="verdict"></div>
+
+<div class="honest">
+  <b>How it stays honest.</b> The section is a read-only picture of the roster: one place per agent that exists, filled when its state is idle (from the transcripts, not invented). The walk back to the desk plays only when the real state changes to working. If there are more sleepers than places, the last one shows "+N more", like the bays. A demo project shows no sleepers, because it has no real agents behind it. Any bar or light on a bed means a real fact: the time since the agent's last activity.
+</div>
+
+<script>
+/* ---------- shared drawing helpers ---------- */
+const bays = [['Planning',230,78],['Development',382,230],['Review & QA',230,382]]; // not exact: only to show where things are
+// real hall: three bays side by side along the back (top of the map), the big free gap is the FRONT (bottom), where the camera stands
+const BAYS = [['PLANNING',230,70],['DEV & INTEGRATION',360,112],['REVIEW & QA',100,112]];
+const hallTop = (extra) => `
+  <circle cx="230" cy="230" r="205" fill="#10151f" stroke="#2c3858" stroke-width="3"/>
+  <circle cx="230" cy="230" r="46" fill="#171c2b" stroke="#2c3858"/><circle cx="230" cy="230" r="17" fill="#1d2640" stroke="#5a6aa0"/>
+  <text x="230" y="234" font-size="9" fill="#8c97b3" text-anchor="middle">core</text>
+  ${BAYS.map(([n,x,y])=>`<rect x="${x-44}" y="${y-14}" width="88" height="28" rx="6" fill="#1b2236" stroke="#44507a"/><text x="${x}" y="${y+4}" font-size="9" fill="#cdd6ee" text-anchor="middle">${n}</text>`).join('')}
+  <rect x="318" y="262" width="0" height="0"/>
+  <text x="62" y="300" font-size="9" fill="#8c97b3">launch pad</text><circle cx="78" cy="320" r="16" fill="#1b2236" stroke="#44507a"/>
+  <text x="408" y="150" font-size="9" fill="#8c97b3" text-anchor="end">library</text>
+  <g transform="translate(230 452)"><path d="M-12 0 L12 0 L0 -16 Z" fill="#ff8a1f"/><text y="-20" font-size="10" fill="#ff8a1f" text-anchor="middle">you look in from here</text></g>
+  ${extra}`;
+const pt = (a, r) => [230 + r*Math.sin(a*Math.PI/180), 230 + r*Math.cos(a*Math.PI/180)]; // a=0 -> front (bottom)
+// camera view: the platform as an ellipse seen from the front
+const camBase = (extra, back='') => `
+  <ellipse cx="230" cy="178" rx="205" ry="92" fill="#10151f" stroke="#2c3858" stroke-width="3"/>
+  <ellipse cx="230" cy="178" rx="46" ry="21" fill="#171c2b" stroke="#2c3858"/><circle cx="230" cy="168" r="12" fill="#1d2640" stroke="#5a6aa0"/>
+  <rect x="190" y="88" width="80" height="26" rx="4" fill="#1b2236" stroke="#44507a"/><text x="230" y="105" font-size="8" fill="#cdd6ee" text-anchor="middle">PLANNING</text>
+  <rect x="318" y="108" width="80" height="26" rx="4" fill="#1b2236" stroke="#44507a"/><text x="358" y="125" font-size="8" fill="#cdd6ee" text-anchor="middle">DEV &amp; INTEGR.</text>
+  <rect x="62" y="108" width="80" height="26" rx="4" fill="#1b2236" stroke="#44507a"/><text x="102" y="125" font-size="8" fill="#cdd6ee" text-anchor="middle">REVIEW &amp; QA</text>
+  ${back}${extra}`;
+const sleeper = (x,y,s=1,fill='#f0c9a8',asleep=true) => `<g transform="translate(${x} ${y}) scale(${s})"><ellipse cx="0" cy="0" rx="9" ry="5" fill="${fill}"/><circle cx="-6" cy="-1" r="1.4" fill="#222"/></g>`;
+const upright = (x,y,s=1,fill='#f0c9a8') => `<g transform="translate(${x} ${y}) scale(${s})"><rect x="-6" y="-16" width="12" height="16" rx="4" fill="${fill}"/><rect x="-4" y="-13" width="8" height="5" rx="2" fill="#222"/></g>`;
+
+const IDEAS = {
+ E: { group:'new', name:'E · Petal island',
+  mapTitle:'A small round island on the front-right, six low berths round one lamp like petals',
+  map: () => hallTop((()=>{const [cx,cy]=pt(48,166);return `<circle cx="${cx}" cy="${cy}" r="42" fill="#141a2c" stroke="#3a4a7a" stroke-dasharray="3 3"/><circle cx="${cx}" cy="${cy}" r="6" fill="#ffd27a"/>`+Array.from({length:6},(_,i)=>{const a=i*60*Math.PI/180;const x=cx+Math.sin(a)*27,y=cy+Math.cos(a)*27;return `<g transform="translate(${x} ${y}) rotate(${-i*60})"><rect x="-8" y="-12" width="16" height="24" rx="8" fill="#1f2a4a" stroke="#6f86c8"/><rect x="-4" y="-7" width="8" height="14" rx="4" fill="${i<4?'#9db6ff':'#555'}" class="${i<4?'glow':''}"/></g>`}).join('')+`<text x="${cx}" y="${cy+58}" font-size="10" fill="#9db6ff" text-anchor="middle">REST ISLAND</text>`})()),
+  camTitle:'Low and round: every berth shows its sleeper, whichever way you look',
+  cam: () => camBase((()=>{const cx=330,cy=232;return `<ellipse cx="${cx}" cy="${cy}" rx="52" ry="19" fill="#141a2c" stroke="#3a4a7a" stroke-dasharray="3 3"/><circle cx="${cx}" cy="${cy-8}" r="4" fill="#ffd27a"/><line x1="${cx}" y1="${cy-8}" x2="${cx}" y2="${cy}" stroke="#ffd27a" stroke-opacity=".5"/>`+Array.from({length:6},(_,i)=>{const a=i*60*Math.PI/180;const x=cx+Math.sin(a)*38,y=cy+Math.cos(a)*13;return `<g><ellipse cx="${x}" cy="${y+3}" rx="12" ry="6" fill="#1f2a4a" stroke="#6f86c8"/>${i<4?sleeper(x,y,0.9):''}</g>`}).join('')})()),
+  score:5, camNote:'Nothing tall, nothing to look through. The camera is above the berths, so you look straight down onto the sleepers.',
+  sideTitle:'One berth: an open cradle with a soft canopy hood and a name plate',
+  side: (awake) => `
+    <rect x="30" y="236" width="400" height="14" fill="#1c2233"/>
+    <ellipse cx="230" cy="232" rx="120" ry="16" fill="#1f2a4a" stroke="#6f86c8" stroke-width="2"/>
+    <rect x="110" y="196" width="240" height="40" rx="20" fill="#2a3a66" stroke="#6f86c8" stroke-width="2"/>
+    <g>${awake?'<rect x="190" y="150" width="50" height="60" rx="14" fill="#f0c9a8"/><rect x="198" y="162" width="34" height="14" rx="5" fill="#222"/><circle cx="208" cy="169" r="3" fill="#5df0a8"/><circle cx="222" cy="169" r="3" fill="#5df0a8"/>':'<ellipse cx="205" cy="198" rx="40" ry="14" fill="#f0c9a8"/><rect x="238" y="190" width="46" height="18" rx="7" fill="#c98a6a"/><circle cx="180" cy="196" r="4" fill="#222"/>'}</g>
+    <path class="lid" d="M120 200 Q230 120 340 200" fill="#9db6ff" fill-opacity="${awake?0.06:0.18}" stroke="#b9ccff" stroke-width="2" stroke-dasharray="${awake?'4 5':''}"/>
+    <rect x="170" y="258" width="120" height="24" rx="6" fill="#121724" stroke="#44507a"/><text x="230" y="274" font-size="11" fill="#cdd6ee" text-anchor="middle">3d-ui-builder · asleep 2h</text>
+    ${awake?'':'<text class="z" x="170" y="150" font-size="16">z</text><text class="z z2" x="184" y="140" font-size="13">z</text><text class="z z3" x="196" y="130" font-size="11">Z</text>'}
+    <rect x="130" y="244" width="${awake?200:70}" height="5" rx="2" fill="${awake?'#5df0a8':'#9db6ff'}" class="glow"/><text x="340" y="250" font-size="9" fill="#8c97b3">idle time bar</text>`,
+  why:'A low open cradle with only a thin translucent hood (no box to look through). Six berths in a circle round a warm lamp: reads as a small camp site and is rotationally symmetric, so it looks the same from every side.',
+  pros:['Visible from the default camera and from every other angle','Low: hides nothing behind it','The circle matches the round platform','Reuses the camp lamp idea you liked'],
+  cons:['Needs about 4 m of free floor (the old Integration spot is free)','Six berths only; more sleepers show "+N more"'],
+  verdict:'recommended' },
+ F: { group:'new', name:'F · Core-ring bunks',
+  mapTitle:'Six small bunks in a circle round the core deck, heads toward the core',
+  map: () => hallTop(Array.from({length:6},(_,i)=>{const a=i*60+30;const [x,y]=pt(a,66);return `<g transform="translate(${x} ${y}) rotate(${-a})"><rect x="-7" y="-11" width="14" height="22" rx="7" fill="#1f2a4a" stroke="#6f86c8"/><rect x="-3" y="-7" width="6" height="14" rx="3" fill="${i<4?'#9db6ff':'#555'}" class="${i<4?'glow':''}"/></g>`}).join('')+`<text x="230" y="318" font-size="10" fill="#9db6ff" text-anchor="middle">BUNK RING round the core</text>`),
+  camTitle:'A necklace round the core: always in view, because the core is',
+  cam: () => camBase(Array.from({length:6},(_,i)=>{const a=(i*60+30)*Math.PI/180;const x=230+Math.sin(a)*66,y=178+Math.cos(a)*30;return `<g><ellipse cx="${x}" cy="${y+2}" rx="11" ry="5" fill="#1f2a4a" stroke="#6f86c8"/>${i<4?sleeper(x,y,0.85):''}</g>`}).join('')),
+  score:5, camNote:'The core is where you look first, so the resting agents are in the middle of the picture, close to the roster lights that already show each agent.',
+  sideTitle:'One bunk: a half-moon cradle on the core deck, head toward the core',
+  side: (awake) => `
+    <rect x="30" y="240" width="400" height="14" fill="#1c2233"/>
+    <path d="M90 240 Q230 150 370 240 Z" fill="#1f2a4a" stroke="#6f86c8" stroke-width="2"/>
+    <g>${awake?'<rect x="205" y="168" width="50" height="62" rx="14" fill="#f0c9a8"/><rect x="213" y="180" width="34" height="14" rx="5" fill="#222"/><circle cx="223" cy="187" r="3" fill="#5df0a8"/><circle cx="237" cy="187" r="3" fill="#5df0a8"/>':'<ellipse cx="230" cy="222" rx="60" ry="16" fill="#f0c9a8"/><circle cx="190" cy="219" r="4" fill="#222"/>'}</g>
+    <circle cx="372" cy="196" r="7" fill="var(--claude)"/><text x="384" y="200" font-size="10" fill="#8c97b3">tool colour</text>
+    ${awake?'':'<text class="z" x="250" y="170" font-size="16">z</text><text class="z z2" x="264" y="158" font-size="13">z</text>'}
+    <text x="230" y="276" font-size="10" fill="#8c97b3" text-anchor="middle">idle agents sleep around the core, next to their own roster light</text>`,
+  why:'Ties the sleeping agents to the core, which already has one light per agent. A symmetric ring, so no facing problem.',
+  pros:['Always in the middle of the view','Uses floor that is empty today (the core deck)','Links to the roster lights: same agents, same place'],
+  cons:['The core area gets busier, and the beam from the core is a lot of light','Bunks are small, so names are hard to read from far away']},
+ G: { group:'new', name:'G · Floor hatches',
+  mapTitle:'Six flush glass cells set into the floor in a gentle arc, front-right',
+  map: () => hallTop(Array.from({length:6},(_,i)=>{const [x,y]=pt(24+i*14,152);return `<rect x="${x-9}" y="${y-5}" width="18" height="10" rx="4" fill="#141a2c" stroke="#6f86c8" transform="rotate(${-(24+i*14)} ${x} ${y})"/><rect x="${x-6}" y="${y-2.5}" width="12" height="5" rx="2" fill="${i<4?'#9db6ff':'#555'}" class="${i<4?'glow':''}" transform="rotate(${-(24+i*14)} ${x} ${y})"/>`}).join('')+`<text x="318" y="396" font-size="10" fill="#9db6ff" text-anchor="middle">FLOOR HATCHES</text>`),
+  camTitle:'Flat on the floor: nothing blocks the view, you look straight down into them',
+  cam: () => camBase(Array.from({length:6},(_,i)=>{const a=(24+i*14)*Math.PI/180;const x=230+Math.sin(a)*152*0.98,y=178+Math.cos(a)*152*0.45;return `<g><ellipse cx="${x}" cy="${y}" rx="14" ry="5.5" fill="#0e1424" stroke="#6f86c8"/>${i<4?`<ellipse cx="${x}" cy="${y}" rx="10" ry="3.6" fill="#9db6ff" fill-opacity=".35" class="glow"/>${sleeper(x,y,0.7)}`:''}</g>`}).join('')),
+  score:4, camNote:'The best view of a sleeper (from above) but they are small on screen, and a robot lying in a hole is hard to read from far away.',
+  sideTitle:'One hatch: a glass-topped cell sunk into the floor',
+  side: (awake) => `
+    <rect x="30" y="170" width="400" height="14" fill="#1c2233"/>
+    <rect x="110" y="170" width="240" height="90" rx="14" fill="#0e1424" stroke="#6f86c8" stroke-width="2"/>
+    <g>${awake?'<rect x="205" y="120" width="50" height="62" rx="14" fill="#f0c9a8"/><rect x="213" y="132" width="34" height="14" rx="5" fill="#222"/><circle cx="223" cy="139" r="3" fill="#5df0a8"/><circle cx="237" cy="139" r="3" fill="#5df0a8"/>':'<ellipse cx="230" cy="226" rx="70" ry="18" fill="#f0c9a8"/><circle cx="184" cy="222" r="4" fill="#222"/>'}</g>
+    <g class="lid" style="transform-box:fill-box"><rect x="106" y="164" width="248" height="12" rx="4" fill="#9db6ff" fill-opacity="${awake?0.0:0.35}" stroke="#b9ccff"/></g>
+    <rect x="130" y="270" width="200" height="6" rx="3" fill="#9db6ff" class="glow"/>
+    ${awake?'':'<text class="z" x="270" y="150" font-size="16">z</text>'}
+    <text x="230" y="294" font-size="10" fill="#8c97b3" text-anchor="middle">when it wakes the lid slides away and the robot steps out</text>`,
+  why:'The flattest option: the floor stays clear and the camera looks straight into each cell. The robot is in a cell, so it cannot be hidden by anything.',
+  pros:['Nothing tall at all','The camera sees every sleeper from above','Round arc follows the platform edge'],
+  cons:['Sleepers look small from far away','Needs the floor mesh cut (a floor change in Blender) or glass drawn on top']},
+ H: { group:'new', name:'H · Hanging cocoons',
+  mapTitle:'One slim mast on the front-right, six cocoons hanging at different heights',
+  map: () => hallTop((()=>{const [cx,cy]=pt(48,160);return `<circle cx="${cx}" cy="${cy}" r="30" fill="none" stroke="#3a4a7a" stroke-dasharray="3 3"/><circle cx="${cx}" cy="${cy}" r="5" fill="#6f86c8"/>`+Array.from({length:6},(_,i)=>{const a=i*60*Math.PI/180;return `<circle cx="${cx+Math.sin(a)*20}" cy="${cy+Math.cos(a)*20}" r="6" fill="${i<4?'#9db6ff':'#555'}" class="${i<4?'glow':''}" stroke="#6f86c8"/>`}).join('')+`<text x="${cx}" y="${cy+50}" font-size="10" fill="#9db6ff" text-anchor="middle">COCOON MAST</text>`})()),
+  camTitle:'Up in the air: the cocoons are above everything, so they are always seen',
+  cam: () => camBase((()=>{const cx=330,cy=230;return `<ellipse cx="${cx}" cy="${cy}" rx="22" ry="8" fill="#141a2c" stroke="#3a4a7a"/><line x1="${cx}" y1="${cy}" x2="${cx}" y2="${cy-120}" stroke="#6f86c8" stroke-width="3"/>`+Array.from({length:6},(_,i)=>{const a=i*60*Math.PI/180;const x=cx+Math.sin(a)*24,y=cy-35-i*14+Math.cos(a)*5;return `<g><line x1="${cx}" y1="${y-14}" x2="${x}" y2="${y-6}" stroke="#6f86c8"/><ellipse cx="${x}" cy="${y}" rx="8" ry="12" fill="#1f2a4a" stroke="#6f86c8"/>${i<4?`<ellipse cx="${x}" cy="${y}" rx="4" ry="7" fill="#9db6ff" class="glow"/>`:''}</g>`}).join('')})()),
+  score:5, camNote:'Highest visibility of all, but you see lights and shapes, not the robot (it is inside the cocoon). A tall thing also reaches into the sky behind it.',
+  sideTitle:'A cocoon: a soft pod hanging from the mast, gently swaying',
+  side: (awake) => `
+    <line x1="230" y1="20" x2="230" y2="90" stroke="#6f86c8" stroke-width="3"/>
+    <g class="sway"><ellipse cx="230" cy="170" rx="62" ry="86" fill="#1f2a4a" stroke="#6f86c8" stroke-width="2"/>
+    <ellipse cx="230" cy="170" rx="46" ry="70" fill="#2a3a66" fill-opacity=".8"/>
+    ${awake?'<rect x="205" y="130" width="50" height="62" rx="14" fill="#f0c9a8"/><circle cx="223" cy="148" r="3" fill="#5df0a8"/><circle cx="237" cy="148" r="3" fill="#5df0a8"/>':'<ellipse cx="230" cy="176" rx="22" ry="40" fill="#f0c9a8"/><circle cx="224" cy="150" r="3" fill="#222"/>'}</g>
+    <text x="230" y="284" font-size="10" fill="#8c97b3" text-anchor="middle">the lantern colour shows the tool; the glow strength shows idle time</text>
+    ${awake?'':'<text class="z" x="300" y="110" font-size="16">z</text><text class="z z2" x="314" y="98" font-size="13">z</text>'}`,
+  why:'The most space-saving: one pole, six pods in the air. It looks magical and works from every side.',
+  pros:['Almost no floor used','Visible from everywhere, even far away','Gentle motion draws the eye (without flashing)'],
+  cons:['The robot is hidden inside the pod','A tall object competes with the rocket tower and crane','Needs a new animated model']},
+
+ P1: { group:'pod', name:'P1 · Glass canopy pod (frost = idle time)',
+  mapTitle:'The bunk ring you have now, each bunk gets a curved glass canopy',
+  map: () => hallTop(Array.from({length:3},(_,i)=>{const a=(-28+i*28);const [x,y]=pt(a,76);return '<g transform="translate('+x+' '+y+') rotate('+(-a+90)+')"><rect x="-13" y="-8" width="26" height="16" rx="8" fill="#1f2a4a" stroke="#9db6ff"/><rect x="-9" y="-5" width="18" height="10" rx="5" fill="#9db6ff" fill-opacity=".5" class="glow"/></g>'}).join('')),
+  camTitle:'A glowing glass shell over each sleeper: the robot is still visible through it',
+  cam: () => camBase(Array.from({length:3},(_,i)=>{const x=170+i*60,y=222+(i===1?6:0);return '<g><ellipse cx="'+x+'" cy="'+(y+4)+'" rx="22" ry="7" fill="#1f2a4a" stroke="#6f86c8"/>'+sleeper(x,y,1)+'<path d="M'+(x-22)+' '+(y+2)+' Q'+x+' '+(y-26)+' '+(x+22)+' '+(y+2)+'" fill="#9db6ff" fill-opacity=".22" stroke="#b9ccff" stroke-width="1.5"/></g>'}).join('')),
+  score:5, camNote:'Low (under a metre) so it hides nothing, and the glass is clear enough to see the robot from the default angle. The canopy is what makes it a pod.',
+  sideTitle:'Base with mattress, a curved glass canopy hinged at the foot, frost grows with idle time',
+  side: (awake, idle) => '<rect x="30" y="248" width="400" height="12" fill="#1c2233"/>'+
+    '<ellipse cx="230" cy="244" rx="150" ry="14" fill="#1f2a4a" stroke="#6f86c8" stroke-width="2"/>'+
+    '<rect x="100" y="204" width="260" height="40" rx="20" fill="#2a3a66" stroke="#6f86c8" stroke-width="2"/>'+
+    (awake?'<rect x="190" y="150" width="50" height="62" rx="14" fill="#f0c9a8"/><rect x="198" y="162" width="34" height="14" rx="5" fill="#222"/><circle cx="208" cy="169" r="3" fill="#5df0a8"/><circle cx="222" cy="169" r="3" fill="#5df0a8"/>':'<ellipse cx="215" cy="205" rx="46" ry="15" fill="#f0c9a8"/><rect x="250" y="196" width="50" height="19" rx="7" fill="#c98a6a"/><circle cx="184" cy="203" r="4" fill="#222"/>')+
+    '<g class="lid"><path d="M96 212 Q230 90 364 212 Z" fill="#9db6ff" fill-opacity="0.18" stroke="#b9ccff" stroke-width="2.5"/>'+
+    '<path d="M96 212 Q230 90 364 212 Z" fill="#fff" fill-opacity="'+(awake?0:(idle/8*0.55).toFixed(2))+'"/>'+
+    '<path d="M140 190 Q200 130 260 126" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="3" stroke-linecap="round"/></g>'+
+    '<rect x="96" y="246" width="268" height="5" rx="2" fill="#9db6ff" class="glow"/>'+
+    '<text x="230" y="284" font-size="10" fill="#8c97b3" text-anchor="middle">'+(awake?'canopy lifts when the agent wakes':'more frost on the glass = asleep longer (real idle time)')+'</text>'+
+    (awake?'':'<text class="z" x="270" y="150" font-size="16">z</text><text class="z z2" x="284" y="138" font-size="13">z</text>'),
+  why:'The classic sleep-pod look. The glass shell closes over the bunk, with a soft frost that grows with the real time the agent has been idle (this replaces the light strip, so there is still one real fact on it). When the agent wakes, the canopy lifts.',
+  pros:['Instantly reads as a pod','The robot stays visible through the glass','Frost shows idle time (real), so the light strip is not needed','The wake-up animation plays only on a real state change'],
+  cons:['A transparent shell costs a little more to draw (one shared material keeps it small)','The curved shell is made in code (no Blender work needed)'],
+  verdict:'pod' },
+ P2: { group:'pod', name:'P2 · Capsule with a window',
+  mapTitle:'Rounded capsules, a solid shell with an oval window',
+  map: () => hallTop(Array.from({length:3},(_,i)=>{const a=(-28+i*28);const [x,y]=pt(a,76);return '<g transform="translate('+x+' '+y+') rotate('+(-a+90)+')"><rect x="-14" y="-8" width="28" height="16" rx="8" fill="#2a3a66" stroke="#9db6ff"/></g>'}).join('')),
+  camTitle:'A solid capsule: strong shape, but you see the sleeper only through the window',
+  cam: () => camBase(Array.from({length:3},(_,i)=>{const x=170+i*60,y=222;return '<rect x="'+(x-24)+'" y="'+(y-14)+'" width="48" height="22" rx="11" fill="#2a3a66" stroke="#9db6ff"/><ellipse cx="'+x+'" cy="'+(y-3)+'" rx="13" ry="5" fill="#9db6ff" fill-opacity=".4"/>'}).join('')),
+  score:3, camNote:'Strong shape, but the shell blocks the view: you mainly see closed capsules with a small window.',
+  sideTitle:'A capsule with a glowing seam and an oval window',
+  side: (awake) => '<rect x="30" y="250" width="400" height="10" fill="#1c2233"/><rect x="90" y="150" width="280" height="100" rx="50" fill="#2a3a66" stroke="#9db6ff" stroke-width="2.5"/><line x1="90" y1="200" x2="370" y2="200" stroke="#9db6ff" stroke-width="2" class="glow"/><ellipse cx="230" cy="178" rx="70" ry="22" fill="#0e1424" stroke="#b9ccff"/>'+(awake?'':'<ellipse cx="220" cy="180" rx="34" ry="11" fill="#f0c9a8"/>')+'<text x="230" y="282" font-size="10" fill="#8c97b3" text-anchor="middle">the robot is only visible through the window</text>',
+  why:'A tough, sealed look. It hides the robot, which was the original problem, so it only works if the window is big.',
+  pros:['Very clear pod shape','Few parts to draw'], cons:['Hides the sleeper','Heavy-looking']},
+ P3: { group:'pod', name:'P3 · Floating pod (levitating)',
+  mapTitle:'Each bunk floats a little above a glowing ring base',
+  map: () => hallTop(Array.from({length:3},(_,i)=>{const a=(-28+i*28);const [x,y]=pt(a,76);return '<circle cx="'+x+'" cy="'+y+'" r="13" fill="none" stroke="#9db6ff" class="glow"/><rect x="'+(x-10)+'" y="'+(y-6)+'" width="20" height="12" rx="6" fill="#1f2a4a" stroke="#6f86c8"/>'}).join('')),
+  camTitle:'Hovering above a glowing ring: the light on the floor makes it easy to spot',
+  cam: () => camBase(Array.from({length:3},(_,i)=>{const x=170+i*60,y=226;return '<ellipse cx="'+x+'" cy="'+(y+8)+'" rx="26" ry="8" fill="none" stroke="#9db6ff" stroke-width="2" class="glow"/><ellipse cx="'+x+'" cy="'+(y+8)+'" rx="18" ry="5" fill="#9db6ff" fill-opacity=".18"/><g class="sway">'+sleeper(x,y-6,1)+'<path d="M'+(x-20)+' '+(y-4)+' Q'+x+' '+(y-28)+' '+(x+20)+' '+(y-4)+'" fill="#9db6ff" fill-opacity=".2" stroke="#b9ccff"/></g>'}).join('')),
+  score:5, camNote:'The ring of light on the floor is visible from far away, and the pod bobbing gently draws the eye without flashing.',
+  sideTitle:'The pod hovers 25 cm above an energy ring, with a soft glow',
+  side: (awake) => '<rect x="30" y="256" width="400" height="10" fill="#1c2233"/><ellipse cx="230" cy="254" rx="130" ry="12" fill="none" stroke="#9db6ff" stroke-width="3" class="glow"/><ellipse cx="230" cy="254" rx="100" ry="8" fill="#9db6ff" fill-opacity=".15"/><g class="sway"><rect x="110" y="170" width="240" height="34" rx="17" fill="#2a3a66" stroke="#6f86c8" stroke-width="2"/>'+(awake?'<rect x="190" y="120" width="50" height="60" rx="14" fill="#f0c9a8"/>':'<ellipse cx="215" cy="172" rx="44" ry="14" fill="#f0c9a8"/>')+'<path d="M106 176 Q230 76 354 176 Z" fill="#9db6ff" fill-opacity=".18" stroke="#b9ccff" stroke-width="2"/></g><text x="230" y="284" font-size="10" fill="#8c97b3" text-anchor="middle">the hover is decoration; it stops when motion is reduced</text>',
+  why:'Adds the sci-fi anti-gravity feel and a bright floor ring that is easy to see. Best combined with P1.',
+  pros:['Easy to spot from far away','Feels futuristic','Combines with P1'], cons:['The bobbing is decoration (labelled, switched off with reduced motion)','Slightly more to draw']},
+ P4: { group:'pod', name:'P4 · Egg pods',
+  mapTitle:'Egg-shaped pods in the ring, like seeds',
+  map: () => hallTop(Array.from({length:3},(_,i)=>{const a=(-28+i*28);const [x,y]=pt(a,76);return '<ellipse cx="'+x+'" cy="'+y+'" rx="10" ry="14" fill="#2a3a66" stroke="#9db6ff"/>'}).join('')),
+  camTitle:'Eggs standing in the ring: round and friendly, but they stand tall',
+  cam: () => camBase(Array.from({length:3},(_,i)=>{const x=170+i*60,y=226;return '<ellipse cx="'+x+'" cy="'+(y-12)+'" rx="14" ry="22" fill="#2a3a66" stroke="#9db6ff"/><ellipse cx="'+x+'" cy="'+(y-12)+'" rx="8" ry="13" fill="#9db6ff" fill-opacity=".35"/>'}).join('')),
+  score:3, camNote:'Cute and recognisable, but the egg stands upright and mostly hides the robot.',
+  sideTitle:'An egg with an oval window, standing on a ring',
+  side: (awake) => '<ellipse cx="230" cy="250" rx="70" ry="9" fill="#1f2a4a" stroke="#6f86c8"/><ellipse cx="230" cy="150" rx="68" ry="98" fill="#2a3a66" stroke="#9db6ff" stroke-width="2.5"/><ellipse cx="230" cy="140" rx="40" ry="64" fill="#0e1424" stroke="#b9ccff"/>'+(awake?'':'<ellipse cx="230" cy="150" rx="16" ry="38" fill="#f0c9a8"/>'),
+  why:'A friendlier, organic look.', pros:['Cute, small footprint'], cons:['Tall and hides the robot']},
+ P5: { group:'pod', name:'P5 · Soft cocoon (blanket and hood)',
+  mapTitle:'A padded cocoon with a blanket tucked over the sleeper',
+  map: () => hallTop(Array.from({length:3},(_,i)=>{const a=(-28+i*28);const [x,y]=pt(a,76);return '<g transform="translate('+x+' '+y+') rotate('+(-a+90)+')"><rect x="-13" y="-8" width="26" height="16" rx="8" fill="#3a4a7a" stroke="#d28bff"/></g>'}).join('')),
+  camTitle:'Padded and cosy: the face peeks out of the blanket',
+  cam: () => camBase(Array.from({length:3},(_,i)=>{const x=170+i*60,y=224;return '<ellipse cx="'+x+'" cy="'+(y+4)+'" rx="24" ry="8" fill="#3a4a7a" stroke="#d28bff"/><path d="M'+(x-22)+' '+(y+2)+' Q'+x+' '+(y-14)+' '+(x+22)+' '+(y+2)+' Z" fill="#46578c"/><circle cx="'+(x-12)+'" cy="'+(y-2)+'" r="5" fill="#f0c9a8"/>'}).join('')),
+  score:4, camNote:'The blanket colour can show the tool (coral, blue, violet). Soft and low, but less like a pod.',
+  sideTitle:'A padded bed with a quilted hood and a tool-coloured blanket',
+  side: (awake) => '<rect x="30" y="250" width="400" height="10" fill="#1c2233"/><rect x="100" y="204" width="260" height="46" rx="23" fill="#3a4a7a" stroke="#6f86c8" stroke-width="2"/>'+(awake?'':'<path d="M200 210 Q280 160 358 214 Z" fill="#ff8a5a"/><circle cx="188" cy="206" r="14" fill="#f0c9a8"/><circle cx="183" cy="204" r="3" fill="#222"/>')+'<path d="M100 214 Q130 150 190 170 Q200 190 180 214 Z" fill="#46578c" stroke="#8fa3d6"/>',
+  why:'The most comfortable and the lowest-tech. Feels like a bed with a hood.', pros:['Soft, friendly','Blanket shows the tool'], cons:['Less pod-like than a shell']},
+ D: { group:'old', name:'D · Charging docks (tried)',
+  mapTitle:'Six upright docks, front-right: what is in the app now',
+  map: () => hallTop(Array.from({length:6},(_,i)=>{const [x,y]=pt(18+i*13,152);return `<rect x="${x-8}" y="${y-5}" width="16" height="10" rx="2" fill="#1f2a4a" stroke="#6f86c8" transform="rotate(${-(18+i*13)} ${x} ${y})"/>`}).join('')),
+  camTitle:'Backs toward you: dark boxes, the robot is hidden',
+  cam: () => camBase(Array.from({length:6},(_,i)=>{const a=(18+i*13)*Math.PI/180;const x=230+Math.sin(a)*152,y=178+Math.cos(a)*152*0.42;return `<rect x="${x-9}" y="${y-30}" width="18" height="32" rx="2" fill="#1d2640" stroke="#44507a"/>`}).join('')),
+  score:2, camNote:'This is the problem you saw: you look at the backs of tall boxes.',
+  sideTitle:'The dock: a tall glass booth with a battery bar',
+  side: (awake) => `<rect x="165" y="60" width="130" height="200" rx="18" fill="#1f2a4a" stroke="#6f86c8" stroke-width="2"/><rect x="205" y="130" width="50" height="70" rx="14" fill="#f0c9a8"/><text x="230" y="284" font-size="10" fill="#8c97b3" text-anchor="middle">tall and dark, faces the core</text>`,
+  why:'Built as the first try. Reads as machinery but hides its robot from the default angle.',
+  pros:['Cheap and already built'],cons:['Backs toward the camera','Tall, dark and bulky']},
+ A: { group:'old', name:'A · Rest wing (curved row)',
+  mapTitle:'A curved row of six glass-lidded pods along the edge',
+  map: () => hallTop(Array.from({length:6},(_,i)=>{const [x,y]=pt(20+i*12,176);return `<rect x="${x-9}" y="${y-5}" width="18" height="10" rx="5" fill="#1f2a4a" stroke="#6f86c8" transform="rotate(${-(20+i*12)} ${x} ${y})"/>`}).join('')),
+  camTitle:'A row at the edge: backs to the camera again, but low',
+  cam: () => camBase(Array.from({length:6},(_,i)=>{const a=(20+i*12)*Math.PI/180;const x=230+Math.sin(a)*176,y=178+Math.cos(a)*176*0.43;return `<ellipse cx="${x}" cy="${y}" rx="12" ry="6" fill="#1f2a4a" stroke="#6f86c8"/>${i<4?sleeper(x,y-2,0.8):''}`}).join('')),
+  score:3, camNote:'Low, so the sleepers show, but at the edge they sit close to the parapet and are partly hidden by it.',
+  sideTitle:'A pod: a lying robot under a glass lid',
+  side: (awake)=>`<rect x="90" y="170" width="280" height="58" rx="26" fill="#1f2a4a" stroke="#6f86c8" stroke-width="2"/><ellipse cx="200" cy="205" rx="34" ry="12" fill="#f0c9a8"/><path d="M96 190 Q230 110 364 190 Z" fill="#9db6ff" fill-opacity=".28" stroke="#b9ccff"/>`,
+  why:'Calm and clear, but placed along an edge, it fights the parapet and light posts.',
+  pros:['Easy to count','Same shape for all'],cons:['Edge position is half hidden','Needs a long stretch of free floor']},
+ C: { group:'old', name:'C · Tent village',
+  mapTitle:'Tents around one lamp (the first version in the app)',
+  map: () => hallTop((()=>{const [cx,cy]=pt(48,160);return `<circle cx="${cx}" cy="${cy}" r="6" fill="#ffd27a"/>`+Array.from({length:5},(_,i)=>{const a=i/5*Math.PI*2;return `<path d="M${cx+Math.cos(a)*30-9} ${cy+Math.sin(a)*30+8} l9 -17 l9 17 Z" fill="#46578c" stroke="#b3c7ff"/>`}).join('')})()),
+  camTitle:'Tents: readable, a little bulky',
+  cam: () => camBase((()=>{const cx=330,cy=232;return `<circle cx="${cx}" cy="${cy-4}" r="4" fill="#ffd27a"/>`+Array.from({length:5},(_,i)=>{const a=i/5*Math.PI*2;const x=cx+Math.cos(a)*40,y=cy+Math.sin(a)*14;return `<path d="M${x-12} ${y+8} L${x} ${y-24} L${x+12} ${y+8} Z" fill="#46578c" fill-opacity=".7" stroke="#b3c7ff"/>`}).join('')})()),
+  score:3, camNote:'Friendly and visible, but the cloth hides the sleeper.',
+  sideTitle:'A tent over the sleeper',side:(awake)=>`<path d="M110 240 L230 70 L350 240 Z" fill="#46578c" fill-opacity=".55" stroke="#b3c7ff" stroke-width="2"/><rect x="205" y="196" width="50" height="40" rx="12" fill="#f0c9a8"/>`,
+  why:'Already tried once (a tent per seat).',pros:['Warm'],cons:['Hides the robot','Bulky']},
+ B: { group:'old', name:'B · Capsule wall',
+  mapTitle:'A straight wall of capsules',
+  map: () => hallTop(Array.from({length:8},(_,i)=>`<rect x="${316+(i%2)*28}" y="${268+Math.floor(i/2)*20}" width="24" height="15" rx="4" fill="#1f2a4a" stroke="#6f86c8"/>`).join('')),
+  camTitle:'A flat wall: a straight line on a round platform',
+  cam: () => camBase(`<rect x="320" y="190" width="70" height="70" fill="#171c2b" stroke="#44507a"/>`+Array.from({length:8},(_,i)=>`<rect x="${324+(i%2)*32}" y="${194+Math.floor(i/2)*16}" width="28" height="12" rx="4" fill="#1f2a4a" stroke="#6f86c8"/>`).join('')),
+  score:2, camNote:'A straight wall fights the round shape and hides robots in drawers.',
+  sideTitle:'Drawers',side:()=>`<rect x="90" y="40" width="280" height="220" rx="10" fill="#171c2b" stroke="#44507a"/>`,
+  why:'Smallest footprint, least charm.',pros:['Compact'],cons:['Straight on a round platform','Robots hidden']}
+};
+
+let cur = 'P1', awake = false, idleH = 3;
+const $ = (id) => document.getElementById(id);
+function tabs(group, id){ $(id).innerHTML = Object.entries(IDEAS).filter(([,v])=>v.group===group).map(([k,v]) => `<button class="${k===cur?'on':''} ${group==='old'?'old':''}" data-k="${k}">${v.name}</button>`).join(''); }
+function render() {
+  const d = IDEAS[cur];
+  tabs('pod','tabsPod'); tabs('new','tabsNew'); tabs('old','tabsOld');
+  $('mapTitle').textContent = d.mapTitle; $('map').innerHTML = d.map();
+  $('camTitle').textContent = d.camTitle; $('cam').innerHTML = d.cam();
+  $('score').textContent = '★'.repeat(d.score) + '☆'.repeat(5-d.score); $('camNote').textContent = d.camNote;
+  $('sideTitle').textContent = d.sideTitle; $('side').innerHTML = d.side(awake, idleH); $('idleRow').style.display = cur === 'P1' ? 'flex' : 'none'; $('idleVal').textContent = idleH + ' h'; $('side').classList.toggle('wake', awake);
+  $('why').textContent = d.why;
+  $('lists').innerHTML = d.pros.map(p=>`<li class="pro">+ ${p}</li>`).join('') + d.cons.map(p=>`<li class="con">− ${p}</li>`).join('');
+  $('verdict').innerHTML = d.verdict === 'pod' ? '<b>My pick: P1 · Glass canopy pod, plus the glowing floor ring from P3.</b> It is the only one that is a real pod (a shell that closes over the sleeper) and still shows the robot. The frost on the glass is the real idle time, so it replaces the light strip, and the canopy lifts only when the agent really wakes. Drag the slider to see the frost. All of it can be made in code with one shared glass material (no Blender needed). P3 adds the bright ring that makes it easy to spot from far away.' : d.verdict ? '<b>My pick: E · Petal island.</b> It is the only one that is low, open, round and shows the actual robot from the default camera, and the round island sits naturally in the old Integration spot. If you like the core connection, F (bunks round the core) is the runner-up and could even sit next to E: sleepers near the core, a camp by the belt. G is the best top-down view but the sleepers are small.' : '<b>Compare:</b> use the stars (how well it is seen from the default angle) and the "As the default camera sees it" panel. The new ideas E to H are all designed to look right from every side.';
+  document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { cur = b.dataset.k; awake = false; render(); });
+}
+$('idle').oninput = (e) => { idleH = +e.target.value; render(); };
+$('wake').onclick = () => { awake = true; render(); };
+$('sleep').onclick = () => { awake = false; render(); };
+render();
+</script>
+</body>
+</html>

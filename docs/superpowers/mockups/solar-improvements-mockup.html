@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Solar system: 12 improvements</title>
+<style>
+  :root { --bg: #07080c; --card: rgba(20, 22, 31, 0.86); --line: #2a2f3f; --text: #ebeef5; --dim: #98a0b5; --amber: #ffb347; --green: #5df0a8; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 system-ui, -apple-system, Segoe UI, sans-serif; }
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 22px 28px 50px; }
+  h1 { margin: 0; font-size: 26px; }
+  .lead { color: var(--dim); max-width: 980px; margin: 6px 0 14px; }
+  .layout { display: grid; grid-template-columns: 1fr 330px; gap: 16px; align-items: start; }
+  .stage { position: relative; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: #000; }
+  canvas { display: block; width: 100%; height: 100%; }
+  .summary { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); display: none; gap: 8px; align-items: center; padding: 6px 14px; border-radius: 999px; background: rgba(10, 12, 18, 0.72); border: 1px solid rgba(255, 255, 255, 0.14); font-size: 12.5px; backdrop-filter: blur(6px); }
+  .summary.on { display: flex; }
+  .summary b { font-weight: 600; }
+  .summary .w { color: var(--green); } .summary .n { color: var(--amber); cursor: pointer; text-decoration: underline dotted; }
+  .card3d { position: absolute; right: 16px; bottom: 16px; width: 270px; padding: 12px 14px; border-radius: 12px; background: rgba(10, 12, 18, 0.82); border: 1px solid rgba(255, 255, 255, 0.14); display: none; font-size: 12.5px; }
+  .card3d.on { display: block; }
+  .card3d h4 { margin: 0 0 4px; font-size: 15px; }
+  .card3d .row { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.08); color: var(--dim); }
+  .card3d .row b { color: var(--text); font-weight: 500; }
+  .card3d button { margin-top: 8px; width: 100%; padding: 6px; border-radius: 7px; border: 1px solid var(--amber); background: transparent; color: var(--amber); cursor: pointer; }
+  .hint { position: absolute; left: 14px; bottom: 12px; color: var(--dim); font-size: 11.5px; background: rgba(0, 0, 0, 0.45); padding: 3px 9px; border-radius: 7px; }
+  .panel { border-radius: 14px; border: 1px solid var(--line); background: var(--card); padding: 12px 14px; }
+  .presets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .presets button { cursor: pointer; padding: 5px 10px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--text); font-size: 12.5px; }
+  .presets button.on { background: var(--amber); color: #1b1004; border-color: var(--amber); font-weight: 600; }
+  label.idea { display: grid; grid-template-columns: 22px 26px 1fr; gap: 6px; align-items: start; padding: 6px 4px; border-bottom: 1px solid rgba(255, 255, 255, 0.06); cursor: pointer; }
+  label.idea:hover { background: rgba(255, 255, 255, 0.04); }
+  label.idea .num { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: rgba(255, 179, 71, 0.15); color: var(--amber); font-size: 11.5px; font-weight: 700; }
+  label.idea b { display: block; font-size: 13px; }
+  label.idea span.d { display: block; color: var(--dim); font-size: 12px; }
+  .modes { display: flex; gap: 8px; margin: 10px 0 14px; }
+  .modes button { cursor: pointer; padding: 8px 16px; border-radius: 10px; border: 1px solid var(--line); background: transparent; color: var(--text); font-size: 14px; }
+  .modes button.on { background: var(--amber); color: #1b1004; border-color: var(--amber); font-weight: 600; }
+  [hidden] { display: none !important; }
+  .group { margin: 10px 0 2px; color: var(--amber); font-size: 11px; letter-spacing: 0.12em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Solar system: patches and big ideas</h1>
+  <div class="modes" id="modes"><button data-m="patches" class="on">Small patches (1 to 12)</button><button data-m="big">Big ideas (A to F): different concepts</button></div>
+  <p class="lead">A 2D drawing of the solar system level, not the real 3D scene. Start from <b>Today</b>, then switch ideas on in the list to see what each one changes, or press <b>All 12</b>. Hover a planet; with idea 11 on, click one to look closer. Data is your 7 projects, as they were in your last screenshot (agent-factory-3d working, Sample C waiting).</p>
+
+  <div id="patches">
+  <div class="layout">
+    <div>
+      <div class="stage">
+        <canvas id="c" width="1280" height="720"></canvas>
+        <div class="summary" id="summary"><b>7 projects</b> · <span class="w">2 working</span> · <span class="n" id="goWait">1 waiting for you</span></div>
+        <div class="card3d" id="card"></div>
+        <div class="hint" id="hint">hover a planet</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="presets" id="presets">
+        <button data-p="none" class="on">Today</button><button data-p="pick">My pick (1 to 7)</button><button data-p="all">All 12</button>
+      </div>
+      <div id="ideas"></div>
+    </div>
+  </div>
+  </div>
+  <div id="big" hidden>
+    <p class="lead">These change what the solar system <i>means</i>, not how it is painted. Each one is built on real data we already have. Pick a scene to see how it would look at a high level.</p>
+    <div class="presets" id="bigtabs"></div>
+    <div class="stage"><canvas id="c2" width="1280" height="720"></canvas></div>
+    <div class="panel" style="margin-top:10px" id="bigtext"></div>
+    <div class="panel" id="timebar" style="margin-top:10px" hidden><b id="treplay">NOW</b> &nbsp; <input id="tscrub" type="range" min="0" max="168" step="0.5" value="0" style="width:55%;vertical-align:middle"> &nbsp; <button id="tplay" style="padding:5px 12px;border-radius:8px;border:1px solid #ffb347;background:transparent;color:#ffb347;cursor:pointer">Replay 7 days</button> <span style="color:#98a0b5">left: now, right: 7 days ago</span></div>
+  </div>
+</div>
+
+<script>
+const IDEAS = [
+  ['FIXES', 1, 'Remove the stray z', 'The sleeping "z" from the hall leaks into this view. A bug.'],
+  ['FIXES', 2, 'Fill the screen', 'Frame the system tighter so it uses the screen, not 40% of it.'],
+  ['FIXES', 3, 'Calmer background', 'Dim the Milky Way to about half here, so the planets lead.'],
+  ['STATUS AT A GLANCE', 4, 'Status halo', 'Soft green when working, amber pulse when waiting, faint grey resting.'],
+  ['STATUS AT A GLANCE', 5, 'Names on every planet', 'Small names for all; a full status line for yours, waiting ones and hover.'],
+  ['STATUS AT A GLANCE', 6, 'Summary at the top', '"7 projects · 2 working · 1 waiting". Click "waiting" to fly there.'],
+  ['ALIVE AND REAL', 7, 'Bigger planets', 'About 30% bigger with more room between orbits.'],
+  ['ALIVE AND REAL', 8, 'Orbit trails', 'A fading arc behind each planet in its status colour.'],
+  ['ALIVE AND REAL', 9, 'Activity pulses', 'A spark runs to the star when an agent finishes a tool call (real data).'],
+  ['ALIVE AND REAL', 10, 'Hover highlight', 'The hovered planet and its orbit brighten; the rest dim a little.'],
+  ['BIGGER IDEAS', 11, 'Look closer', 'First click flies close with an info card; the button inside enters the hall.'],
+  ['BIGGER IDEAS', 12, 'Size by project', 'Planet size follows how much is in the project (files and agents).'],
+]
+const on = new Set()
+const PROJECTS = [
+  { name: 'agent-factory-3d', status: 'working', files: 32, agents: 2, c1: '#3a6fb8', c2: '#0c1f44', current: true },
+  { name: 'Ledger API', status: 'idle', files: 1, agents: 0, c1: '#c7a26a', c2: '#5a3e1e' },
+  { name: 'Aurora Shop', status: 'idle', files: 1, agents: 0, c1: '#d9cf8a', c2: '#6b6030' },
+  { name: 'Sample C', status: 'needs', files: 80, agents: 3, c1: '#9a7fd1', c2: '#2c1d55' },
+  { name: 'Sample B', status: 'working', files: 5, agents: 1, c1: '#c0583a', c2: '#3a1208' },
+  { name: 'Sample D', status: 'idle', files: 0, agents: 0, c1: '#7c8794', c2: '#22272e' },
+  { name: 'Sample A', status: 'idle', files: 1, agents: 0, c1: '#6fb0a0', c2: '#173a33' },
+]
+const COL = { working: [93, 240, 168], needs: [255, 179, 71], idle: [140, 152, 182] }
+const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`
+const W = 1280, H = 720, K = 0.36
+const cv = document.getElementById('c'), g = cv.getContext('2d')
+const sky = new Image(); let skyOk = false; sky.onload = () => (skyOk = true); sky.src = '../../../apps/dashboard/public/textures/milkyway-4k.jpg'
+let mouse = { x: -1, y: -1 }, hover = -1, zoom = { t: 0, target: 0, i: -1 }
+cv.addEventListener('mousemove', (e) => { const b = cv.getBoundingClientRect(); mouse = { x: ((e.clientX - b.left) / b.width) * W, y: ((e.clientY - b.top) / b.height) * H } })
+cv.addEventListener('mouseleave', () => (mouse = { x: -1, y: -1 }))
+cv.addEventListener('click', () => { if (on.has(11) && hover >= 0) { zoom.i = hover; zoom.target = 1; showCard(hover) } })
+document.getElementById('goWait').onclick = () => { const i = PROJECTS.findIndex((p) => p.status === 'needs'); if (on.has(11)) { zoom.i = i; zoom.target = 1; showCard(i) } else { flash = { i, t: performance.now() } } }
+let flash = null
+
+function showCard(i) {
+  const p = PROJECTS[i], card = document.getElementById('card')
+  card.innerHTML = `<h4>${p.name}</h4><div class="row"><span>Status</span><b style="color:${p.status === 'needs' ? '#ffb347' : p.status === 'working' ? '#5df0a8' : '#aab'}">${p.status === 'needs' ? 'waiting for you' : p.status === 'working' ? 'agents working' : 'resting'}</b></div><div class="row"><span>Agents working</span><b>${p.status === 'idle' ? 0 : p.agents}</b></div><div class="row"><span>Markdown files</span><b>${p.files}</b></div><div class="row"><span>Last activity</span><b>${p.status === 'idle' ? '2 days ago' : 'just now'}</b></div><button>Enter the hall ›</button> <button id="back" style="border-color:#555;color:#ccc">Back to the system</button>`
+  card.classList.add('on')
+  card.querySelector('#back').onclick = (e) => { e.stopPropagation(); zoom.target = 0; card.classList.remove('on') }
+}
+
+function layout(t) {
+  const big = on.has(7) ? 1.3 : 1, gap = on.has(7) ? 1.15 : 1
+  return PROJECTS.map((p, i) => {
+    const R = (70 + i * 46) * gap
+    const a = i * 0.95 + t * 0.12 * Math.pow(70 / R, 1.5)
+    const size = on.has(12) ? 6 + Math.sqrt(p.files + p.agents * 6) * 1.7 : [9, 8, 8, 10, 8, 7, 8][i] * (p.current ? 1.18 : 1)
+    return { p, i, R, a, x: Math.cos(a) * R, y: Math.sin(a) * R * K, r: size * big }
+  })
+}
+
+function frame(now) {
+  const t = now / 1000
+  zoom.t += (zoom.target - zoom.t) * 0.08
+  // sky
+  g.fillStyle = '#020306'; g.fillRect(0, 0, W, H)
+  if (skyOk) { g.globalAlpha = on.has(3) ? 0.45 : 1; g.drawImage(sky, 1250, 640, 1500, 844, 0, 0, W, H); g.globalAlpha = 1 }
+  const P = layout(t)
+  const outer = P[P.length - 1].R
+  let scale = on.has(2) ? (W * 0.46) / outer : (W * 0.29) / outer
+  let cx = W / 2, cy = H / 2 + 20
+  // look closer: zoom toward the chosen planet
+  let fx = 0, fy = 0
+  if (zoom.t > 0.001 && zoom.i >= 0) { const q = P[zoom.i]; fx = q.x; fy = q.y; scale *= 1 + zoom.t * 3.2 }
+  const X = (x) => cx + (x - fx * zoom.t) * scale, Y = (y) => cy + (y - fy * zoom.t) * scale
+  // hover
+  hover = -1
+  if (mouse.x >= 0) { let best = 1e9; P.forEach((q) => { const d = Math.hypot(mouse.x - X(q.x), mouse.y - Y(q.y)); if (d < Math.max(14, q.r * scale * 0.1 + 14) && d < best) { best = d; hover = q.i } }) }
+  document.getElementById('hint').textContent = hover >= 0 ? PROJECTS[hover].name + (on.has(11) ? ' · click to look closer' : '') : on.has(11) ? 'hover a planet, click to look closer' : 'hover a planet'
+  const dimOthers = on.has(10) && hover >= 0
+  // orbits
+  P.forEach((q) => {
+    const hl = on.has(10) && hover === q.i
+    g.strokeStyle = q.p.current ? 'rgba(255,255,255,.45)' : hl ? 'rgba(200,220,255,.6)' : `rgba(140,170,220,${dimOthers ? 0.08 : 0.16})`
+    g.lineWidth = hl ? 1.6 : 1
+    g.beginPath(); g.ellipse(X(0), Y(0), q.R * scale, q.R * K * scale, 0, 0, Math.PI * 2); g.stroke()
+    if (on.has(8) && q.p.status !== 'idle') {
+      const c = COL[q.p.status]
+      for (let k = 0; k < 30; k++) { const a0 = q.a - k * 0.025, a1 = q.a - (k + 1) * 0.025; g.strokeStyle = rgba(c, 0.6 * (1 - k / 30)); g.lineWidth = 2.2; g.beginPath(); g.moveTo(X(Math.cos(a0) * q.R), Y(Math.sin(a0) * q.R * K)); g.lineTo(X(Math.cos(a1) * q.R), Y(Math.sin(a1) * q.R * K)); g.stroke() }
+    }
+  })
+  // star
+  const draw = (q) => {
+    const x = X(q.x), y = Y(q.y), r = q.r * (scale / ((W * 0.29) / outer)) * 0.95
+    const st = q.p.status, c = COL[st], faded = dimOthers && hover !== q.i ? 0.45 : 1
+    if (on.has(4)) {
+      const pulse = st === 'needs' ? 0.6 + 0.4 * Math.sin(t * 4) : 1, a = (st === 'idle' ? 0.12 : st === 'working' ? 0.35 : 0.55) * pulse * faded
+      const h = g.createRadialGradient(x, y, r * 0.8, x, y, r * 3.4); h.addColorStop(0, rgba(c, a)); h.addColorStop(1, rgba(c, 0)); g.fillStyle = h; g.fillRect(x - r * 3.5, y - r * 3.5, r * 7, r * 7)
+    }
+    g.globalAlpha = faded
+    const body = g.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.1, x, y, r); body.addColorStop(0, q.p.c1); body.addColorStop(1, q.p.c2)
+    g.fillStyle = body; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill()
+    const night = g.createLinearGradient(x + (X(0) - x) * 0.02, y, x - (X(0) - x) * 0.02 * 50, y); night.addColorStop(0, 'rgba(0,0,0,0)'); night.addColorStop(1, 'rgba(0,0,0,.55)')
+    g.fillStyle = night; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill()
+    if (on.has(10) && hover === q.i) { g.strokeStyle = 'rgba(255,255,255,.9)'; g.lineWidth = 1.5; g.beginPath(); g.arc(x, y, r + 3, 0, Math.PI * 2); g.stroke() }
+    g.globalAlpha = 1
+    // moons for working agents
+    if (st !== 'idle') for (let k = 0; k < Math.min(5, q.p.agents); k++) { const a = t * (1.2 + k * 0.4) + k * 2; g.fillStyle = k === 0 && st === 'needs' ? rgba(COL.needs, 0.6 + 0.4 * Math.sin(t * 6)) : rgba(COL.working, 0.95); g.beginPath(); g.arc(x + Math.cos(a) * r * 2, y + Math.sin(a) * r * 0.8, Math.max(1.6, r * 0.13), 0, 7); g.fill() }
+    if (q.p.current) { g.strokeStyle = 'rgba(255,255,255,.75)'; g.lineWidth = 1.4; g.beginPath(); g.arc(x, y, r * 2.3, 0, 7); g.stroke() }
+    if (flash && flash.i === q.i && now - flash.t < 1600) { const f = (now - flash.t) / 1600; g.strokeStyle = rgba(COL.needs, 1 - f); g.lineWidth = 3; g.beginPath(); g.arc(x, y, r * (1.5 + f * 4), 0, 7); g.stroke() }
+    // labels
+    const full = q.p.current || st === 'needs' || hover === q.i
+    if (on.has(5) || full && (q.p.current || hover === q.i)) {
+      g.textAlign = 'center'
+      const ly = y - r * 2.6 - 8
+      if (full) {
+        g.font = '600 13px system-ui'; const w = Math.max(g.measureText(q.p.name).width, 120) + 20
+        g.fillStyle = 'rgba(10,12,18,.75)'; g.beginPath(); g.roundRect(x - w / 2, ly - 16, w, 34, 8); g.fill(); g.strokeStyle = 'rgba(255,255,255,.14)'; g.stroke()
+        g.fillStyle = '#f3e6d4'; g.fillText(q.p.name, x, ly - 1)
+        g.font = '500 10px system-ui'; g.fillStyle = rgba(c, 1); g.fillText((q.p.current ? 'YOU ARE HERE · ' : '') + (st === 'needs' ? 'WAITING FOR YOU' : st === 'working' ? `${q.p.agents} AGENT${q.p.agents > 1 ? 'S' : ''} WORKING` : 'RESTING'), x, ly + 12)
+      } else { g.font = '500 11px system-ui'; g.fillStyle = 'rgba(220,226,240,.75)'; g.fillText(q.p.name, x, y - r - 8) }
+    }
+  }
+  const back = P.filter((q) => q.y < 0), front = P.filter((q) => q.y >= 0)
+  back.forEach(draw)
+  // the star
+  const sr = 16 * (scale / ((W * 0.29) / outer)) * 0.8
+  const co = g.createRadialGradient(X(0), Y(0), sr, X(0), Y(0), sr * 5); co.addColorStop(0, 'rgba(255,110,60,.45)'); co.addColorStop(1, 'rgba(255,110,60,0)'); g.fillStyle = co; g.fillRect(X(0) - sr * 5, Y(0) - sr * 5, sr * 10, sr * 10)
+  const sg = g.createRadialGradient(X(0) - sr * 0.3, Y(0) - sr * 0.3, sr * 0.1, X(0), Y(0), sr); sg.addColorStop(0, '#ffc9a0'); sg.addColorStop(0.6, '#e8552a'); sg.addColorStop(1, '#8a1f08'); g.fillStyle = sg; g.beginPath(); g.arc(X(0), Y(0), sr, 0, 7); g.fill()
+  if (on.has(5)) { g.font = '500 10.5px system-ui'; g.textAlign = 'center'; g.fillStyle = 'rgba(255,200,170,.7)'; g.fillText('THIS COMPUTER', X(0), Y(0) + sr + 16) }
+  front.forEach(draw)
+  // activity pulses: a spark from a working planet to the star now and then
+  if (on.has(9)) P.forEach((q) => { if (q.p.status === 'idle') return; const period = 2.2 + q.i * 0.7, u = ((t + q.i) % period) / 1.1; if (u > 1) return; const x = X(q.x) + (X(0) - X(q.x)) * u, y = Y(q.y) + (Y(0) - Y(q.y)) * u; const sp = g.createRadialGradient(x, y, 0, x, y, 9); sp.addColorStop(0, 'rgba(255,255,255,.95)'); sp.addColorStop(0.4, rgba(COL[q.p.status], 0.6)); sp.addColorStop(1, rgba(COL[q.p.status], 0)); g.fillStyle = sp; g.fillRect(x - 9, y - 9, 18, 18) })
+  // the stray z of the sleeping robots (the bug idea 1 removes)
+  if (!on.has(1)) { g.font = '700 22px system-ui'; g.fillStyle = 'rgba(160,210,240,.75)'; g.textAlign = 'left'; g.fillText('z', X(0) + 60 + Math.sin(t) * 3, Y(0) + 40 - (t * 8) % 20) }
+  requestAnimationFrame(frame)
+}
+
+// controls
+const ideas = document.getElementById('ideas')
+let last = ''
+IDEAS.forEach(([group, n, title, d]) => {
+  if (group !== last) { const h = document.createElement('div'); h.className = 'group'; h.textContent = group; ideas.appendChild(h); last = group }
+  const l = document.createElement('label'); l.className = 'idea'
+  l.innerHTML = `<input type="checkbox" data-n="${n}"><span class="num">${n}</span><span><b>${title}</b><span class="d">${d}</span></span>`
+  ideas.appendChild(l)
+})
+const sync = () => {
+  document.querySelectorAll('#ideas input').forEach((c) => (c.checked = on.has(+c.dataset.n)))
+  document.getElementById('summary').classList.toggle('on', on.has(6))
+  if (!on.has(11)) { zoom.target = 0; document.getElementById('card').classList.remove('on') }
+}
+ideas.addEventListener('change', (e) => { const n = +e.target.dataset.n; e.target.checked ? on.add(n) : on.delete(n); sync(); document.querySelectorAll('#presets button').forEach((b) => b.classList.remove('on')) })
+document.getElementById('presets').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return
+  on.clear(); if (b.dataset.p === 'pick') [1, 2, 3, 4, 5, 6, 7].forEach((n) => on.add(n)); if (b.dataset.p === 'all') IDEAS.forEach(([, n]) => on.add(n))
+  document.querySelectorAll('#presets button').forEach((x) => x.classList.toggle('on', x === b)); sync()
+})
+sync(); requestAnimationFrame(frame)
+// ---------- BIG IDEAS: six different concepts, each drawn as its own scene ----------
+const BIG = [
+  { id: 'A', name: 'A · The tools are the stars', text: 'Claude Code, Codex and Copilot are three different stars. A project planet orbits the star of the tool that worked on it most; one used by two tools hangs between them, tied to both.', data: 'Real data: which tool wrote each session in each project.' },
+  { id: 'B', name: 'B · Shared things in space', text: 'An MCP server used by several projects is a station with beams to each of them. An account-level agent is a comet crossing every project. A shared CLAUDE.md is a moon between two planets.', data: 'Real data: MCP configs, agent files by scope, harness files per project.' },
+  { id: 'C', name: 'C · Distance means time', text: 'Orbit distance is how recently a project was active: working now is close, last week is far out. Drag the scrubber to replay the last 7 days (labelled replay).', data: 'Real data: last activity time of every session.' },
+  { id: 'D', name: 'D · Agents are ships', text: 'Each live session is a small ship at its planet. A subagent launches from its parent ship on a thread. A tool call is a thruster burst. A waiting agent hangs still with an amber beacon.', data: 'Real data: sessions, the parent link of subagents, current tool, state.' },
+  { id: 'E', name: 'E · The planet is the project\'s state', text: 'Atmosphere thickness is plan progress, night-side lights are the agents active in it, a ring appears when the plan is complete, land area is how many files it holds.', data: 'Real data: plan done of total, working agents, markdown files.' },
+  { id: 'F', name: 'F · A mission log you can watch', text: 'The system with a live feed of real events beside it. When something needs you, the camera flies to that planet by itself.', data: 'Real data: state changes and tool names (feed here is a simulation).' },
+]
+let bigId = 'A'
+const cv2 = document.getElementById('c2'), g2 = cv2.getContext('2d')
+const lerp = (a, b, k) => a + (b - a) * k
+function bg2(dim) { g2.fillStyle = '#020306'; g2.fillRect(0, 0, W, H); if (skyOk) { g2.globalAlpha = dim; g2.drawImage(sky, 1250, 640, 1500, 844, 0, 0, W, H); g2.globalAlpha = 1 } }
+function txt(s, x, y, color, size, align, weight) { g2.font = `${weight || 500} ${size}px system-ui`; g2.textAlign = align || 'center'; g2.fillStyle = color; g2.fillText(s, x, y) }
+function ball(x, y, r, p, alpha) {
+  g2.globalAlpha = alpha ?? 1
+  const b = g2.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.1, x, y, r); b.addColorStop(0, p.c1); b.addColorStop(1, p.c2)
+  g2.fillStyle = b; g2.beginPath(); g2.arc(x, y, r, 0, 7); g2.fill(); g2.globalAlpha = 1
+}
+function glow2(x, y, r, c, a) { const gr = g2.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, rgba(c, a)); gr.addColorStop(1, rgba(c, 0)); g2.fillStyle = gr; g2.fillRect(x - r, y - r, r * 2, r * 2) }
+function starDisc(x, y, r, c) { glow2(x, y, r * 4.5, c, 0.5); const sg = g2.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r); sg.addColorStop(0, '#fff2e0'); sg.addColorStop(0.5, rgba(c, 1)); sg.addColorStop(1, rgba(c.map((v) => v * 0.4), 1)); g2.fillStyle = sg; g2.beginPath(); g2.arc(x, y, r, 0, 7); g2.fill() }
+function legend(lines) { g2.fillStyle = 'rgba(8,10,16,.78)'; g2.beginPath(); g2.roundRect(18, H - 22 - lines.length * 20, 560, 14 + lines.length * 20, 10); g2.fill(); lines.forEach((l, i) => txt(l, 32, H - 18 - (lines.length - 1 - i) * 20 - 2, 'rgba(225,230,245,.88)', 12, 'left')) }
+
+// A: the tools are the stars
+const TOOLS = [{ n: 'Claude Code', x: 330, y: 330, r: 30, c: [255, 105, 55] }, { n: 'Codex', x: 950, y: 300, r: 27, c: [110, 170, 255] }, { n: 'Copilot', x: 640, y: 560, r: 20, c: [255, 215, 110] }]
+const USE = [[1, 0, 0], [0, 1, 0], [1, 0, 0], [0.5, 0.5, 0], [0, 0, 1], [0.5, 0, 0.5], [0, 1, 0]]
+function sceneA(t) {
+  bg2(0.4)
+  const used = [0, 0, 0]
+  const P = PROJECTS.map((p, i) => {
+    const w = USE[i], main = w.indexOf(Math.max(...w)), multi = w.filter((v) => v > 0).length > 1
+    if (!multi) { const k = used[main]++, R = 95 + k * 42, a = i * 1.7 + t * 0.18 / (1 + k * 0.3), s = TOOLS[main]; return { p, i, main, multi, x: s.x + Math.cos(a) * R, y: s.y + Math.sin(a) * R * 0.45, R, s } }
+    const px = TOOLS.reduce((acc, s, k) => acc + s.x * w[k], 0), py = TOOLS.reduce((acc, s, k) => acc + s.y * w[k], 0)
+    return { p, i, main, multi, x: px + Math.cos(t * 0.5 + i) * 26, y: py + Math.sin(t * 0.5 + i) * 14 }
+  })
+  TOOLS.forEach((s, k) => { P.filter((q) => !q.multi && q.main === k).forEach((q) => { g2.strokeStyle = rgba(s.c, 0.2); g2.lineWidth = 1; g2.beginPath(); g2.ellipse(s.x, s.y, q.R, q.R * 0.45, 0, 0, 7); g2.stroke() }) })
+  P.filter((q) => q.multi).forEach((q) => { USE[q.i].forEach((w, k) => { if (!w) return; g2.setLineDash([4, 6]); g2.strokeStyle = rgba(TOOLS[k].c, 0.55); g2.beginPath(); g2.moveTo(TOOLS[k].x, TOOLS[k].y); g2.lineTo(q.x, q.y); g2.stroke(); g2.setLineDash([]) }) })
+  TOOLS.forEach((s) => { starDisc(s.x, s.y, s.r, s.c); txt(s.n.toUpperCase(), s.x, s.y + s.r + 24, rgba(s.c, 1), 12, 'center', 600); txt(`${PROJECTS.filter((_, i) => USE[i][TOOLS.indexOf(s)] > 0).length} projects`, s.x, s.y + s.r + 40, 'rgba(210,215,230,.6)', 11) })
+  P.forEach((q) => {
+    const st = q.p.status, c = COL[st]
+    if (st !== 'idle') glow2(q.x, q.y, 34, c, st === 'needs' ? 0.35 + 0.2 * Math.sin(t * 4) : 0.25)
+    ball(q.x, q.y, 10 + (q.p.current ? 3 : 0), q.p)
+    if (q.multi) { g2.strokeStyle = 'rgba(255,255,255,.7)'; g2.lineWidth = 1.2; g2.beginPath(); g2.arc(q.x, q.y, 16, 0, 7); g2.stroke() }
+    txt(q.p.name, q.x, q.y - 18, q.p.current ? '#fff' : 'rgba(225,230,245,.8)', q.p.current ? 12.5 : 11, 'center', q.p.current ? 600 : 500)
+  })
+  legend(['Each planet orbits the star of the tool that worked on it most.', 'A ringed planet between two stars was worked on by both tools, tied to each.', 'Green and amber halos are still the real status of each project.'])
+}
+
+// B: shared things as objects in space
+function sceneB(t) {
+  bg2(0.35)
+  const cx = 640, cy = 360
+  const P = PROJECTS.map((p, i) => { const a = (i / PROJECTS.length) * 6.283 + t * 0.06; return { p, i, x: cx + Math.cos(a) * 400, y: cy + Math.sin(a) * 215 } })
+  const STATIONS = [{ n: 'github (MCP)', uses: [0, 3, 4, 5], x: cx - 150, y: cy - 40, c: [120, 200, 255] }, { n: 'notes (MCP)', uses: [1, 2], x: cx + 170, y: cy + 60, c: [200, 160, 255] }]
+  starDisc(cx, cy, 15, [255, 110, 60])
+  STATIONS.forEach((s) => s.uses.forEach((i) => { const q = P[i]; g2.setLineDash([5, 7]); g2.lineDashOffset = -t * 20; g2.strokeStyle = rgba(s.c, 0.5); g2.lineWidth = 1.2; g2.beginPath(); g2.moveTo(s.x, s.y); g2.lineTo(q.x, q.y); g2.stroke(); g2.setLineDash([]); const u = (t * 0.25 + i * 0.2) % 1; glow2(s.x + (q.x - s.x) * u, s.y + (q.y - s.y) * u, 9, s.c, 0.9) }))
+  P.forEach((q) => { const c = COL[q.p.status]; if (q.p.status !== 'idle') glow2(q.x, q.y, 36, c, 0.28); ball(q.x, q.y, 17 + (q.p.current ? 4 : 0), q.p); txt(q.p.name, q.x, q.y - 28, 'rgba(225,230,245,.85)', 11.5) })
+  STATIONS.forEach((s) => { g2.fillStyle = 'rgba(14,18,28,.95)'; g2.strokeStyle = rgba(s.c, 0.95); g2.lineWidth = 2; g2.beginPath(); for (let k = 0; k < 6; k++) { const a = k * 1.047 + t * 0.2; g2[k ? 'lineTo' : 'moveTo'](s.x + Math.cos(a) * 16, s.y + Math.sin(a) * 16) } g2.closePath(); g2.fill(); g2.stroke(); txt(s.n.toUpperCase(), s.x, s.y + 34, rgba(s.c, 1), 11, 'center', 600); txt(`used by ${s.uses.length} projects`, s.x, s.y + 48, 'rgba(210,215,230,.6)', 10.5) })
+  // a shared moon between two planets
+  const a = P[0], b = P[2], mx = (a.x + b.x) / 2 + Math.sin(t) * 10, my = (a.y + b.y) / 2
+  g2.strokeStyle = 'rgba(200,200,210,.25)'; g2.beginPath(); g2.moveTo(a.x, a.y); g2.lineTo(b.x, b.y); g2.stroke(); g2.fillStyle = '#c9ccd6'; g2.beginPath(); g2.arc(mx, my, 6, 0, 7); g2.fill(); txt('CLAUDE.md (shared)', mx, my + 20, 'rgba(210,215,230,.75)', 10.5)
+  // the account-level agent: a comet crossing the whole system
+  const u = (t * 0.07) % 1, cxp = lerp(-80, W + 80, u), cyp = 120 + Math.sin(u * 6.283) * 60 + u * 360
+  g2.save(); g2.globalCompositeOperation = 'lighter'; const tail = g2.createLinearGradient(cxp, cyp, cxp - 170, cyp - 40); tail.addColorStop(0, 'rgba(255,255,255,.85)'); tail.addColorStop(1, 'rgba(255,255,255,0)'); g2.strokeStyle = tail; g2.lineWidth = 3; g2.beginPath(); g2.moveTo(cxp, cyp); g2.lineTo(cxp - 170, cyp - 40); g2.stroke(); glow2(cxp, cyp, 14, [255, 255, 255], 0.9); g2.restore(); txt('reviewer (account agent)', cxp, cyp + 20, 'rgba(255,255,255,.8)', 10.5)
+  legend(['Stations: an MCP server shared by several projects, beams to each user.', 'Comet: an agent defined for your whole account, passing through every project.', 'Moon: a harness file (CLAUDE.md) used by two projects.'])
+}
+
+// C: distance means time, with a replay scrubber
+const EVENTS = [[0.1, 0.5, 2, 5, 20, 30, 50, 100], [60, 130], [150], [0.2, 1, 3, 26, 40, 70], [4, 28, 50], [90], [160]]
+const rcur = PROJECTS.map(() => 100)
+let playing = false
+const scrub = document.getElementById('tscrub')
+document.getElementById('tplay').onclick = () => { playing = true; scrub.value = 168 }
+function ringR(h) { return 70 + 250 * Math.log1p(h) / Math.log1p(168) }
+function sceneC(t) {
+  bg2(0.3)
+  if (playing) { scrub.value = Math.max(0, +scrub.value - 0.55); if (+scrub.value <= 0) playing = false }
+  const T = +scrub.value, cx = 640, cy = 360, K = 0.45
+  const label = T === 0 ? 'NOW' : `REPLAY · ${T >= 24 ? (T / 24).toFixed(1) + ' days' : T.toFixed(0) + ' h'} ago`
+  document.getElementById('treplay').textContent = label
+  document.getElementById('treplay').style.color = T === 0 ? '#5df0a8' : '#ffb347'
+  ;[[1, '1 hour'], [24, '1 day'], [168, '1 week']].forEach(([h, n]) => { const R = ringR(h); g2.setLineDash([3, 6]); g2.strokeStyle = 'rgba(160,180,220,.3)'; g2.beginPath(); g2.ellipse(cx, cy, R * 1.9, R * K * 1.9, 0, 0, 7); g2.stroke(); g2.setLineDash([]); txt(n + ' ago', cx + R * 1.9 * 0.707 + 4, cy + R * K * 1.9 * 0.707 + 14, 'rgba(170,185,220,.65)', 11, 'left') })
+  starDisc(cx, cy, 16, [255, 110, 60])
+  PROJECTS.forEach((p, i) => {
+    const ev = EVENTS[i].filter((e) => e >= T), rec = ev.length ? Math.min(...ev) - T : 999
+    const target = rec === 999 ? 400 : rec
+    rcur[i] = lerp(rcur[i], target, 0.08)
+    const R = ringR(Math.min(rcur[i], 168)) * 1.9, a = i * 0.9 + 0.3, x = cx + Math.cos(a) * R, y = cy + Math.sin(a) * R * K
+    const live = rec < 0.4, c = live ? COL.working : rec < 3 ? [190, 200, 120] : COL.idle
+    g2.strokeStyle = rgba(c, 0.18); g2.beginPath(); g2.moveTo(cx, cy); g2.lineTo(x, y); g2.stroke()
+    if (live) glow2(x, y, 36, c, 0.35 + 0.1 * Math.sin(t * 4))
+    ball(x, y, 14 + (p.current ? 3 : 0), p, rec === 999 ? 0.25 : 1)
+    txt(p.name, x, y - 24, 'rgba(225,230,245,.85)', 11.5)
+    txt(rec === 999 ? 'not started yet' : rec < 0.4 ? 'active now' : rec < 24 ? `quiet ${rec.toFixed(0)} h` : `quiet ${(rec / 24).toFixed(1)} d`, x, y + 28, rgba(c, 0.95), 10.5)
+  })
+  legend(['The closer to the star, the more recently the project was active.', 'Drag the scrubber to replay the last 7 days; projects drift out as they go quiet.'])
+}
+
+// D: agents are ships
+function ship(x, y, ang, s, color, burst) {
+  g2.save(); g2.translate(x, y); g2.rotate(ang)
+  if (burst) { g2.save(); g2.globalCompositeOperation = 'lighter'; const f = g2.createLinearGradient(-6 * s, 0, -26 * s * (0.6 + Math.random() * 0.6), 0); f.addColorStop(0, rgba(color, 0.9)); f.addColorStop(1, rgba(color, 0)); g2.fillStyle = f; g2.beginPath(); g2.moveTo(-6 * s, -2.4 * s); g2.lineTo(-26 * s, 0); g2.lineTo(-6 * s, 2.4 * s); g2.fill(); g2.restore() }
+  g2.fillStyle = '#dfe6f2'; g2.beginPath(); g2.moveTo(9 * s, 0); g2.lineTo(-6 * s, 5 * s); g2.lineTo(-3 * s, 0); g2.lineTo(-6 * s, -5 * s); g2.closePath(); g2.fill()
+  g2.fillStyle = rgba(color, 1); g2.beginPath(); g2.arc(2 * s, 0, 1.8 * s, 0, 7); g2.fill(); g2.restore()
+}
+function sceneD(t) {
+  bg2(0.3)
+  const WORLDS = [{ x: 300, y: 380, r: 74, p: PROJECTS[0], ships: [{ m: 'work', sub: 0 }, { m: 'work', sub: 1 }, { m: 'work', sub: 1 }] }, { x: 700, y: 300, r: 66, p: PROJECTS[3], ships: [{ m: 'wait' }, { m: 'work', sub: 1 }] }, { x: 1010, y: 440, r: 54, p: PROJECTS[1], ships: [] }]
+  WORLDS.forEach((w) => {
+    const c = COL[w.p.status]; if (w.p.status !== 'idle') glow2(w.x, w.y, w.r * 2.8, c, 0.18)
+    ball(w.x, w.y, w.r, w.p); txt(w.p.name, w.x, w.y - w.r - 20, '#f1e9dc', 13, 'center', 600)
+    txt(w.p.status === 'needs' ? 'WAITING FOR YOU' : w.p.status === 'working' ? `${w.ships.length} SESSIONS` : 'RESTING', w.x, w.y - w.r - 6, rgba(c, 1), 10.5)
+    const parents = w.ships.filter((s) => !s.sub)
+    w.ships.forEach((s, k) => {
+      const base = w.r * 1.7 + (s.sub ? 30 + k * 12 : 0), a = t * (s.sub ? 0.9 : 0.5) + k * 2.1
+      let x = w.x + Math.cos(a) * base, y = w.y + Math.sin(a) * base * 0.45, ang = a + Math.PI / 2 + (Math.sin(a) < 0 ? 0 : 0)
+      if (s.m === 'wait') { x = w.x + w.r * 1.9; y = w.y - w.r * 0.5; ang = -0.5 }
+      const px = parents[0] ? w.x + Math.cos(t * 0.5) * w.r * 1.7 : x, py = parents[0] ? w.y + Math.sin(t * 0.5) * w.r * 1.7 * 0.45 : y
+      if (s.sub && parents[0]) { g2.setLineDash([2, 4]); g2.strokeStyle = 'rgba(200,215,240,.4)'; g2.beginPath(); g2.moveTo(px, py); g2.lineTo(x, y); g2.stroke(); g2.setLineDash([]) }
+      const burst = s.m === 'work' && Math.sin(t * 3 + k * 1.9) > 0.3
+      ship(x, y, ang, s.sub ? 1.5 : 2.3, s.m === 'wait' ? COL.needs : COL.working, burst)
+      if (s.m === 'wait') { const f = (t * 0.8) % 1; g2.strokeStyle = rgba(COL.needs, 1 - f); g2.lineWidth = 2; g2.beginPath(); g2.arc(x, y, 8 + f * 22, 0, 7); g2.stroke(); txt('waiting for you', x, y + 24, rgba(COL.needs, 1), 10.5) }
+      else if (!s.sub) txt('Claude Code session', x + 12, y - 22, 'rgba(210,225,245,.85)', 11)
+      else if (k === 1) txt('subagent', x, y + 24, 'rgba(210,225,245,.75)', 10.5)
+    })
+  })
+  legend(['Big ship: a live session. Small ships: its subagents, launched on a thread from the parent.', 'Flame: a tool call just ran. A ship hanging still with an amber ring: waiting for you.'])
+}
+
+// E: the planet is the project's state
+function sceneE(t) {
+  bg2(0.25)
+  const D = [{ x: 250, p: PROJECTS[1], plan: 0.2, agents: 0, files: 4, ring: false, name: 'Ledger API' }, { x: 640, p: PROJECTS[3], plan: 0.6, agents: 3, files: 40, ring: false, name: 'Sample C' }, { x: 1030, p: PROJECTS[0], plan: 1, agents: 2, files: 32, ring: true, name: 'agent-factory-3d' }]
+  const cy = 330, r = 108
+  D.forEach((d) => {
+    const x = d.x
+    // atmosphere: thicker with the plan
+    const th = 6 + d.plan * 44; const at = g2.createRadialGradient(x, cy, r, x, cy, r + th); at.addColorStop(0, rgba([110, 180, 255], 0.55)); at.addColorStop(1, rgba([110, 180, 255], 0)); g2.fillStyle = at; g2.beginPath(); g2.arc(x, cy, r + th, 0, 7); g2.fill()
+    const ringArc = (a0, a1) => { for (const [k, w, al] of [[1.55, 6, 0.55], [1.75, 9, 0.7], [1.95, 4, 0.45]]) { g2.strokeStyle = 'rgba(235,215,170,' + al + ')'; g2.lineWidth = w; g2.beginPath(); g2.ellipse(x, cy, r * k, r * k * 0.28, -0.25, a0, a1); g2.stroke() } }
+    if (d.ring) ringArc(Math.PI, Math.PI * 2)
+    g2.save(); g2.beginPath(); g2.arc(x, cy, r, 0, 7); g2.clip()
+    const b = g2.createRadialGradient(x - r * 0.35, cy - r * 0.35, r * 0.1, x, cy, r); b.addColorStop(0, '#2c5ea8'); b.addColorStop(1, '#06142f'); g2.fillStyle = b; g2.fillRect(x - r, cy - r, r * 2, r * 2)
+    let s = d.files * 7 + 3; const rnd = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296)
+    for (let k = 0; k < Math.min(22, d.files / 2 + 1); k++) { g2.fillStyle = `rgba(${70 + rnd() * 40},${120 + rnd() * 40},${70},.9)`; g2.beginPath(); g2.ellipse(x + (rnd() - 0.5) * r * 1.6, cy + (rnd() - 0.5) * r * 1.4, 12 + rnd() * 24, 8 + rnd() * 16, rnd() * 3, 0, 7); g2.fill() }
+    const sh = g2.createLinearGradient(x - r, cy, x + r, cy); sh.addColorStop(0, 'rgba(0,0,0,0)'); sh.addColorStop(0.5, 'rgba(0,0,8,.2)'); sh.addColorStop(1, 'rgba(0,0,8,.92)'); g2.fillStyle = sh; g2.fillRect(x - r, cy - r, r * 2, r * 2)
+    g2.globalCompositeOperation = 'lighter'; let q = d.files + 11; const rn = () => ((q = (q * 1103515245 + 12345) >>> 0) / 4294967296)
+    for (let k = 0; k < d.agents * 9; k++) { const px = x + r * (0.25 + rn() * 0.7), py = cy + (rn() - 0.5) * r * 1.5; if (Math.hypot(px - x, py - cy) > r * 0.96) continue; g2.fillStyle = `rgba(255,226,150,${0.5 + 0.5 * Math.sin(t * 2 + k)})`; g2.fillRect(px, py, 2.2, 2.2) }
+    g2.restore()
+    if (d.ring) ringArc(0, Math.PI)
+    txt(d.name, x, cy - r - 64, '#f1e9dc', 16, 'center', 600)
+    txt(`plan ${Math.round(d.plan * 100)}%  ·  ${d.agents} working  ·  ${d.files} files`, x, cy + r + 70, 'rgba(210,215,230,.8)', 12.5)
+  })
+  const call = (x1, y1, x2, y2, s) => { g2.strokeStyle = 'rgba(255,255,255,.5)'; g2.lineWidth = 1; g2.beginPath(); g2.moveTo(x1, y1); g2.lineTo(x2, y2); g2.stroke(); txt(s, x2, y2 - 6, 'rgba(255,255,255,.9)', 11.5) }
+  call(640 + 108 + 24, cy - 70, 790, 170, 'atmosphere = plan progress')
+  call(640 + 60, cy + 30, 800, 560, 'night lights = agents working')
+  call(1030 + 150, cy - 30, 1190, 170, 'ring = plan complete')
+  call(640 - 70, cy - 20, 470, 560, 'land = files in the project')
+  legend(['Left to right: a quiet project, a busy one, a finished one.'])
+}
+
+// F: a mission log you can watch
+const FEED = [['working', 'agent-factory-3d', 'Claude Code is running a command'], ['working', 'agent-factory-3d', 'Claude Code is editing files'], ['idle', 'Ledger API', 'quiet for 2 days'], ['needs', 'Sample C', 'Codex is waiting for you'], ['working', 'Sample B', 'Copilot started a session'], ['working', 'agent-factory-3d', 'Claude Code handed work to a subagent'], ['idle', 'Aurora Shop', 'session ended']]
+let feedAt = 0, feed = [], focusI = -1, focusT = 0, feedClock = 0
+function sceneF(t) {
+  bg2(0.35)
+  if (t - feedClock > 2.4) { feedClock = t; const e = FEED[feedAt++ % FEED.length]; feed.unshift({ e, at: t }); feed = feed.slice(0, 9); if (e[0] === 'needs') { focusI = PROJECTS.findIndex((p) => p.name === e[1]); focusT = t } }
+  const flying = focusI >= 0 && t - focusT < 3.4, k = flying ? Math.sin(Math.min(1, (t - focusT) / 3.4) * Math.PI) : 0
+  g2.save(); g2.beginPath(); g2.rect(0, 0, 940, H); g2.clip()
+  const cx = 470, cy = 380, scale = 1 + k * 1.1
+  const P = PROJECTS.map((p, i) => { const R = 70 + i * 36, a = i * 0.95 + t * 0.1 * Math.pow(70 / R, 1.4); return { p, i, R, x: Math.cos(a) * R, y: Math.sin(a) * R * 0.42 } })
+  const tgt = focusI >= 0 ? P[focusI] : { x: 0, y: 0 }
+  const X = (x) => cx + (x - tgt.x * k) * scale * 1.55, Y = (y) => cy + (y - tgt.y * k) * scale * 1.55
+  P.forEach((q) => { g2.strokeStyle = 'rgba(140,170,220,.15)'; g2.beginPath(); g2.ellipse(X(0), Y(0), q.R * scale * 1.55, q.R * 0.42 * scale * 1.55, 0, 0, 7); g2.stroke() })
+  starDisc(X(0), Y(0), 14 * scale, [255, 110, 60])
+  P.forEach((q) => { const c = COL[q.p.status]; if (q.p.status !== 'idle') glow2(X(q.x), Y(q.y), 30 * scale, c, q.p.status === 'needs' ? 0.4 + 0.2 * Math.sin(t * 5) : 0.25); ball(X(q.x), Y(q.y), 8 * scale, q.p); if (scale > 1.4 || q.p.current) txt(q.p.name, X(q.x), Y(q.y) - 14 * scale, 'rgba(235,238,250,.9)', 11 + k * 2) })
+  if (flying) { g2.fillStyle = `rgba(255,179,71,${0.13 * k})`; g2.fillRect(0, 0, 940, H); txt('AUTO-FLYING TO ' + PROJECTS[focusI].name.toUpperCase() + ' · WAITING FOR YOU', 470, 70, rgba(COL.needs, Math.min(1, k * 2)), 15, 'center', 700) }
+  g2.restore()
+  g2.fillStyle = 'rgba(8,10,16,.88)'; g2.fillRect(940, 0, 340, H); g2.strokeStyle = 'rgba(255,255,255,.1)'; g2.beginPath(); g2.moveTo(940, 0); g2.lineTo(940, H); g2.stroke()
+  txt('MISSION LOG', 960, 34, rgba(COL.needs, 1), 12, 'left', 700); txt('simulated feed for this mockup', 960, 52, 'rgba(160,170,190,.7)', 10.5, 'left')
+  feed.forEach((item, i) => { const f = item.e, y = 92 + i * 68, c = COL[f[0] === 'needs' ? 'needs' : f[0] === 'working' ? 'working' : 'idle'], fade = 1 - i * 0.09; g2.globalAlpha = fade; g2.fillStyle = rgba(c, 1); g2.beginPath(); g2.arc(966, y - 4, 5, 0, 7); g2.fill(); txt(f[1], 982, y, '#f0e6d6', 13, 'left', 600); txt(f[2], 982, y + 18, 'rgba(205,212,228,.85)', 12, 'left'); txt(`${Math.max(0, Math.round(t - item.at))} s ago`, 982, y + 35, 'rgba(150,160,180,.7)', 10.5, 'left'); g2.globalAlpha = 1 })
+}
+
+const SCENES = { A: sceneA, B: sceneB, C: sceneC, D: sceneD, E: sceneE, F: sceneF }
+function frame2(now) { if (!document.getElementById('big').hidden) { g2.clearRect(0, 0, W, H); SCENES[bigId](now / 1000) } requestAnimationFrame(frame2) }
+const bt = document.getElementById('bigtabs')
+BIG.forEach((b) => { const el = document.createElement('button'); el.textContent = b.name; el.dataset.id = b.id; if (b.id === 'A') el.classList.add('on'); bt.appendChild(el) })
+function setBig(id) {
+  bigId = id; const b = BIG.find((x) => x.id === id)
+  document.getElementById('bigtext').innerHTML = `<b>${b.name}</b><br>${b.text}<br><span style="color:#ffb347">${b.data}</span>`
+  bt.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x.dataset.id === id))
+  document.getElementById('timebar').hidden = id !== 'C'
+  if (id === 'F') { feed = []; feedAt = 0; feedClock = -10; focusI = -1 }
+}
+bt.addEventListener('click', (e) => { const el = e.target.closest('button'); if (el) setBig(el.dataset.id) })
+document.getElementById('modes').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return
+  document.querySelectorAll('#modes button').forEach((x) => x.classList.toggle('on', x === b))
+  document.getElementById('patches').hidden = b.dataset.m !== 'patches'; document.getElementById('big').hidden = b.dataset.m !== 'big'
+})
+setBig('A'); requestAnimationFrame(frame2)
+
+</script>
+</body>
+</html>

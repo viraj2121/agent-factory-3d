@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.next/
+*.log
+.env
+.env.*
+*.sqlite
+*.db
+.claude/settings.local.json
+.superpowers/
+
+# large saved Blender scenes (kept on disk, not in history); the scripts in assets/source rebuild everything
+assets/blender/*.blend
+assets/blender/*.blend1
+assets/previews/

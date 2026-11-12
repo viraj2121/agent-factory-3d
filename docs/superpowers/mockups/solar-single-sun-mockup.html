@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>One sun: 12 ideas on the same solar system</title>
+<style>
+  :root { --bg: #07080c; --card: rgba(20, 22, 31, 0.86); --line: #2a2f3f; --text: #ebeef5; --dim: #98a0b5; --amber: #ffb347; --green: #5df0a8; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 system-ui, -apple-system, Segoe UI, sans-serif; }
+  .wrap { max-width: 1440px; margin: 0 auto; padding: 22px 28px 50px; }
+  h1 { margin: 0; font-size: 26px; }
+  .lead { color: var(--dim); max-width: 1000px; margin: 6px 0 14px; }
+  .layout { display: grid; grid-template-columns: 1fr 340px; gap: 16px; align-items: start; }
+  .stage { position: relative; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: #000; }
+  canvas { display: block; width: 100%; height: 100%; }
+  .hint { position: absolute; left: 14px; top: 12px; color: var(--dim); font-size: 11.5px; background: rgba(0, 0, 0, 0.5); padding: 3px 9px; border-radius: 7px; pointer-events: none; }
+  .card3d { position: absolute; left: 16px; bottom: 16px; width: 280px; padding: 12px 14px; border-radius: 12px; background: rgba(10, 12, 18, 0.86); border: 1px solid rgba(255, 255, 255, 0.14); display: none; font-size: 12.5px; }
+  .card3d.on { display: block; }
+  .card3d h4 { margin: 0 0 4px; font-size: 15px; }
+  .card3d .row { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.08); color: var(--dim); }
+  .card3d .row b { color: var(--text); font-weight: 500; }
+  .card3d button { margin-top: 8px; padding: 6px 10px; border-radius: 7px; border: 1px solid var(--amber); background: transparent; color: var(--amber); cursor: pointer; }
+  .panel { border-radius: 14px; border: 1px solid var(--line); background: var(--card); padding: 12px 14px; }
+  .presets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .presets button { cursor: pointer; padding: 5px 10px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--text); font-size: 12.5px; }
+  .presets button.on { background: var(--amber); color: #1b1004; border-color: var(--amber); font-weight: 600; }
+  label.idea { display: grid; grid-template-columns: 22px 26px 1fr; gap: 6px; align-items: start; padding: 6px 4px; border-bottom: 1px solid rgba(255, 255, 255, 0.06); cursor: pointer; }
+  label.idea:hover { background: rgba(255, 255, 255, 0.04); }
+  label.idea .num { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: rgba(255, 179, 71, 0.15); color: var(--amber); font-size: 11.5px; font-weight: 700; }
+  label.idea b { display: block; font-size: 13px; }
+  label.idea span.d { display: block; color: var(--dim); font-size: 12px; }
+  .group { margin: 10px 0 2px; color: var(--amber); font-size: 11px; letter-spacing: 0.12em; }
+  .bar { margin-top: 10px; display: none; align-items: center; gap: 12px; }
+  .bar.on { display: flex; }
+  .bar button { padding: 5px 12px; border-radius: 8px; border: 1px solid var(--amber); background: transparent; color: var(--amber); cursor: pointer; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px; color: var(--dim); font-size: 12.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>One sun, twelve ideas</h1>
+  <p class="lead">The same solar system you have now: one sun (this computer), a planet per project, a moon per working agent. Switch the ideas on one by one, or use a preset. A 2D drawing with example data (your 7 projects, 24 idle folders), not the real 3D scene. Hover a planet; with <b>12</b> on, click one.</p>
+  <div class="layout">
+    <div>
+      <div class="stage">
+        <canvas id="c" width="1280" height="720"></canvas>
+        <div class="hint" id="hint">hover a planet</div>
+        <div class="card3d" id="card"></div>
+      </div>
+      <div class="bar" id="bar"><b id="replay">NOW</b><input id="scrub" type="range" min="0" max="168" step="0.5" value="0" style="width:50%"><button id="play">Replay the last 7 days</button><span style="color:#98a0b5">left: now · right: 7 days ago</span></div>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div class="panel">
+      <div class="presets" id="presets"><button data-p="none" class="on">Today</button><button data-p="pick">My pick (3, 5, 6, 7)</button><button data-p="all">All 12</button></div>
+      <div id="ideas"></div>
+    </div>
+  </div>
+</div>
+<script>
+const IDEAS = [
+  ['THE SUN IS THIS COMPUTER', 1, 'Corona follows total load', 'More agents working anywhere: a bigger, brighter corona and more flares.'],
+  ['THE SUN IS THIS COMPUTER', 2, 'Solar wind', 'A particle drifts from the sun to a project each time an agent finishes a tool call.'],
+  ['THE ORBITS CARRY MEANING', 3, 'Distance is recency', 'Closer to the sun = active more recently. Rings for 1 hour, 1 day, 1 week. Replay 7 days.'],
+  ['THE ORBITS CARRY MEANING', 4, 'Attention zone', 'A glowing band; anything waiting for you is pulled into it.'],
+  ['THE ORBITS CARRY MEANING', 5, 'Asteroid belt for idle folders', 'Folders found only by setup files become a belt of rocks, no 8-project limit.'],
+  ['THE PLANETS CARRY STATE', 6, 'Planet state', 'Atmosphere = plan progress, lights = working agents, land = files, ring = plan done. Hover for a close-up.'],
+  ['THE PLANETS CARRY STATE', 7, 'Moons by tool', 'Claude, Codex and Copilot moons have different shapes and colours.'],
+  ['THE PLANETS CARRY STATE', 8, 'Stations for MCP servers', 'Each MCP server is a small station at its planet; a shared one links planets.'],
+  ['THE PLANETS CARRY STATE', 9, 'Satellites for subagents', 'A subagent leaves its parent moon on a thread and returns.'],
+  ['THE PLANETS CARRY STATE', 10, 'Comets for account agents', 'An agent for your whole account crosses the system.'],
+  ['HOW YOU USE IT', 11, 'Mission log', 'Live feed of real events; the camera flies to a planet that needs you.'],
+  ['HOW YOU USE IT', 12, 'Look closer', 'Click a planet: fly close with an info card and an Enter button.'],
+]
+const on = new Set()
+const TOOLS = { claude: { c: '#ff8a5a', n: 'Claude Code' }, codex: { c: '#6fa8ff', n: 'Codex' }, copilot: { c: '#d28bff', n: 'Copilot' } }
+const PROJECTS = [
+  { name: 'agent-factory-3d', status: 'working', current: true, tools: ['claude', 'claude'], files: 32, plan: 0.55, mcp: ['github'], sub: 2, ev: [0.05, 0.5, 2, 5, 20, 30, 50, 100], c1: '#3a6fb8', c2: '#0c1f44' },
+  { name: 'Ledger API', status: 'idle', tools: [], files: 1, plan: null, mcp: [], sub: 0, ev: [60, 130], c1: '#c7a26a', c2: '#5a3e1e' },
+  { name: 'Aurora Shop', status: 'idle', tools: [], files: 1, plan: null, mcp: ['notes'], sub: 0, ev: [150], c1: '#d9cf8a', c2: '#6b6030' },
+  { name: 'Sample C', status: 'needs', tools: ['codex', 'codex', 'claude'], files: 80, plan: 0.3, mcp: ['github', 'notes'], sub: 1, ev: [0.2, 1, 3, 26, 40, 70], c1: '#9a7fd1', c2: '#2c1d55' },
+  { name: 'Sample B', status: 'working', tools: ['copilot'], files: 5, plan: 1, mcp: ['github'], sub: 0, ev: [0.1, 4, 28, 50], c1: '#c0583a', c2: '#3a1208' },
+  { name: 'Sample D', status: 'idle', tools: [], files: 0, plan: null, mcp: [], sub: 0, ev: [90], c1: '#7c8794', c2: '#22272e' },
+  { name: 'Sample A', status: 'idle', tools: [], files: 1, plan: null, mcp: [], sub: 0, ev: [160], c1: '#6fb0a0', c2: '#173a33' },
+]
+const COL = { working: [93, 240, 168], needs: [255, 179, 71], idle: [140, 152, 182] }
+const rgba = (c, a) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`
+const lerp = (a, b, k) => a + (b - a) * k
+const W = 1280, H = 720, K = 0.42, CX = 640, CY = 372, TAU = Math.PI * 2
+const cv = document.getElementById('c'), g = cv.getContext('2d')
+const sky = new Image(); let skyOk = false; sky.onload = () => (skyOk = true); sky.src = '../../../apps/dashboard/public/textures/milkyway-4k.jpg'
+let mouse = { x: -1, y: -1 }, hover = -1
+cv.addEventListener('mousemove', (e) => { const b = cv.getBoundingClientRect(); mouse = { x: ((e.clientX - b.left) / b.width) * W, y: ((e.clientY - b.top) / b.height) * H } })
+cv.addEventListener('mouseleave', () => (mouse = { x: -1, y: -1 }))
+const rnd = (seed) => () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296 }
+
+// state
+const R = PROJECTS.map((_, i) => 100 + i * 45)   // current orbit radius of each planet (eases toward its target)
+const view = { z: 1.3, fx: 0, fy: 0, lockI: -1, autoI: -1, autoT: -99 }
+const ZONE = 150
+const FEED = [['working', 'agent-factory-3d', 'Claude Code is running a command'], ['working', 'agent-factory-3d', 'Claude Code is editing files'], ['idle', 'Ledger API', 'quiet for 2 days'], ['needs', 'Sample C', 'Codex is waiting for you'], ['working', 'Sample B', 'Copilot started a session'], ['working', 'agent-factory-3d', 'a subagent was launched'], ['idle', 'Aurora Shop', 'session ended']]
+let feed = [], feedAt = 0, feedClock = -10
+let playing = false
+const scrub = document.getElementById('scrub')
+document.getElementById('play').onclick = () => { playing = true; scrub.value = 168 }
+const ringR = (h) => 95 + 270 * Math.log1p(Math.min(168, h)) / Math.log1p(168)
+
+function recency(p, T) { const ev = p.ev.filter((e) => e >= T); return ev.length ? Math.min(...ev) - T : 999 }
+
+function planetDetail(x, y, r, p, t, detail) {
+  // atmosphere first (outside the ball)
+  if (detail && p.plan !== null) { const th = r * (0.12 + p.plan * 0.5), at = g.createRadialGradient(x, y, r, x, y, r + th); at.addColorStop(0, 'rgba(110,180,255,.6)'); at.addColorStop(1, 'rgba(110,180,255,0)'); g.fillStyle = at; g.beginPath(); g.arc(x, y, r + th, 0, TAU); g.fill() }
+  const ring = (a0, a1) => { for (const [k, w, al] of [[1.55, 0.14, 0.55], [1.8, 0.2, 0.7], [2.05, 0.09, 0.45]]) { g.strokeStyle = `rgba(235,215,170,${al})`; g.lineWidth = Math.max(1, r * w); g.beginPath(); g.ellipse(x, y, r * k, r * k * 0.28, -0.25, a0, a1); g.stroke() } }
+  if (detail && p.plan === 1) ring(Math.PI, TAU)
+  g.save(); g.beginPath(); g.arc(x, y, r, 0, TAU); g.clip()
+  const b = g.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.1, x, y, r); b.addColorStop(0, p.c1); b.addColorStop(1, p.c2); g.fillStyle = b; g.fillRect(x - r, y - r, r * 2, r * 2)
+  if (detail) {
+    const rr = rnd(p.files * 7 + 3)
+    for (let k = 0; k < Math.min(18, p.files / 3 + (p.files ? 1 : 0)); k++) { g.fillStyle = `rgba(${70 + rr() * 40},${120 + rr() * 40},70,.85)`; g.beginPath(); g.ellipse(x + (rr() - 0.5) * r * 1.5, y + (rr() - 0.5) * r * 1.3, r * (0.12 + rr() * 0.2), r * (0.08 + rr() * 0.14), rr() * 3, 0, TAU); g.fill() }
+  }
+  const sx = x + (CX - x) * 0.0, sh = g.createLinearGradient(x + (CX - x) / Math.max(1, Math.hypot(CX - x, CY - y)) * r, y, x - (CX - x) / Math.max(1, Math.hypot(CX - x, CY - y)) * r, y)
+  sh.addColorStop(0, 'rgba(0,0,0,0)'); sh.addColorStop(0.55, 'rgba(0,0,8,.15)'); sh.addColorStop(1, 'rgba(0,0,8,.8)'); g.fillStyle = sh; g.fillRect(x - r, y - r, r * 2, r * 2)
+  if (detail) { const n = p.tools.length * 6; g.globalCompositeOperation = 'lighter'; const q = rnd(p.files + 11); for (let k = 0; k < n; k++) { const dx = (CX - x), side = dx >= 0 ? -1 : 1; const px = x + side * r * (0.15 + q() * 0.75), py = y + (q() - 0.5) * r * 1.6; if (Math.hypot(px - x, py - y) > r * 0.95) continue; g.fillStyle = `rgba(255,226,150,${0.5 + 0.5 * Math.sin(t * 2 + k)})`; g.fillRect(px, py, Math.max(1.2, r * 0.07), Math.max(1.2, r * 0.07)) } }
+  g.restore()
+  if (detail && p.plan === 1) ring(0, Math.PI)
+}
+
+function moonShape(tool, x, y, s, alpha) {
+  const c = on.has(7) ? TOOLS[tool].c : '#5df0a8'
+  g.globalAlpha = alpha; g.fillStyle = c; g.strokeStyle = c
+  if (!on.has(7) || tool === 'copilot') { g.beginPath(); g.arc(x, y, s, 0, TAU); on.has(7) ? (g.lineWidth = 1.6, g.stroke(), g.beginPath(), g.arc(x, y, s * 0.4, 0, TAU), g.fill()) : g.fill() }
+  else if (tool === 'claude') { g.beginPath(); g.moveTo(x, y - s * 1.25); g.lineTo(x + s * 1.05, y); g.lineTo(x, y + s * 1.25); g.lineTo(x - s * 1.05, y); g.closePath(); g.fill() }
+  else { g.fillRect(x - s, y - s, s * 2, s * 2) }
+  g.globalAlpha = 1
+}
+
+function frame(now) {
+  const t = now / 1000
+  g.clearRect(0, 0, W, H)
+  g.fillStyle = '#020306'; g.fillRect(0, 0, W, H)
+  if (skyOk) { g.globalAlpha = 0.55; g.drawImage(sky, 1250, 640, 1500, 844, 0, 0, W, H); g.globalAlpha = 1 }
+  if (playing) { scrub.value = Math.max(0, +scrub.value - 0.55); if (+scrub.value <= 0) playing = false }
+  const T = on.has(3) ? +scrub.value : 0
+  document.getElementById('replay').textContent = T === 0 ? 'NOW' : `REPLAY · ${T >= 24 ? (T / 24).toFixed(1) + ' days' : T.toFixed(0) + ' h'} ago`
+  document.getElementById('replay').style.color = T === 0 ? '#5df0a8' : '#ffb347'
+
+  // statuses at the replay moment (a project is working only when it was just active)
+  const status = PROJECTS.map((p) => (T === 0 ? p.status : recency(p, T) < 0.4 ? 'working' : 'idle'))
+  // mission log feed
+  if (on.has(11) && t - feedClock > 2.4) { feedClock = t; const e = FEED[feedAt++ % FEED.length]; feed.unshift({ e, at: t }); feed = feed.slice(0, 8); if (e[0] === 'needs') { view.autoI = PROJECTS.findIndex((p) => p.name === e[1]); view.autoT = t } }
+  if (!on.has(11)) feed = []
+
+  // orbits: base by place, recency when idea 3 is on, pulled into the zone when waiting (idea 4)
+  PROJECTS.forEach((p, i) => {
+    let target = 100 + i * 45
+    if (on.has(3)) { const rec = recency(p, T); target = rec === 999 ? 400 : ringR(rec) }
+    if (on.has(4) && status[i] === 'needs') target = ZONE
+    R[i] = lerp(R[i], target, 0.07)
+  })
+  const P = PROJECTS.map((p, i) => { const a = i * 0.95 + 0.4 + t * 0.12 * Math.pow(100 / R[i], 1.5); return { p, i, st: status[i], x: Math.cos(a) * R[i], y: Math.sin(a) * R[i] * K, r: (p.current ? 15 : 12) } })
+
+  // view: zoom to a planet (idea 11 auto-fly, idea 12 click)
+  let zi = on.has(12) ? view.lockI : -1, zt = zi >= 0 ? 4.8 : 1.3
+  if (zi < 0 && on.has(11) && t - view.autoT < 3.4) { zi = view.autoI; zt = 1.3 + 2.2 * Math.sin(Math.min(1, (t - view.autoT) / 3.4) * Math.PI) }
+  const tf = zi >= 0 ? { x: P[zi].x, y: P[zi].y } : { x: 0, y: 0 }
+  view.z = lerp(view.z, zt, 0.08); view.fx = lerp(view.fx, tf.x, 0.08); view.fy = lerp(view.fy, tf.y, 0.08)
+  const S = (x, y) => [CX + (x - view.fx) * view.z, CY + (y - view.fy) * view.z]
+  const Z = view.z
+
+  // hover
+  hover = -1
+  if (mouse.x >= 0) { let best = 1e9; P.forEach((q) => { const [sx, sy] = S(q.x, q.y), d = Math.hypot(mouse.x - sx, mouse.y - sy); if (d < Math.max(16, q.r * Z + 8) && d < best) { best = d; hover = q.i } }) }
+  document.getElementById('hint').textContent = hover >= 0 ? PROJECTS[hover].name + (on.has(12) ? ' · click to look closer' : '') : on.has(12) ? 'hover a planet, click to look closer' : 'hover a planet'
+
+  // attention zone (4)
+  if (on.has(4)) { const [x, y] = S(0, 0); const bandW = 34; for (let k = 0; k < 10; k++) { g.strokeStyle = rgba(COL.needs, 0.035 + 0.02 * Math.sin(t * 1.5)); g.lineWidth = bandW * Z * (1 - k / 10); g.beginPath(); g.ellipse(x, y, ZONE * Z, ZONE * K * Z, 0, 0, TAU); g.stroke() } g.fillStyle = rgba(COL.needs, 0.75); g.font = '600 10.5px system-ui'; g.textAlign = 'center'; g.fillText('ATTENTION ZONE', x, y - ZONE * K * Z - 14) }
+  // recency rings (3)
+  if (on.has(3)) [[1, '1 hour'], [24, '1 day'], [168, '1 week']].forEach(([h, n]) => { const [x, y] = S(0, 0), r = ringR(h); g.setLineDash([3, 6]); g.strokeStyle = 'rgba(160,180,220,.3)'; g.lineWidth = 1; g.beginPath(); g.ellipse(x, y, r * Z, r * K * Z, 0, 0, TAU); g.stroke(); g.setLineDash([]); g.fillStyle = 'rgba(175,190,225,.7)'; g.font = '11px system-ui'; g.textAlign = 'left'; g.fillText(n + ' ago', x + r * Z * 0.72, y + r * K * Z * 0.72 + 14) })
+  // orbits
+  P.forEach((q) => { const [x, y] = S(0, 0); g.strokeStyle = q.p.current ? 'rgba(255,255,255,.42)' : `rgba(140,170,220,${hover === q.i ? 0.45 : 0.15})`; g.lineWidth = 1; g.beginPath(); g.ellipse(x, y, R[q.i] * Z, R[q.i] * K * Z, 0, 0, TAU); g.stroke() })
+  // asteroid belt (5)
+  const bR = 330
+  if (on.has(5)) { const r2 = rnd(5); const [bx, by] = S(0, 0); for (let k = 0; k < 24; k++) { const a = r2() * TAU + t * (0.02 + r2() * 0.03), rr = bR + (r2() - 0.5) * 34, [x, y] = S(Math.cos(a) * rr, Math.sin(a) * rr * K); g.fillStyle = `rgba(${150 + r2() * 50},${135 + r2() * 40},${120 + r2() * 30},.9)`; g.beginPath(); g.arc(x, y, (1.6 + r2() * 2.4) * Math.sqrt(Z), 0, TAU); g.fill() } g.fillStyle = 'rgba(210,200,185,.75)'; g.font = '11px system-ui'; g.textAlign = 'center'; g.fillText('24 idle folders (found by their setup files)', bx, by + (bR + 22) * K * Z + 14) }
+
+  // sun + corona
+  const working = P.filter((q) => q.st !== 'idle').reduce((n, q) => n + Math.max(1, q.p.tools.length), 0), L = on.has(1) ? Math.min(1, working / 8) : 0.35
+  const [sx, sy] = S(0, 0), sr = 22 * Z
+  const co = g.createRadialGradient(sx, sy, sr, sx, sy, sr * (4 + 3.6 * L)); co.addColorStop(0, `rgba(255,110,60,${0.3 + 0.35 * L})`); co.addColorStop(1, 'rgba(255,110,60,0)'); g.fillStyle = co; g.fillRect(sx - sr * 8, sy - sr * 8, sr * 16, sr * 16)
+  const drawSunBody = () => { const sg = g.createRadialGradient(sx - sr * 0.3, sy - sr * 0.3, sr * 0.1, sx, sy, sr); sg.addColorStop(0, '#ffd0a8'); sg.addColorStop(0.55, '#e8552a'); sg.addColorStop(1, '#7c1c07'); g.fillStyle = sg; g.beginPath(); g.arc(sx, sy, sr, 0, TAU); g.fill() }
+  const drawFlares = () => { if (!on.has(1)) return; const per = lerp(18, 4, L), n = Math.floor(t / per), ph = (t - n * per) / 2.6; if (ph < 1) { const a = rnd(n * 13 + 5)() * TAU, k = Math.sin(ph * Math.PI); g.strokeStyle = `rgba(255,225,170,${0.8 * k})`; g.lineWidth = 3 * Z; g.beginPath(); g.moveTo(sx + Math.cos(a - 0.18) * sr, sy + Math.sin(a - 0.18) * sr); g.quadraticCurveTo(sx + Math.cos(a) * sr * (1.7 + 1.4 * ph), sy + Math.sin(a) * sr * (1.7 + 1.4 * ph), sx + Math.cos(a + 0.18) * sr, sy + Math.sin(a + 0.18) * sr); g.stroke() } }
+  if (on.has(1)) { g.fillStyle = 'rgba(255,200,170,.75)'; g.font = '10.5px system-ui'; g.textAlign = 'center'; g.fillText(`THIS COMPUTER · ${working} agent${working === 1 ? '' : 's'} working`, sx, sy + sr * 1.2 + 16) }
+
+  const back = P.filter((q) => q.y < 0), front = P.filter((q) => q.y >= 0)
+  const drawPlanet = (q) => {
+    const [x, y] = S(q.x, q.y), r = q.r * Z, c = COL[q.st]
+    const faded = hover >= 0 && hover !== q.i && false ? 0.5 : 1
+    if (q.st !== 'idle') { const h = g.createRadialGradient(x, y, r * 0.8, x, y, r * 3); h.addColorStop(0, rgba(c, q.st === 'needs' ? 0.38 + 0.2 * Math.sin(t * 4) : 0.25)); h.addColorStop(1, rgba(c, 0)); g.fillStyle = h; g.fillRect(x - r * 3, y - r * 3, r * 6, r * 6) }
+    g.globalAlpha = faded
+    planetDetail(x, y, r, q.p, t, on.has(6) && (Z > 2.1 || hover === q.i || r > 24))
+    g.globalAlpha = 1
+    // moons (agents), by tool when idea 7 is on
+    const tools = q.st === 'idle' ? [] : q.p.tools.length ? q.p.tools : ['claude']
+    const moonPos = tools.map((tool, k) => { const a = t * (1.1 + k * 0.4) + k * 2.1, mx = x + Math.cos(a) * r * 2.1, my = y + Math.sin(a) * r * 0.8 * 2.1 / 1.3; return { tool, mx, my, k } })
+    moonPos.forEach(({ tool, mx, my, k }) => { const waiting = q.st === 'needs' && k === 0; if (waiting) { g.strokeStyle = rgba(COL.needs, 0.5 + 0.5 * Math.sin(t * 6)); g.lineWidth = 2; g.beginPath(); g.arc(mx, my, Math.max(4, r * 0.3), 0, TAU); g.stroke() } moonShape(tool, mx, my, Math.max(2.4, r * 0.15), 0.95) })
+    // satellites for subagents (9)
+    if (on.has(9) && q.st !== 'idle' && q.p.sub > 0 && moonPos[0]) for (let s = 0; s < q.p.sub; s++) { const m = moonPos[0], u = Math.abs(Math.sin(t * 0.7 + s * 1.7 + q.i)), dx = Math.cos(t * 0.9 + s * 2.2), dy = Math.sin(t * 0.9 + s * 2.2), sxp = m.mx + dx * 26 * u * Math.sqrt(Z), syp = m.my + dy * 18 * u * Math.sqrt(Z); g.setLineDash([2, 3]); g.strokeStyle = 'rgba(200,215,240,.55)'; g.lineWidth = 1; g.beginPath(); g.moveTo(m.mx, m.my); g.lineTo(sxp, syp); g.stroke(); g.setLineDash([]); g.fillStyle = '#dfe6f2'; g.beginPath(); g.arc(sxp, syp, Math.max(1.6, r * 0.09), 0, TAU); g.fill() }
+    // stations for MCP servers (8)
+    if (on.has(8)) q.p.mcp.forEach((m, k) => { const a = -t * 0.4 + k * 3, sxp = x + Math.cos(a) * r * 3.3, syp = y + Math.sin(a) * r * 1.4 * 1.2; g.fillStyle = 'rgba(14,18,28,.95)'; g.strokeStyle = m === 'github' ? 'rgba(120,200,255,.95)' : 'rgba(200,160,255,.95)'; g.lineWidth = 1.6; g.beginPath(); for (let j = 0; j < 6; j++) { const aa = j * 1.047; g[j ? 'lineTo' : 'moveTo'](sxp + Math.cos(aa) * Math.max(3.4, r * 0.2), syp + Math.sin(aa) * Math.max(3.4, r * 0.2)) } g.closePath(); g.fill(); g.stroke() })
+    if (q.p.current) { g.strokeStyle = 'rgba(255,255,255,.7)'; g.lineWidth = 1.3; g.beginPath(); g.arc(x, y, r * 2.5, 0, TAU); g.stroke() }
+    if (hover === q.i && !on.has(12)) { g.strokeStyle = 'rgba(255,255,255,.85)'; g.lineWidth = 1.4; g.beginPath(); g.arc(x, y, r + 4, 0, TAU); g.stroke() }
+    // label
+    const full = q.p.current || q.st === 'needs' || hover === q.i
+    if (full || Z > 2) {
+      g.textAlign = 'center'; const ly = y - r * 2.7 - 6
+      g.font = '600 12.5px system-ui'; const w = Math.max(g.measureText(q.p.name).width, 118) + 18; g.fillStyle = 'rgba(10,12,18,.78)'; g.beginPath(); g.roundRect(x - w / 2, ly - 15, w, 32, 8); g.fill(); g.strokeStyle = 'rgba(255,255,255,.14)'; g.stroke()
+      g.fillStyle = '#f3e6d4'; g.fillText(q.p.name, x, ly - 1); g.font = '500 10px system-ui'; g.fillStyle = rgba(c, 1)
+      g.fillText((q.p.current ? 'YOU ARE HERE · ' : '') + (q.st === 'needs' ? 'WAITING FOR YOU' : q.st === 'working' ? `${Math.max(1, q.p.tools.length)} AGENT${q.p.tools.length > 1 ? 'S' : ''} WORKING` : 'RESTING'), x, ly + 11)
+    }
+    // magnifier card on hover (6): the planet's state close up
+    if (on.has(6) && hover === q.i && Z < 2.1) {
+      const cx = Math.min(W - 150, Math.max(150, x)), cy = y > 330 ? y - 190 : y + 130
+      g.fillStyle = 'rgba(8,10,16,.9)'; g.strokeStyle = 'rgba(255,255,255,.2)'; g.beginPath(); g.roundRect(cx - 120, cy - 78, 240, 156, 12); g.fill(); g.stroke()
+      planetDetail(cx - 58, cy, 40, q.p, t, true)
+      g.textAlign = 'left'; g.fillStyle = '#f3e6d4'; g.font = '600 12.5px system-ui'; g.fillText(q.p.name, cx - 6, cy - 46)
+      g.font = '11px system-ui'; g.fillStyle = 'rgba(205,212,228,.9)'; g.fillText(`plan ${q.p.plan === null ? 'unknown' : Math.round(q.p.plan * 100) + '%'}`, cx - 6, cy - 22); g.fillText(`${q.st === 'idle' ? 0 : Math.max(1, q.p.tools.length)} working`, cx - 6, cy - 6); g.fillText(`${q.p.files} markdown files`, cx - 6, cy + 10)
+      g.fillStyle = 'rgba(160,170,190,.8)'; g.fillText(q.p.plan === 1 ? 'ring: plan complete' : 'no ring: plan not done', cx - 6, cy + 28)
+    }
+  }
+  back.forEach(drawPlanet); drawSunBody(); drawFlares(); front.forEach(drawPlanet)
+
+  // shared MCP threads between planets (8)
+  if (on.has(8)) ['github', 'notes'].forEach((m) => { const own = P.filter((q) => q.p.mcp.includes(m)); for (let i = 1; i < own.length; i++) { const [x1, y1] = S(own[0].x, own[0].y), [x2, y2] = S(own[i].x, own[i].y); g.setLineDash([4, 7]); g.lineDashOffset = -t * 18; g.strokeStyle = m === 'github' ? 'rgba(120,200,255,.35)' : 'rgba(200,160,255,.35)'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); g.setLineDash([]) } })
+  // solar wind (2)
+  if (on.has(2)) P.forEach((q) => { if (q.st === 'idle') return; const per = 1.5 + q.i * 0.45, k = Math.floor((t + q.i) / per), u = ((t + q.i) - k * per) / 0.9; if (u > 1) return; const [x2, y2] = S(q.x, q.y), x = sx + (x2 - sx) * u, y = sy + (y2 - sy) * u; g.save(); g.globalCompositeOperation = 'lighter'; for (let j = 0; j < 8; j++) { const uu = Math.max(0, u - j * 0.02), xx = sx + (x2 - sx) * uu, yy = sy + (y2 - sy) * uu; g.fillStyle = rgba(COL[q.st], 0.5 * (1 - j / 8)); g.beginPath(); g.arc(xx, yy, 2.4 - j * 0.2, 0, TAU); g.fill() } const sp = g.createRadialGradient(x, y, 0, x, y, 9); sp.addColorStop(0, 'rgba(255,255,255,.95)'); sp.addColorStop(1, rgba(COL[q.st], 0)); g.fillStyle = sp; g.fillRect(x - 9, y - 9, 18, 18); g.restore() })
+  // comet (10)
+  if (on.has(10)) { const u = (t * 0.06) % 1, x = lerp(-60, W + 60, u), y = 110 + Math.sin(u * TAU) * 70 + u * 380; g.save(); g.globalCompositeOperation = 'lighter'; const tl = g.createLinearGradient(x, y, x - 190, y - 46); tl.addColorStop(0, 'rgba(255,255,255,.85)'); tl.addColorStop(1, 'rgba(255,255,255,0)'); g.strokeStyle = tl; g.lineWidth = 3; g.beginPath(); g.moveTo(x, y); g.lineTo(x - 190, y - 46); g.stroke(); const gl = g.createRadialGradient(x, y, 0, x, y, 14); gl.addColorStop(0, 'rgba(255,255,255,.95)'); gl.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gl; g.fillRect(x - 14, y - 14, 28, 28); g.restore(); g.fillStyle = 'rgba(255,255,255,.8)'; g.font = '10.5px system-ui'; g.textAlign = 'center'; g.fillText('reviewer (account agent)', x, y + 22) }
+  // mission log (11)
+  if (on.has(11)) {
+    if (zi >= 0 && view.lockI < 0 || (zi >= 0 && !on.has(12))) { if (t - view.autoT < 3.4) { g.fillStyle = `rgba(255,179,71,${0.1 * Math.sin(Math.min(1, (t - view.autoT) / 3.4) * Math.PI)})`; g.fillRect(0, 0, 960, H); g.fillStyle = rgba(COL.needs, 1); g.font = '700 15px system-ui'; g.textAlign = 'center'; g.fillText('AUTO-FLYING TO ' + PROJECTS[view.autoI].name.toUpperCase() + ' · WAITING FOR YOU', 480, 54) } }
+    g.fillStyle = 'rgba(8,10,16,.88)'; g.fillRect(960, 0, 320, H); g.strokeStyle = 'rgba(255,255,255,.1)'; g.beginPath(); g.moveTo(960, 0); g.lineTo(960, H); g.stroke()
+    g.textAlign = 'left'; g.fillStyle = rgba(COL.needs, 1); g.font = '700 12px system-ui'; g.fillText('MISSION LOG', 978, 32); g.fillStyle = 'rgba(160,170,190,.7)'; g.font = '10.5px system-ui'; g.fillText('simulated feed for this mockup', 978, 50)
+    feed.forEach((item, i) => { const f = item.e, y = 88 + i * 66, c = COL[f[0]]; g.globalAlpha = 1 - i * 0.1; g.fillStyle = rgba(c, 1); g.beginPath(); g.arc(984, y - 4, 5, 0, TAU); g.fill(); g.fillStyle = '#f0e6d6'; g.font = '600 13px system-ui'; g.fillText(f[1], 1000, y); g.fillStyle = 'rgba(205,212,228,.85)'; g.font = '12px system-ui'; g.fillText(f[2], 1000, y + 18); g.fillStyle = 'rgba(150,160,180,.7)'; g.font = '10.5px system-ui'; g.fillText(`${Math.max(0, Math.round(t - item.at))} s ago`, 1000, y + 34); g.globalAlpha = 1 })
+  }
+  // today's note about the 8-project limit
+  if (!on.has(5)) { g.fillStyle = 'rgba(8,10,16,.7)'; g.beginPath(); g.roundRect(14, H - 38, 300, 26, 8); g.fill(); g.fillStyle = 'rgba(190,198,215,.85)'; g.font = '11.5px system-ui'; g.textAlign = 'left'; g.fillText('+24 idle folders not shown (limit of 8 projects)', 26, H - 20) }
+  requestAnimationFrame(frame)
+}
+
+// controls
+cv.addEventListener('click', () => { if (on.has(12) && hover >= 0) { view.lockI = hover; showCard(hover) } })
+function showCard(i) {
+  const p = PROJECTS[i], c = document.getElementById('card'), st = p.status
+  c.innerHTML = `<h4>${p.name}</h4><div class="row"><span>Status</span><b style="color:${st === 'needs' ? '#ffb347' : st === 'working' ? '#5df0a8' : '#aab'}">${st === 'needs' ? 'waiting for you' : st === 'working' ? 'agents working' : 'resting'}</b></div><div class="row"><span>Agents</span><b>${p.tools.map((x) => TOOLS[x].n).join(', ') || 'none running'}</b></div><div class="row"><span>MCP servers</span><b>${p.mcp.join(', ') || 'none'}</b></div><div class="row"><span>Markdown files</span><b>${p.files}</b></div><button>Enter the hall ›</button> <button id="back" style="border-color:#555;color:#ccc">Back</button>`
+  c.classList.add('on'); c.querySelector('#back').onclick = (e) => { e.stopPropagation(); view.lockI = -1; c.classList.remove('on') }
+}
+const ideas = document.getElementById('ideas'); let last = ''
+IDEAS.forEach(([group, n, title, d]) => { if (group !== last) { const h = document.createElement('div'); h.className = 'group'; h.textContent = group; ideas.appendChild(h); last = group } const l = document.createElement('label'); l.className = 'idea'; l.innerHTML = `<input type="checkbox" data-n="${n}"><span class="num">${n}</span><span><b>${title}</b><span class="d">${d}</span></span>`; ideas.appendChild(l) })
+const sync = () => {
+  document.querySelectorAll('#ideas input').forEach((c) => (c.checked = on.has(+c.dataset.n)))
+  document.getElementById('bar').classList.toggle('on', on.has(3))
+  if (!on.has(12)) { view.lockI = -1; document.getElementById('card').classList.remove('on') }
+  document.getElementById('legend').innerHTML = on.has(7) ? Object.values(TOOLS).map((t, i) => `<span><span style="color:${t.c}">${['◆', '■', '●'][i]}</span> ${t.n}</span>`).join('') + '<span>amber ring = waiting for you</span>' : '<span><span style="color:#5df0a8">●</span> green moon = a working agent</span><span>amber ring on a moon = waiting for you</span>'
+}
+ideas.addEventListener('change', (e) => { const n = +e.target.dataset.n; e.target.checked ? on.add(n) : on.delete(n); sync(); document.querySelectorAll('#presets button').forEach((b) => b.classList.remove('on')) })
+document.getElementById('presets').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; on.clear(); if (b.dataset.p === 'pick') [3, 5, 6, 7].forEach((n) => on.add(n)); if (b.dataset.p === 'all') IDEAS.forEach(([, n]) => on.add(n)); document.querySelectorAll('#presets button').forEach((x) => x.classList.toggle('on', x === b)); sync() })
+sync(); requestAnimationFrame(frame)
+</script>
+</body>
+</html>
