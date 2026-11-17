@@ -4,6 +4,8 @@ import { prewarmSystem } from './SystemWorld'
 import ProjectRail from './ProjectRail'
 import PlanetCard from './PlanetCard'
 import ActiveStrip from './ActiveStrip'
+import InboxPanel from './InboxPanel'
+import { inboxItems, type InboxItem } from './inbox'
 import { pictureMode, usePictureMode } from './pictureMode'
 import DepartmentPanel from './DepartmentPanel'
 import CrewPanel from './CrewPanel'
@@ -74,6 +76,13 @@ export default function App() {
   const [tab, setTab] = useState<TabId | null>(null)
   const [keysOpen, setKeysOpen] = useState(false)
   // the planet being looked at closely in the solar system (the camera glides to it, then follows it)
+  // the inbox: every agent that waits for you, in every project; its clock moves every 15 seconds
+  const [inboxNow, setInboxNow] = useState(() => Date.now())
+  useEffect(() => {
+    const t = window.setInterval(() => setInboxNow(Date.now()), 15000)
+    return () => window.clearInterval(t)
+  }, [])
+  const inbox = useMemo(() => inboxItems(projects, inboxNow), [projects, inboxNow])
   const [look, setLook] = useState<string | null>(null)
   const [following, setFollowing] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -273,6 +282,19 @@ export default function App() {
     [busy, level, enterProject, project.id, projects],
   )
 
+  // Inbox: show a waiting agent. In the solar system this goes into its hall; in the hall it opens the robot's details, first
+  // changing to its project when it is another one.
+  const showInHall = useCallback(
+    (item: InboxItem) => {
+      if (busy) return
+      if (level === 'system') return enterProject(item.projectId)
+      if (item.projectId === project.id) return openCrew(item.entry)
+      pick(item.projectId)
+      timers.current.push(window.setTimeout(() => { setTab(null); setSelected(null); setCrew({ id: item.entry.id, projectId: item.projectId }) }, 2000))
+    },
+    [busy, level, enterProject, project.id, openCrew, pick],
+  )
+
   if (!webgl) {
     return (
       <div className="message">
@@ -300,6 +322,7 @@ export default function App() {
       {tab === 'crew' && !selected && !crew && <CrewTabPanel project={project} onPick={openCrew} onClose={() => setTab(null)} />}
       {tab === 'activity' && !selected && !crew && <ActivityPanel project={project} onClose={() => setTab(null)} />}
       {tab === 'library' && !selected && !crew && <LibraryPanel project={project} onClose={() => setTab(null)} />}
+      {tab === 'inbox' && !selected && !crew && <InboxPanel items={inbox} onShow={showInHall} onClose={() => setTab(null)} />}
       {level === 'system' && look && !busy && <PlanetCard project={findProject(projects, look)} onEnter={() => enterProject(look)} onBack={lookBack} />}
       {settingsOpen && <SettingsPanel projects={projects} view={settings.view} error={settings.error} change={settings.change} state={live.state} base={live.base} onClose={() => setSettingsOpen(false)} />}
       {picture && <div className="picture-hint">Picture mode · press H or Esc to bring everything back</div>}
@@ -313,7 +336,7 @@ export default function App() {
             <button className="ibtn" data-tip="Settings (,)" aria-label="Settings" aria-haspopup="dialog" onClick={() => setSettingsOpen(true)}>⚙</button>
           </div>
           {level === 'hall' && <MiniMap onGo={goPlace} />}
-          <TabStrip tab={tab} onTab={openTab} />
+          <TabStrip tab={tab} onTab={openTab} counts={{ inbox: inbox.length }} />
           <HintLine />
           <button className="ibtn help-btn" data-tip="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts" onClick={() => setKeysOpen(true)}>?</button>
           <KeysSheet open={keysOpen} onClose={() => setKeysOpen(false)} />

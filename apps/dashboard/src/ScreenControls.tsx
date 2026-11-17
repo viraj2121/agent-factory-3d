@@ -50,15 +50,17 @@ const TABS: { id: TabId; icon: string; tip: string }[] = [
   { id: 'crew', icon: '👥', tip: 'Crew (C)' },
   { id: 'activity', icon: '⏱', tip: 'Activity (A)' },
   { id: 'library', icon: '📚', tip: 'Library: markdown files (L)' },
+  { id: 'inbox', icon: '📥', tip: 'Inbox: agents waiting for you (W)' },
 ]
 
 /** The panels of the project live on the right edge: one click opens one beside it. */
-export function TabStrip({ tab, onTab }: { tab: TabId | null; onTab: (t: TabId) => void }) {
+export function TabStrip({ tab, onTab, counts = {} }: { tab: TabId | null; onTab: (t: TabId) => void; /** A small count on a tab, for example how many agents wait in the inbox. */ counts?: Partial<Record<TabId, number>> }) {
   return (
     <div className="tabstrip" role="toolbar" aria-label="Panels">
       {TABS.map((t) => (
         <button key={t.id} className={`ibtn tip-left${tab === t.id ? ' on' : ''}`} data-tip={t.tip} aria-label={t.tip} onClick={() => onTab(t.id)}>
           {t.icon}
+          {!!counts[t.id] && <em className="tab-badge">{counts[t.id]}</em>}
         </button>
       ))}
     </div>

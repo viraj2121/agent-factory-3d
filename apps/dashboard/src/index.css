@@ -277,6 +277,35 @@ kbd { padding: 0 6px; border: 1px solid #3a4054; border-bottom-width: 2px; borde
 body[data-picture='on'] .topbar, body[data-picture='on'] .toolbar, body[data-picture='on'] .minimap, body[data-picture='on'] .tabstrip, body[data-picture='on'] .hintline, body[data-picture='on'] .help-btn { opacity: 0 !important; pointer-events: none !important; }
 .topbar, .toolbar, .minimap, .tabstrip, .help-btn { transition: opacity 0.35s ease; }
 
+/* ---- the inbox: a full-height panel of the agents that wait for you */
+.tab-badge { position: absolute; top: -5px; right: -6px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; background: #ffb347; color: #1a0e04; font: 700 11px/17px system-ui, sans-serif; font-style: normal; text-align: center; }
+.panel.inbox-panel { top: 64px; bottom: 12px; right: 56px; width: 440px; display: flex; flex-direction: column; background: rgba(14, 16, 24, 0.9); border: 1px solid rgba(255, 255, 255, 0.14); backdrop-filter: blur(8px); }
+.inbox-count { margin-left: 6px; padding: 0 8px; border-radius: 10px; background: #ffb347; color: #1a0e04; font-size: 13px; vertical-align: 2px; }
+.inbox-filters { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 8px; }
+.inbox-filters button { padding: 4px 11px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.16); background: transparent; color: inherit; cursor: pointer; font-size: 12px; }
+.inbox-filters button.on { background: rgba(255, 179, 71, 0.2); border-color: rgba(255, 179, 71, 0.6); color: #ffd9a0; }
+.inbox-filters small { opacity: 0.65; margin-left: 2px; }
+.inbox-list { flex: 1; overflow-y: auto; padding-right: 2px; }
+.inbox-item { display: grid; grid-template-columns: 10px 1fr auto; gap: 4px 10px; padding: 10px 11px; margin-bottom: 8px; border-radius: 11px; border: 1px solid rgba(255, 179, 71, 0.3); background: rgba(255, 179, 71, 0.06); }
+.inbox-item.stale { border-color: rgba(255, 110, 80, 0.6); background: rgba(255, 110, 80, 0.08); }
+.inbox-dot { width: 10px; height: 10px; margin-top: 5px; border-radius: 50%; background: #ffb347; box-shadow: 0 0 8px #ffb347; animation: blink 1.2s infinite; }
+.inbox-item.stale .inbox-dot { background: #ff6e50; box-shadow: 0 0 8px #ff6e50; }
+.inbox-who { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.inbox-tool { font-size: 10.5px; padding: 1px 7px; border-radius: 7px; border: 1px solid; }
+.inbox-what { color: #ffd9a0; font-size: 13px; margin-top: 2px; }
+.inbox-detail { font-size: 12px; opacity: 0.75; }
+.inbox-project { font-size: 12px; opacity: 0.6; margin-top: 2px; }
+.inbox-age { color: #ffb347; font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.inbox-item.stale .inbox-age { color: #ff8f78; }
+.inbox-actions { grid-column: 2 / 4; display: flex; gap: 6px; margin-top: 4px; }
+.inbox-actions a, .inbox-actions button { font-size: 12px; padding: 4px 10px; border-radius: 7px; border: 1px solid #5a4028; background: transparent; color: #ffb35c; text-decoration: none; cursor: pointer; }
+.inbox-actions button { border-color: rgba(255, 255, 255, 0.18); color: inherit; }
+.inbox-actions a:hover, .inbox-actions button:hover { background: rgba(255, 255, 255, 0.1); }
+.inbox-empty { text-align: center; padding: 60px 14px; opacity: 0.8; }
+.inbox-empty b { display: block; color: #5df0a8; font-size: 16px; margin-bottom: 6px; }
+.inbox-foot { margin: 8px 0 0; font-size: 11px; opacity: 0.6; line-height: 1.4; }
+body[data-picture='on'] .inbox-panel { opacity: 0 !important; pointer-events: none !important; }
+
 /* ---- Active now: the real agents that work or wait */
 .active-strip { position: absolute; top: 60px; left: 50%; transform: translateX(-50%); z-index: 11; display: flex; align-items: center; gap: 6px; max-width: min(760px, 70vw); overflow-x: auto; padding: 5px 8px; border-radius: 999px; background: rgba(14, 16, 24, 0.78); border: 1px solid rgba(255, 255, 255, 0.12); backdrop-filter: blur(8px); font-size: 12px; }
 .as-title { color: #8fa7d0; letter-spacing: 0.08em; text-transform: uppercase; font-size: 10px; padding: 0 4px; white-space: nowrap; }

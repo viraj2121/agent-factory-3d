@@ -3,7 +3,7 @@ import type { PlaceId } from './places'
 // Every key the hub answers to, in one table: the key handler and the `?` sheet both read it, so they cannot disagree.
 // R, G, H, [ and Esc are handled where they always were (the camera, the level, picture mode, the rail, the panels).
 
-export type TabId = 'info' | 'crew' | 'activity' | 'library'
+export type TabId = 'info' | 'crew' | 'activity' | 'library' | 'inbox'
 export type KeyAction = { type: 'place'; id: PlaceId } | { type: 'sound' } | { type: 'tour' } | { type: 'settings' } | { type: 'tab'; tab: TabId } | { type: 'keys' }
 
 /** Keys by their lower-case form. */
@@ -20,6 +20,7 @@ export const ACTIONS: Record<string, KeyAction> = {
   c: { type: 'tab', tab: 'crew' },
   a: { type: 'tab', tab: 'activity' },
   l: { type: 'tab', tab: 'library' },
+  w: { type: 'tab', tab: 'inbox' },
   '?': { type: 'keys' },
 }
 
@@ -56,6 +57,7 @@ export const KEYS_SHEET: KeyGroup[] = [
       { label: 'Crew', key: 'C' },
       { label: 'Activity', key: 'A' },
       { label: 'Library (markdown files)', key: 'L' },
+      { label: 'Inbox (waiting for you)', key: 'W' },
       { label: 'This sheet', key: '?' },
     ],
   },

@@ -127,14 +127,19 @@ const TOOL_WORDS: [RegExp, string][] = [
 ]
 const MAX_TITLE = 60
 
+/** A tool name in plain words ("running a command", "editing files", "using github"). */
+export function toolPhrase(tool: string): string {
+  const server = /^mcp__([^_].*?)__/.exec(tool)?.[1]
+  return server ? `using ${server}` : (TOOL_WORDS.find(([re]) => re.test(tool))?.[1] ?? `using ${tool}`)
+}
+
 /** What a working or waiting agent is doing, in plain words: its tool, then the title its session wrote. Null for an agent that is asleep or standing by. */
 export function workLine(entry: RosterEntry): string | null {
   if (entry.state !== 'running' && entry.state !== 'needs-you') return null
   const tool = entry.currentTool
   let doing: string | null = null
   if (tool) {
-    const server = /^mcp__([^_].*?)__/.exec(tool)?.[1]
-    doing = server ? `using ${server}` : (TOOL_WORDS.find(([re]) => re.test(tool))?.[1] ?? `using ${tool}`)
+    doing = toolPhrase(tool)
   }
   // the description of an agent file says what the agent is for, not what it works on now
   const about = entry.role === 'definition' ? null : entry.description
