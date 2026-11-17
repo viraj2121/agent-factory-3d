@@ -12,7 +12,7 @@ npm start          # http://127.0.0.1:4317, this computer only
 npm test
 ```
 
-Needs Node 22.15 or newer (built-in SQLite and zstd). Then open the dashboard (`npm run dev` in `apps/dashboard`):
+Needs Node 22.18 or newer (it runs TypeScript directly, and uses built-in SQLite and zstd). Then open the dashboard (`npm run dev` in `apps/dashboard`):
 the banner at the top says `LIVE` when it is connected; when the service is not running the page shows the labelled
 demo projects. `?live=off` forces the demo, `?service=http://127.0.0.1:5000` points at another local port.
 

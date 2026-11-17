@@ -2,7 +2,7 @@
 
 ## Requirements
 
-- Windows, macOS or Linux with **Node 22.15 or newer** (the service uses built-in SQLite and zstd).
+- Windows, macOS or Linux with **Node 22.18 or newer** (the service runs TypeScript directly, and uses built-in SQLite and zstd; older Node versions fail).
 - A browser with WebGL2. A graphics card is recommended; the hub also has a Lite mode for computers without one.
 
 ## Start everything

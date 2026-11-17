@@ -7,7 +7,7 @@ title AI Software Factory launcher
 
 where node >nul 2>nul
 if errorlevel 1 (
-  echo Node.js was not found. Install Node 22.15 or newer from https://nodejs.org and run this file again.
+  echo Node.js was not found. Install Node 22.18 or newer from https://nodejs.org and run this file again.
   pause
   exit /b 1
 )

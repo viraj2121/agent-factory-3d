@@ -16,9 +16,9 @@ const apps = [
 ]
 const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm'
 
-const major = Number(process.versions.node.split('.')[0])
-if (major < 22) {
-  console.error(`Node 22 or newer is needed (this is ${process.versions.node}). Get it from https://nodejs.org`)
+const [major, minor] = process.versions.node.split('.').map(Number)
+if (major < 22 || (major === 22 && minor < 18)) {
+  console.error(`Node 22.18 or newer is needed (this is ${process.versions.node}). Get the current LTS from https://nodejs.org`)
   process.exit(1)
 }
 

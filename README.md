@@ -37,7 +37,7 @@ It only **watches**. It never starts, stops or prompts an agent, and it never re
 
 ## Quick start
 
-You need **Node 22.15 or newer** and a browser with WebGL2.
+You need **Node 22.18 or newer** and a browser with WebGL2.
 
 ```bash
 git clone https://github.com/viraj2121/agent-factory-3d.git
@@ -52,6 +52,30 @@ If the service finds no agent activity, the page shows labelled demo projects. S
 page flips to LIVE by itself.
 
 More: [getting started](docs/getting-started.md), [keys and guides](docs/guides), [troubleshooting](docs/guides/troubleshooting.md).
+
+## Will it work with my setup?
+
+Short answer: yes for **GitHub Copilot Chat in VS Code** and **Claude Code** on Windows, macOS and Linux, if they run on the same computer as this dashboard. It reads the files those tools already write; it does not need an account, a login or any change to them.
+
+| Tool | Where it reads (read-only) | Notes |
+|---|---|---|
+| Claude Code (terminal or VS Code extension) | `~/.claude/projects` | Sessions and helper agents. Agent files from `.claude/agents` and `~/.claude/agents`. |
+| GitHub Copilot Chat in **VS Code** | `<VS Code user folder>/workspaceStorage/*/chatSessions` (Windows: `%APPDATA%CodeUser`) | Chat and agent-mode sessions, `.github/copilot-instructions.md`, `.github/agents`, MCP config. |
+| Codex | `~/.codex` | Sessions and subagent threads. |
+| Anything else | `POST /api/hook` | Any tool that can run a command can report; see `apps/agent-service/README.md`. |
+
+**Not supported yet** (it will simply not see these, and nothing breaks):
+- VS Code Insiders, VSCodium, Cursor or a VS Code with a custom user-data folder (only the standard stable VS Code folder is read).
+- VS Code **Remote** sessions (WSL, SSH, Dev Containers, Codespaces): their chat files live on the remote machine, not on the one running the dashboard.
+- Copilot in Visual Studio or JetBrains, and the Copilot CLI.
+- A relocated Claude folder (`CLAUDE_CONFIG_DIR`).
+
+**On a work PC:**
+- You do not need admin rights. You need **Node 22.18 or newer** (a portable or per-user install is fine) and npm access to the public registry; behind a company proxy, set `npm config set proxy` / `https-proxy` first.
+- Ports **4317** (service) and **5173** (dashboard) must be free on `localhost`. Nothing is exposed to the network: the service binds to `127.0.0.1` only and rejects other websites.
+- By default it shows agent activity from the **last 7 days** (`AGENT_SERVICE_DAYS`, up to 365). A project appears once an agent worked in its folder.
+- It reads titles, tool names, counts and times. Message text, tool inputs and results are never read. Check your company's policy before running tools that read other tools' files; the source is small and meant to be read.
+- If the banner says `LOOK TEST`, the service is not running or found no activity; see [troubleshooting](docs/guides/troubleshooting.md).
 
 ## How it works
 
