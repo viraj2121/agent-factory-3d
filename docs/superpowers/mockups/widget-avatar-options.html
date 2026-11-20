@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Widget avatar options - design mockup</title>
+<style>
+  :root { --amber:#ffb547; --green:#4ee7a0; --rest:#8a93b0; --claude:#ff8a5a; --txt:#eef2fa; --dim:#9aa3b8; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#0c0f18; color:var(--txt); font:14px/1.45 "Segoe UI",system-ui,sans-serif; }
+  header { padding:22px 28px 6px; max-width:1100px; }
+  h1 { margin:0 0 4px; font-size:21px; }
+  .sub { color:var(--dim); }
+  .opt { margin:16px 28px; padding:16px 18px; border-radius:14px; background:#141927; border:1px solid #252c42; display:grid; grid-template-columns: 260px 1fr 250px; gap:18px; align-items:center; max-width:1240px; }
+  .opt.pick { border-color:#ff8a1f; box-shadow:0 0 0 1px #ff8a1f55; }
+  .opt h2 { margin:0 0 4px; font-size:16px; }
+  .opt p { margin:0; color:var(--dim); font-size:13px; }
+  .badge { display:inline-block; margin-top:8px; padding:2px 9px; border-radius:999px; font-size:11.5px; background:#ff8a1f; color:#1a0e04; font-weight:600; }
+  .states { display:flex; gap:14px; }
+  .cell { text-align:center; font-size:11.5px; color:var(--dim); }
+  .stage { width:120px; height:130px; border-radius:14px; background:radial-gradient(circle at 50% 85%, rgba(255,255,255,.07), transparent 70%), #10141f; border:1px solid #232a3e; display:flex; align-items:center; justify-content:center; margin-bottom:5px; }
+  .stage svg { width:110px; height:120px; overflow:visible; }
+  /* the same avatar at widget size, in a row */
+  .row { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:11px; background:rgba(255,255,255,.04); margin-bottom:6px; }
+  .row .mini { width:44px; height:50px; border-radius:10px; background:#10141f; border:1px solid #232a3e; display:flex; align-items:center; justify-content:center; flex:none; }
+  .row .mini svg { width:42px; height:46px; overflow:visible; }
+  .row b { display:block; font-size:12.5px; }
+  .row span { font-size:11.5px; color:var(--dim); }
+  .row.w span { color:var(--amber); }
+  .cap { font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:#6c7489; margin-bottom:6px; }
+
+  /* shared animation helpers */
+  .a { transform-box:fill-box; transform-origin:center; }
+  .bob { animation:bob 2.4s ease-in-out infinite; }
+  .breathe { animation:breathe 4s ease-in-out infinite; }
+  .tapL { animation:tap .45s ease-in-out infinite; }
+  .tapR { animation:tap .45s ease-in-out infinite .22s; }
+  .wave { transform-origin:0% 100%; animation:wave 1s ease-in-out infinite; }
+  .sway { transform-origin:50% 100%; animation:sway 3.2s ease-in-out infinite; }
+  .swayFast { transform-origin:50% 100%; animation:sway 1.6s ease-in-out infinite; }
+  .grow { transform-origin:0% 100%; animation:grow 3s ease-in-out infinite; }
+  .tail { transform-origin:0% 100%; animation:tail 1.6s ease-in-out infinite; }
+  .ring { transform-origin:center; animation:ring 1.8s ease-out infinite; }
+  .ring2 { transform-origin:center; animation:ring 1.8s ease-out infinite .9s; }
+  .spin { transform-origin:center; animation:spin 1.6s linear infinite; }
+  .pulse { animation:pulse 1.4s ease-in-out infinite; }
+  .z { animation:z 3s ease-in-out infinite; } .z2 { animation:z 3s ease-in-out infinite 1s; }
+  .blink { animation:blink 4s infinite; }
+  .spark { animation:spark 1.8s ease-in-out infinite; }
+  .bounce { animation:bounce 1.1s ease-in-out infinite; }
+  @keyframes bob { 50% { transform:translateY(-1.5px); } }
+  @keyframes breathe { 50% { transform:scale(1.035); } }
+  @keyframes tap { 50% { transform:translateY(-2.5px); } }
+  @keyframes wave { 0%,100% { transform:rotate(-14deg); } 50% { transform:rotate(18deg); } }
+  @keyframes sway { 0%,100% { transform:rotate(-3deg); } 50% { transform:rotate(3deg); } }
+  @keyframes grow { 0%,100% { transform:scale(.85); } 50% { transform:scale(1.05); } }
+  @keyframes tail { 0%,100% { transform:rotate(-12deg); } 50% { transform:rotate(16deg); } }
+  @keyframes ring { 0% { transform:scale(.7); opacity:.9; } 100% { transform:scale(1.5); opacity:0; } }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  @keyframes pulse { 50% { opacity:.45; } }
+  @keyframes z { 0% { opacity:0; transform:translate(0,4px); } 40% { opacity:1; } 100% { opacity:0; transform:translate(4px,-8px); } }
+  @keyframes blink { 0%,92%,100% { transform:scaleY(1); } 95% { transform:scaleY(.1); } }
+  @keyframes spark { 0%,100% { opacity:0; transform:scale(.4); } 50% { opacity:1; transform:scale(1); } }
+  @keyframes bounce { 0%,100% { transform:translateY(0); } 40% { transform:translateY(-5px); } }
+  .note { margin:10px 28px 28px; padding:12px 16px; border:1px dashed #5a4028; border-radius:12px; color:var(--dim); max-width:1240px; }
+  .note b { color:var(--txt); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Options for the little figures in the widget</h1>
+  <div class="sub">Design mockup. Each option shows the three states: <b style="color:var(--green)">working</b>, <b style="color:var(--amber)">waiting for you</b> and <b style="color:#a9b3d0">resting</b>, big and at the real widget size. The coloured detail (shirt, collar, pot, glow) is the agent's tool colour; here Claude Code coral.</div>
+</header>
+
+<div id="opts"></div>
+
+<div class="note"><b>Honest notes.</b> These are drawn and animated in 2D (SVG), which is very light: a widget that runs all day costs almost nothing, unlike the 3D robots. Any option can be made in 3D later if you want. The figure only shows the state the service already infers (working / waiting / resting); it does not mean the agent is literally typing.</div>
+
+<script>
+const C = '#ff8a5a' // tool colour (Claude Code)
+const G = '#4ee7a0', A = '#ffb547', R = '#8a93b0'
+
+// ---- A. a little person at a desk
+const person = (s) => `<svg viewBox="0 0 60 66">
+  <rect x="6" y="52" width="48" height="3.5" rx="1.5" fill="#3b4258"/>
+  <g class="${s === 'rest' ? 'a breathe' : 'a bob'}">
+    <path d="M18 52 C18 38 22 33 30 33 C38 33 42 38 42 52 Z" fill="${C}" opacity="${s === 'rest' ? .55 : 1}"/>
+    ${s === 'rest'
+      ? `<g transform="translate(2 12) rotate(-8 30 22)"><circle cx="30" cy="25" r="7.5" fill="#f2c9a6" opacity=".8"/><path d="M22.5 23 A7.5 7.5 0 0 1 37.5 23 L37 21 C35 15 25 15 23 21 Z" fill="#4a3b33" opacity=".85"/><path d="M26 26 q2 1.4 4 0 M31 26 q2 1.4 4 0" stroke="#5a4636" stroke-width="1" fill="none"/></g>
+         <rect x="16" y="45" width="28" height="5" rx="2.5" fill="#f2c9a6" opacity=".7"/>
+         <text class="z" x="44" y="22" font-size="8" fill="#a9b3d0" font-weight="700">z</text><text class="z2" x="48" y="15" font-size="6" fill="#a9b3d0" font-weight="700">z</text>`
+      : `<circle cx="30" cy="25" r="7.5" fill="#f2c9a6"/><path d="M22.5 24 A7.5 7.5 0 0 1 37.5 24 L37 21 C35 15 25 15 23 21 Z" fill="#4a3b33"/>
+         <g class="a blink"><circle cx="27.3" cy="26" r=".95" fill="#2b2420"/><circle cx="32.7" cy="26" r=".95" fill="#2b2420"/></g>
+         ${s === 'run'
+           ? `<path d="M27.5 29.2 q2.5 1.2 5 0" stroke="#7a4a3a" stroke-width=".9" fill="none"/><rect x="19" y="39" width="22" height="13" rx="2" fill="#3a4258"/><circle class="pulse" cx="30" cy="45.5" r="1.6" fill="#cfe4ff"/><rect class="a tapL" x="14" y="47" width="6" height="3.4" rx="1.7" fill="#f2c9a6"/><rect class="a tapR" x="40" y="47" width="6" height="3.4" rx="1.7" fill="#f2c9a6"/>`
+           : `<ellipse cx="30" cy="29.6" rx="1.6" ry="1.1" fill="#7a4a3a"/><g class="wave"><rect x="40" y="26" width="4" height="13" rx="2" fill="${C}" transform="rotate(20 42 39)"/><circle cx="45.5" cy="25" r="2.6" fill="#f2c9a6"/></g>
+              <rect x="17" y="45" width="6" height="3.2" rx="1.6" fill="#f2c9a6"/><g class="bounce"><circle cx="49" cy="12" r="5.5" fill="${A}"/><text x="49" y="15" font-size="7.5" text-anchor="middle" font-weight="800" fill="#2a1a06">?</text></g>`}`}
+  </g></svg>`
+
+// ---- B. a cat
+const cat = (s) => `<svg viewBox="0 0 60 66">
+  <ellipse cx="30" cy="56" rx="20" ry="3" fill="#000" opacity=".25"/>
+  ${s === 'rest'
+    ? `<g class="a breathe"><ellipse cx="30" cy="47" rx="17" ry="9" fill="#d9a066" opacity=".75"/><path d="M14 48 C10 40 18 34 22 40" stroke="#c48a52" stroke-width="4" fill="none" stroke-linecap="round" opacity=".75"/>
+       <circle cx="40" cy="44" r="7" fill="#d9a066" opacity=".8"/><path d="M35 39 l1.5 -5 l3 4 Z M42 38 l3 -4 l1.5 5 Z" fill="#d9a066" opacity=".8"/>
+       <path d="M37 44 q1.5 1 3 0 M41.5 44 q1.5 1 3 0" stroke="#5a3b22" stroke-width=".9" fill="none"/><rect x="33" y="49.5" width="12" height="2.2" rx="1.1" fill="${C}" opacity=".55"/></g>
+       <text class="z" x="48" y="34" font-size="8" fill="#a9b3d0" font-weight="700">z</text><text class="z2" x="52" y="27" font-size="6" fill="#a9b3d0" font-weight="700">z</text>`
+    : `<g class="${s === 'run' ? '' : 'a bob'}">
+       <g class="tail"><path d="M41 52 C52 50 54 38 49 34" stroke="#c48a52" stroke-width="4" fill="none" stroke-linecap="round"/></g>
+       <ellipse cx="30" cy="45" rx="12" ry="11" fill="#d9a066"/><circle cx="30" cy="28" r="10" fill="#d9a066"/>
+       <path d="M21.5 22 l1 -9 l7 6 Z M38.5 22 l-1 -9 l-7 6 Z" fill="#d9a066"/><path d="M23 20 l.8 -5 l3.6 3.2 Z M37 20 l-.8 -5 l-3.6 3.2 Z" fill="#f0b8a0"/>
+       <g class="a blink"><ellipse cx="26" cy="28" rx="1.6" ry="${s === 'run' ? 1.1 : 2.2}" fill="#2a3a20"/><ellipse cx="34" cy="28" rx="1.6" ry="${s === 'run' ? 1.1 : 2.2}" fill="#2a3a20"/></g>
+       <path d="M29 31.5 l1 1 l1 -1 Z" fill="#e88c8c"/><path d="M30 32.5 q-2 2 -3.5 1 M30 32.5 q2 2 3.5 1" stroke="#5a3b22" stroke-width=".7" fill="none"/>
+       <rect x="23" y="36.5" width="14" height="2.6" rx="1.3" fill="${C}"/>
+       ${s === 'run'
+         ? `<rect x="17" y="50" width="26" height="6" rx="1.5" fill="#2a3045"/><circle class="a tapL" cx="25" cy="49" r="2.6" fill="#e8b47c"/><circle class="a tapR" cx="35" cy="49" r="2.6" fill="#e8b47c"/>`
+         : `<circle cx="25" cy="55" r="2.6" fill="#e8b47c"/><circle cx="35" cy="55" r="2.6" fill="#e8b47c"/><g class="bounce"><circle cx="49" cy="14" r="5.5" fill="${A}"/><text x="49" y="17" font-size="7.5" text-anchor="middle" font-weight="800" fill="#2a1a06">?</text></g>`}
+       </g>`}
+  </svg>`
+
+// ---- C. a plant in a pot
+const plant = (s) => `<svg viewBox="0 0 60 66">
+  <path d="M19 46 h22 l-3 14 h-16 Z" fill="${C}" opacity="${s === 'rest' ? .55 : 1}"/><rect x="17.5" y="44" width="25" height="4" rx="1.5" fill="${C}" opacity="${s === 'rest' ? .6 : 1}" style="filter:brightness(.85)"/>
+  ${s === 'rest'
+    ? `<g class="a breathe"><path d="M30 44 C30 34 34 30 38 31" stroke="#5f7d5a" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+       <path d="M30 40 C24 40 20 44 18 47 C23 47 27 45 30 40 Z" fill="#6d8a63" opacity=".7"/><path d="M30 37 C35 36 39 38 41 41 C36 42 32 40 30 37 Z" fill="#6d8a63" opacity=".7"/>
+       <ellipse cx="38.5" cy="31.5" rx="3" ry="4.2" fill="#8c7aa8" opacity=".75" transform="rotate(35 38.5 31.5)"/></g>
+       <text class="z" x="44" y="24" font-size="8" fill="#a9b3d0" font-weight="700">z</text><text class="z2" x="48" y="17" font-size="6" fill="#a9b3d0" font-weight="700">z</text>`
+    : s === 'run'
+    ? `<g class="sway"><path d="M30 44 V18" stroke="#3f9a5a" stroke-width="2.4" stroke-linecap="round"/>
+         <path d="M30 38 C22 38 17 33 16 28 C23 28 28 31 30 38 Z" fill="#4fbf74"/><path d="M30 32 C38 32 43 27 44 22 C37 22 32 25 30 32 Z" fill="#5fd486"/>
+         <g class="grow"><path d="M30 24 C25 22 23 17 24 13 C28 15 30 19 30 24 Z" fill="#7be59c"/></g>
+         <path d="M30 19 C33 16 36 15 38 15 C37 18 34 20 30 19 Z" fill="#7be59c"/></g>
+       <circle class="spark" cx="15" cy="20" r="1.6" fill="${G}"/><circle class="spark" style="animation-delay:.6s" cx="46" cy="14" r="1.3" fill="${G}"/><circle class="spark" style="animation-delay:1.2s" cx="40" cy="36" r="1.1" fill="${G}"/>`
+    : `<g class="swayFast"><path d="M30 44 V20" stroke="#3f9a5a" stroke-width="2.4" stroke-linecap="round"/>
+         <path d="M30 38 C22 38 17 33 16 28 C23 28 28 31 30 38 Z" fill="#4fbf74"/><path d="M30 33 C38 33 43 28 44 23 C37 23 32 26 30 33 Z" fill="#5fd486"/>
+         <g class="a bounce">${[0, 72, 144, 216, 288].map((r) => `<ellipse cx="30" cy="13" rx="3.4" ry="5.6" fill="${A}" transform="rotate(${r} 30 19)"/>`).join('')}<circle cx="30" cy="19" r="3.4" fill="#fff1c9"/></g></g>`}
+  </svg>`
+
+// ---- D. a soft living orb (no character)
+const orb = (s) => {
+  const col = s === 'run' ? G : s === 'wait' ? A : R
+  return `<svg viewBox="0 0 60 66"><defs><radialGradient id="g${s}" cx="38%" cy="34%" r="70%"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".35" stop-color="${col}"/><stop offset="1" stop-color="${C}" stop-opacity=".9"/></radialGradient></defs>
+  <ellipse cx="30" cy="58" rx="13" ry="2.6" fill="#000" opacity=".3"/>
+  ${s === 'run' ? `<circle class="ring" cx="30" cy="33" r="15" fill="none" stroke="${G}" stroke-width="1.5"/><circle class="ring2" cx="30" cy="33" r="15" fill="none" stroke="${G}" stroke-width="1.5"/>` : ''}
+  ${s === 'wait' ? `<circle class="pulse" cx="30" cy="33" r="19" fill="none" stroke="${A}" stroke-width="2"/>` : ''}
+  <g class="a ${s === 'wait' ? 'bounce' : 'breathe'}" style="${s === 'run' ? 'animation-duration:1.6s' : ''}"><circle cx="30" cy="33" r="14" fill="url(#g${s})" opacity="${s === 'rest' ? .5 : 1}"/></g>
+  ${s === 'rest' ? `<text class="z" x="44" y="18" font-size="8" fill="#a9b3d0" font-weight="700">z</text>` : ''}</svg>`
+}
+
+// ---- E. minimal: the tool's initials in a status ring
+const minimal = (s) => `<svg viewBox="0 0 60 66">
+  <circle cx="30" cy="33" r="18" fill="${C}22" stroke="${C}66" stroke-width="1"/>
+  <text x="30" y="37.5" font-size="12" font-weight="700" text-anchor="middle" fill="${C}" opacity="${s === 'rest' ? .5 : 1}">CC</text>
+  ${s === 'run' ? `<g class="spin"><circle cx="30" cy="33" r="22" fill="none" stroke="${G}" stroke-width="2.4" stroke-dasharray="34 104" stroke-linecap="round"/></g>` : ''}
+  ${s === 'wait' ? `<circle class="pulse" cx="30" cy="33" r="22" fill="none" stroke="${A}" stroke-width="2.4"/>` : ''}
+  ${s === 'rest' ? `<circle cx="30" cy="33" r="22" fill="none" stroke="${R}" stroke-width="1.4" stroke-dasharray="2 4"/>` : ''}</svg>`
+
+const OPTIONS = [
+  { id:'person', name:'A · A little person at a desk', fn:person, text:'Types at a laptop while working, raises a hand with a "?" when it waits for you, rests its head on its arms when idle. The shirt is the tool colour. Most human and relatable.' },
+  { id:'cat', name:'B · A cat', fn:cat, text:'Taps the keyboard with its paws while working, sits up and swishes its tail when it waits for you, curls up asleep when idle. The collar is the tool colour. Warm and playful, and very easy to read at a glance.' },
+  { id:'plant', name:'C · A plant', fn:plant, text:'Grows new leaves (with small sparks) while working, opens an amber flower that bobs when it waits for you, droops into a closed bud when idle. The pot is the tool colour. The calmest, most "natural" option.' },
+  { id:'orb', name:'D · A living orb', fn:orb, text:'No character: a soft glowing ball. Ripples in green while working, bounces in amber when it waits, breathes slowly in grey when idle. Calm and modern, nothing to "read".' },
+  { id:'minimal', name:'E · Minimal ring', fn:minimal, text:'Just the tool initials in a status ring: spinning green arc, pulsing amber ring, dotted grey ring. The most compact and businesslike.' },
+]
+const STATES = [['run', 'Working', 'editing files'], ['wait', 'Waiting for you', 'A step is waiting'], ['rest', 'Resting', 'asleep']]
+document.getElementById('opts').innerHTML = OPTIONS.map((o) => `<section class="opt ${o.id === 'plant' ? 'pick' : ''}">
+  <div><h2>${o.name}</h2><p>${o.text}</p>${o.id === 'plant' ? '<span class="badge">My pick for "natural"</span>' : ''}</div>
+  <div class="states">${STATES.map(([s, label]) => `<div class="cell"><div class="stage">${o.fn(s)}</div>${label}</div>`).join('')}</div>
+  <div><div class="cap">At widget size</div>${STATES.map(([s, label, line]) => `<div class="row ${s === 'wait' ? 'w' : ''}"><div class="mini">${o.fn(s)}</div><div><b>Claude Code</b><span>${line}</span></div></div>`).join('')}</div>
+</section>`).join('')
+</script>
+</body>
+</html>

@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Desktop widget v3 with 3D robots - design mockup (sample data)</title>
+<style>
+  :root {
+    --amber:#ffb547; --amber-soft:rgba(255,181,71,.14); --green:#4ee7a0; --red:#ff6b6b; --grey:#7f889c;
+    --claude:#ff8a5a; --codex:#6fa8ff; --copilot:#c08bff;
+    --bg:rgba(17,20,30,.82); --bg2:rgba(255,255,255,.045); --line:rgba(255,255,255,.09); --txt:#eef2fa; --dim:#9aa3b8; --faint:#6c7489;
+    --shadow:0 24px 60px rgba(0,0,0,.55), 0 2px 6px rgba(0,0,0,.35);
+  }
+  .light { --amber:#b9620a; --green:#0e9a5f; --red:#d23c3c; --bg:rgba(250,251,254,.9); --bg2:rgba(20,30,60,.05); --line:rgba(20,30,60,.1); --txt:#161b29; --dim:#5b6479; --faint:#8a92a6; --amber-soft:rgba(230,140,20,.12);
+    --shadow:0 24px 60px rgba(20,30,60,.25), 0 2px 6px rgba(20,30,60,.15); }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; overflow:hidden; font:13px/1.4 "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif; color:#eef2fa; }
+
+  /* ---------- fake Windows 11 desktop ---------- */
+  .desktop { position:fixed; inset:0; background:
+      radial-gradient(ellipse at 18% 28%, #4569b8 0%, transparent 55%),
+      radial-gradient(ellipse at 82% 76%, #8a4aa0 0%, transparent 50%),
+      linear-gradient(135deg, #1d2b52, #2a1c46 60%, #13182b); }
+  .sample { position:absolute; left:50%; top:8px; transform:translateX(-50%); z-index:5; padding:4px 12px; border-radius:8px; background:rgba(0,0,0,.6); font-size:12px; color:#ffd9a0; }
+  .vscode { position:absolute; left:28px; top:44px; width:58%; height:72%; border-radius:8px; background:#1e1e1e; box-shadow:0 20px 50px rgba(0,0,0,.55); overflow:hidden; }
+  .vscode .tb { height:30px; background:#2b2b2b; display:flex; align-items:center; padding:0 12px; font-size:12px; color:#aaa; gap:16px; }
+  .vscode .side { position:absolute; left:0; top:30px; bottom:0; width:46px; background:#333; }
+  .vscode .code { position:absolute; left:62px; top:44px; right:20px; font:12.5px/1.75 Consolas,monospace; color:#9cdcfe; opacity:.7; white-space:pre; }
+  .taskbar { position:absolute; left:0; right:0; bottom:0; height:48px; background:rgba(28,30,40,.92); backdrop-filter:blur(12px); display:flex; align-items:center; justify-content:center; gap:10px; border-top:1px solid rgba(255,255,255,.08); }
+  .taskbar span { width:36px; height:36px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:18px; }
+  .clock { position:absolute; right:14px; bottom:9px; font-size:11.5px; text-align:right; color:#ddd; }
+
+  /* ---------- the widget window ---------- */
+  .win { position:absolute; right:24px; top:40px; width:372px; border-radius:12px; background:var(--bg); color:var(--txt); border:1px solid var(--line);
+    box-shadow:var(--shadow); backdrop-filter:blur(22px) saturate(1.3); overflow:hidden; user-select:none; transition:height .2s; }
+  /* the thin Windows title bar the real Edge app window keeps (we style its colour) */
+  .titlebar { height:30px; display:flex; align-items:center; gap:8px; padding:0 0 0 12px; background:rgba(0,0,0,.18); font-size:11.5px; color:var(--dim); cursor:move; }
+  .light .titlebar { background:rgba(20,30,60,.05); }
+  .titlebar .sp { flex:1; }
+  .titlebar .cap { width:44px; height:30px; display:flex; align-items:center; justify-content:center; color:var(--dim); font-size:11px; }
+  .titlebar .cap:hover { background:rgba(255,255,255,.08); }
+  .titlebar .cap.x:hover { background:#c42b1c; color:#fff; }
+
+  .head { display:flex; align-items:center; gap:10px; padding:12px 14px 10px; }
+  .logo { width:30px; height:30px; border-radius:9px; background:linear-gradient(135deg,#ff8a1f,#ffc46b); display:flex; align-items:center; justify-content:center; font-size:16px; box-shadow:0 4px 12px rgba(255,138,31,.35); }
+  .title b { display:block; font-size:14.5px; letter-spacing:.01em; }
+  .conn { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--dim); }
+  .conn i { width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 6px var(--green); }
+  .conn.off i { background:var(--red); box-shadow:0 0 6px var(--red); }
+  .head .sp { flex:1; }
+  .ib { width:28px; height:28px; border-radius:8px; border:0; background:transparent; color:var(--dim); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px; }
+  .ib:hover { background:var(--bg2); color:var(--txt); }
+  .ib.on { color:var(--amber); background:var(--amber-soft); }
+
+  /* the three counters double as tabs */
+  .seg { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; padding:0 14px 10px; }
+  .seg button { text-align:left; padding:8px 10px; border-radius:10px; border:1px solid transparent; background:var(--bg2); color:var(--txt); cursor:pointer; font:inherit; }
+  .seg button b { display:block; font-size:20px; line-height:1.1; font-variant-numeric:tabular-nums; }
+  .seg button span { font-size:11px; color:var(--dim); }
+  .seg button.w b { color:var(--amber); } .seg button.r b { color:var(--green); } .seg button.s b { color:var(--grey); }
+  .seg button.on { border-color:var(--line); background:rgba(255,255,255,.08); }
+  .light .seg button.on { background:rgba(20,30,60,.08); }
+
+  .tools { display:flex; gap:6px; padding:0 14px 8px; align-items:center; }
+  .search { flex:1; display:flex; align-items:center; gap:6px; padding:5px 9px; border-radius:8px; background:var(--bg2); border:1px solid var(--line); color:var(--faint); font-size:12px; }
+  .chip { padding:4px 9px; border-radius:999px; border:1px solid var(--line); font-size:11.5px; color:var(--dim); }
+
+  .list { padding:2px 8px 8px; max-height:390px; overflow:auto; }
+  .group { font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--faint); padding:8px 8px 4px; display:flex; justify-content:space-between; }
+  .row { display:grid; grid-template-columns:54px 1fr auto; gap:0 10px; padding:9px 8px; border-radius:11px; position:relative; }
+  .row:hover { background:var(--bg2); }
+  .av { width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px; position:relative; }
+  .av .st { position:absolute; right:-2px; bottom:-2px; width:11px; height:11px; border-radius:50%; border:2px solid #171b28; }
+  .light .av .st { border-color:#fafbfe; }
+  .figwrap { position:relative; width:54px; height:64px; border-radius:12px; overflow:visible; }
+  .figwrap canvas { display:block; width:54px; height:64px; }
+  .figwrap .st { position:absolute; right:-2px; bottom:-2px; width:11px; height:11px; border-radius:50%; border:2px solid #171b28; }
+  .light .figwrap .st { border-color:#fafbfe; }
+  .figwrap .zz { position:absolute; right:3px; top:1px; z-index:2; font:700 12px "Segoe UI",sans-serif; color:#b9c6ff; text-shadow:0 0 6px rgba(150,170,255,.8); animation:zz 2.6s infinite; }
+  .figwrap canvas[data-state="rest"] { filter:brightness(.55) saturate(.55); }
+  @keyframes zz { 0% { opacity:0; transform:translateY(6px); } 40% { opacity:1; } 100% { opacity:0; transform:translateY(-8px); } }
+  .st.wait { background:var(--amber); animation:pulse 1.4s infinite; } .st.run { background:var(--green); } .st.rest { background:#59627a; }
+  .nm { font-weight:600; display:flex; align-items:center; gap:6px; min-width:0; }
+  .nm .tag { font-weight:500; font-size:10.5px; padding:0 6px; border-radius:6px; border:1px solid; white-space:nowrap; }
+  .sub { font-size:12px; color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .row.wait .sub.what { color:var(--amber); }
+  .meta { text-align:right; font-size:11.5px; color:var(--dim); white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .row.wait .meta { color:var(--amber); }
+  .row.old .meta { color:var(--red); }
+  .bar { height:3px; border-radius:2px; background:var(--line); margin-top:5px; overflow:hidden; }
+  .bar i { display:block; height:100%; background:var(--green); border-radius:2px; }
+  .hover { position:absolute; right:8px; bottom:7px; display:none; gap:4px; }
+  .row:hover .hover { display:flex; }
+  .hover button { font-size:11px; padding:3px 8px; border-radius:7px; border:1px solid var(--line); background:var(--bg); color:var(--txt); cursor:pointer; }
+
+  /* approval card (preview of a later step) */
+  .ask { grid-column:2 / 4; margin-top:8px; padding:9px; border-radius:10px; background:var(--amber-soft); border:1px solid rgba(255,181,71,.35); }
+  .ask .q { font-size:12px; margin-bottom:6px; }
+  .ask code { display:block; font:12px/1.5 Consolas,monospace; padding:6px 8px; border-radius:7px; background:rgba(0,0,0,.35); color:#e9eefc; white-space:pre-wrap; word-break:break-all; }
+  .light .ask code { background:rgba(20,30,60,.08); color:#161b29; }
+  .ask .btns { display:flex; gap:6px; margin-top:8px; }
+  .ask .btns button { flex:1; padding:6px 8px; border-radius:8px; font:600 12px "Segoe UI",system-ui; cursor:pointer; border:1px solid var(--line); background:transparent; color:var(--txt); }
+  .ask .btns .ok { background:#1f8f5a; border-color:#1f8f5a; color:#fff; }
+  .ask .btns .no { border-color:rgba(255,107,107,.6); color:var(--red); }
+  .ask .fine { font-size:10.5px; color:var(--faint); margin-top:6px; }
+  .done { grid-column:2 / 4; margin-top:6px; font-size:12px; }
+  .goto { grid-column:2 / 4; margin-top:7px; display:flex; gap:6px; }
+  .goto button { padding:5px 10px; border-radius:8px; border:1px solid rgba(255,181,71,.5); background:transparent; color:var(--amber); font-size:12px; cursor:pointer; }
+
+  .foot { display:flex; gap:6px; padding:9px 12px 10px; border-top:1px solid var(--line); align-items:center; }
+  .foot button { white-space:nowrap; padding:6px 10px; border-radius:8px; border:1px solid var(--line); background:transparent; color:var(--txt); font-size:12px; cursor:pointer; }
+  .foot button.main { border-color:rgba(255,138,31,.7); color:#ff9d45; }
+  .foot .sp { flex:1; }
+  .foot small { color:var(--faint); font-size:10.5px; text-align:right; line-height:1.25; }
+  .empty, .offline { text-align:center; padding:34px 18px 30px; color:var(--dim); }
+  .empty b, .offline b { display:block; font-size:14.5px; margin-bottom:4px; }
+  .empty b { color:var(--green); } .offline b { color:var(--red); }
+  .offline code { display:inline-block; margin-top:8px; padding:3px 8px; border-radius:6px; background:var(--bg2); font:12px Consolas,monospace; color:var(--txt); }
+
+  /* collapsed pill */
+  .pill { position:absolute; right:24px; top:40px; display:flex; align-items:center; gap:12px; padding:8px 14px 8px 8px; border-radius:999px; background:var(--bg); color:var(--txt); border:1px solid var(--line); box-shadow:var(--shadow); backdrop-filter:blur(22px); cursor:move; user-select:none; }
+  .pill .logo { width:26px; height:26px; font-size:14px; border-radius:50%; }
+  .pill span { display:flex; align-items:center; gap:6px; font-size:12.5px; font-variant-numeric:tabular-nums; }
+  .pill i { width:8px; height:8px; border-radius:50%; }
+  @keyframes pulse { 0%,100% { box-shadow:0 0 0 0 rgba(255,181,71,.6); } 50% { box-shadow:0 0 0 5px rgba(255,181,71,0); } }
+
+  /* ---------- the control box for this mockup (not part of the widget) ---------- */
+  .ctl { position:absolute; left:28px; bottom:62px; width:440px; padding:12px 14px; border-radius:12px; background:rgba(0,0,0,.68); font-size:12.5px; color:#eef2fa; z-index:6; }
+  .ctl b { color:#ffd9a0; }
+  .ctl .btns { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .ctl button { padding:5px 10px; border-radius:7px; border:1px solid #5a4028; background:transparent; color:#ffb35c; cursor:pointer; font-size:12px; }
+  .ctl button.on { background:#ff8a1f; color:#1a0e04; }
+  .ctl p { margin:8px 0 0; color:#c9cfdc; font-size:11.5px; line-height:1.5; }
+  .ctl .warn { color:#ffd9a0; }
+</style>
+</head>
+<body>
+<div class="desktop" id="desk">
+  <div class="sample">Design mockup v4 · realistic 3D robots · sample data · a fake Windows desktop</div>
+  <div class="vscode">
+    <div class="tb"><span>File</span><span>Edit</span><span>View</span><span style="margin-left:auto">atlas-app - Visual Studio Code</span></div>
+    <div class="side"></div>
+    <div class="code">import { useState } from 'react'
+
+export function Checkout() {
+  const [items, setItems] = useState([])
+  // ...
+}</div>
+  </div>
+  <div class="taskbar"><span>⊞</span><span>🔍</span><span>📁</span><span>🧩</span><span>🌐</span><span>💬</span></div>
+  <div class="clock">10:42 AM<br>20-11-2026</div>
+  <div id="mount"></div>
+
+  <div class="ctl">
+    <b>Try the widget</b>
+    <div class="btns" id="views">
+      <button data-v="today" class="on">Viewer (steps 1-2)</button>
+      <button data-v="approve">With approvals (later step)</button>
+      <button data-v="pill">Collapsed</button>
+      <button data-v="empty">Nothing running</button>
+      <button data-v="offline">Service off</button>
+    </div>
+    <div class="btns">
+      <button id="theme">Light / dark</button>
+      <button id="dense">Compact / roomy</button>
+    </div>
+    <p id="explain"></p>
+  </div>
+</div>
+
+<script>
+// sample sessions (made up). tool: claude, codex, copilot-vscode, copilot-cli
+const TOOLS = {
+  claude: { label:'Claude Code', c:'#ff8a5a', ab:'CC', approve:true },
+  codex: { label:'Codex', c:'#6fa8ff', ab:'CX', approve:false, where:'your terminal' },
+  'copilot-vscode': { label:'Copilot · VS Code', c:'#c08bff', ab:'GH', approve:false, where:'VS Code' },
+  'copilot-cli': { label:'Copilot CLI', c:'#c08bff', ab:'GH', approve:true },
+}
+const DATA = [
+  { id:1, shape:'terminal', st:'wait', name:'Claude Code', tool:'claude', proj:'Beacon Metrics', what:'A step is waiting (maybe for your permission)', whatApprove:'Asks for permission', step:'running a command', min:12,
+    ask:{ q:'Wants to run a command', code:'npm install chart.js --save' } },
+  { id:2, shape:'plug', st:'wait', name:'Copilot CLI', tool:'copilot-cli', proj:'Relay Pipeline', what:'A step is waiting (maybe for your permission)', whatApprove:'Asks for permission', step:'running a command', min:3,
+    ask:{ q:'Wants to run a command', code:'git push origin feature/export' } },
+  { id:3, shape:'fishbowl', st:'wait', name:'Copilot', tool:'copilot-vscode', proj:'Atlas App', what:'Waiting for your reply', step:null, min:1 },
+  { id:4, shape:'developer', st:'run', name:'Claude Code', tool:'claude', proj:'Atlas App', what:'editing files', plan:[3,7], min:0 },
+  { id:5, shape:'cassette', st:'run', name:'docs-writer', tool:'claude', proj:'Pocket Kit', what:'reading code', plan:null, min:0 },
+  { id:6, shape:'gauge', st:'run', name:'Codex', tool:'codex', proj:'Relay Pipeline', what:'running a command', plan:[5,6], min:1 },
+  { id:7, shape:'tester', st:'rest', name:'test-runner', tool:'codex', proj:'Relay Pipeline', what:'asleep', min:125 },
+]
+// working: an action that matches what it does; waiting: waves at you; resting: stands still with dim eyes
+const CLIP_FOR_WORK = { 'editing files': 'typing', 'running a command': 'assemble', 'reading code': 'inspect' }
+const clipFor = (d, dec) => (dec ? 'assemble' : d.st === 'wait' ? 'wave' : d.st === 'rest' ? 'idle' : CLIP_FOR_WORK[d.what] ?? 'typing')
+const eff = (d) => (decided[d.id] ? 'run' : d.st)
+let view = 'today', tab = 'all', light = false, dense = false, decided = {}, pos = null
+
+const ago = (m, st) => st === 'run' ? (m < 1 ? 'now' : `${m} min ago`) : st === 'rest' ? (m >= 60 ? `${Math.floor(m / 60)} h` : `${m} min`) : (m < 1 ? 'just now' : `${m} min`)
+function rowHtml(d) {
+  const t = TOOLS[d.tool]
+  const canAsk = view === 'approve' && d.st === 'wait' && t.approve && d.ask
+  const dec = decided[d.id]
+  let extra = ''
+  if (d.st === 'wait' && dec) extra = `<div class="done" style="color:${dec === 'allow' ? 'var(--green)' : 'var(--red)'}">${dec === 'allow' ? '✓ Allowed once · logged' : '✕ Denied · logged'}</div>`
+  else if (canAsk) extra = `<div class="ask"><div class="q">${d.ask.q}:</div><code>${d.ask.code}</code>
+      <div class="btns"><button class="ok" data-a="allow" data-id="${d.id}">Allow once</button><button class="no" data-a="deny" data-id="${d.id}">Deny</button><button data-a="here">Answer in its window</button></div>
+      <div class="fine">If you do not answer, ${t.label} asks you in its own window as usual. Every answer is logged on this computer.</div></div>`
+  else if (d.st === 'wait') extra = `<div class="goto"><button>${t.approve ? 'Answer in its window' : `Answer in ${t.where}`} ↗</button></div>`
+  const plan = d.plan ? `<div class="bar" title="its own plan: ${d.plan[0]} of ${d.plan[1]} steps"><i style="width:${Math.round(d.plan[0] / d.plan[1] * 100)}%"></i></div>` : ''
+  return `<div class="row ${dec ? 'run' : d.st} ${!dec && d.st === 'wait' && d.min >= 10 ? 'old' : ''}">
+    <div class="figwrap" style="background:radial-gradient(circle at 50% 85%, ${t.c}40, transparent 70%);border:1px solid ${t.c}44"><canvas class="fig" data-key="${d.id}" data-shape="${d.shape}" data-clip="${clipFor(d, dec)}" data-state="${eff(d)}"></canvas>${eff(d) === 'rest' ? '<span class="zz">z</span>' : ''}<span class="st ${dec ? 'run' : d.st}"></span></div>
+    <div style="min-width:0"><div class="nm"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.name}</span><span class="tag" style="color:${t.c};border-color:${t.c}77">${t.label}</span></div>
+      <div class="sub what">${dec ? (dec === 'allow' ? 'Allowed · now running the command' : 'Denied · the agent carries on without it') : (view === 'approve' && d.whatApprove ? d.whatApprove : d.what) + (d.step ? ` · ${d.step}` : '')}</div><div class="sub">${d.proj}${d.plan ? ` · plan ${d.plan[0]}/${d.plan[1]}` : ''}</div>${plan}</div>
+    <div class="meta">${dec ? 'just now' : (d.st === 'wait' ? 'waiting ' : '') + ago(d.min, d.st)}</div>
+    ${extra}
+    ${eff(d) !== 'wait' ? '<div class="hover"><button>Open in VS Code</button><button>Show in hall</button></div>' : ''}
+  </div>`
+}
+function render() {
+  document.getElementById('desk').classList.toggle('light', light)
+  const m = document.getElementById('mount')
+  const n = (s) => DATA.filter((d) => eff(d) === s).length
+  if (view === 'pill') {
+    m.innerHTML = `<div class="pill" id="drag" title="Click to open"><span class="logo">🤖</span><span><i style="background:var(--amber);animation:pulse 1.4s infinite"></i>${n('wait')} waiting</span><span><i style="background:var(--green)"></i>${n('run')} working</span></div>`
+  } else {
+    const off = view === 'offline', empty = view === 'empty'
+    const groups = [['wait', 'Waiting for you'], ['run', 'Working'], ['rest', 'Resting']].filter(([s]) => tab === 'all' || tab === s)
+    const body = off ? `<div class="offline"><b>The agent service is not running</b>Start it again with<br><code>start-widget.cmd</code></div>`
+      : empty ? `<div class="empty"><b>Nothing is running</b>No agent has been active lately on this computer.</div>`
+      : groups.map(([s, label]) => { const rows = DATA.filter((d) => eff(d) === s); return rows.length ? `<div class="group"><span>${label}</span><span>${rows.length}</span></div>${rows.map(rowHtml).join('')}` : '' }).join('')
+    m.innerHTML = `<div class="win" id="drag">
+      <div class="titlebar"><span>Agents</span><span class="sp"></span><span class="cap">—</span><span class="cap x">✕</span></div>
+      <div class="head"><span class="logo">🤖</span><div class="title"><b>Agents</b><span class="conn ${off ? 'off' : ''}"><i></i>${off ? 'Service not running' : 'This computer · live'}</span></div><span class="sp"></span>
+        <button class="ib on" title="Keep on top">📌</button><button class="ib" id="col" title="Collapse to a pill">⤡</button><button class="ib" title="Settings">⚙</button></div>
+      <div class="seg">
+        <button class="w ${tab === 'wait' ? 'on' : ''}" data-t="wait"><b>${off || empty ? 0 : n('wait')}</b><span>waiting for you</span></button>
+        <button class="r ${tab === 'run' ? 'on' : ''}" data-t="run"><b>${off || empty ? 0 : n('run')}</b><span>working</span></button>
+        <button class="s ${tab === 'rest' ? 'on' : ''}" data-t="rest"><b>${off || empty ? 0 : n('rest')}</b><span>resting</span></button>
+      </div>
+      ${off || empty ? '' : `<div class="tools"><div class="search">🔎 Search agents or projects</div><span class="chip">All tools ▾</span></div>`}
+      <div class="list" style="${dense ? 'max-height:300px' : ''}">${body}</div>
+      <div class="foot"><button class="main">Open 3D hall</button><button>Open inbox</button><span class="sp"></span><small>${view === 'approve' ? 'answers: Claude Code · Copilot CLI' : 'read-only'}</small></div>
+    </div>`
+    if (dense) m.querySelectorAll('.row').forEach((r) => (r.style.padding = '5px 8px'))
+  }
+  const el = document.getElementById('drag')
+  if (pos) Object.assign(el.style, { left: pos[0] + 'px', top: pos[1] + 'px', right: 'auto' })
+  const handle = view === 'pill' ? el : el.querySelector('.titlebar')
+  let start = null, moved = false
+  handle.onmousedown = (e) => { const r = el.getBoundingClientRect(); start = [e.clientX - r.left, e.clientY - r.top]; moved = false }
+  window.onmousemove = (e) => { if (!start) return; moved = true; pos = [e.clientX - start[0], e.clientY - start[1]]; Object.assign(el.style, { left: pos[0] + 'px', top: pos[1] + 'px', right: 'auto' }) }
+  window.onmouseup = () => { if (start && !moved && view === 'pill') setView('today'); start = null }
+  m.querySelectorAll('.seg button').forEach((b) => (b.onclick = () => { tab = tab === b.dataset.t ? 'all' : b.dataset.t; render() }))
+  m.querySelectorAll('[data-a="allow"],[data-a="deny"]').forEach((b) => (b.onclick = () => { decided[b.dataset.id] = b.dataset.a; render() }))
+  const col = document.getElementById('col'); if (col) col.onclick = () => setView('pill')
+  explain()
+}
+const EXPLAIN = {
+  today: 'The tiny robots are the hall robots drawn with realistic materials, studio reflections and natural motion (decoration: their action shows the state; working agents act out what they do, waiting ones wave, resting ones stand still with dim eyes). What steps 1 and 2 build: a read-only viewer (Copilot CLI sessions appear once step 2 teaches the service to read them; today it reads Claude Code, Codex and Copilot in VS Code). Waiting agents first, with what kind of wait it is (inferred, never the command itself), how long, and a button that takes you to the right window. Click a counter to show only that group. Hover a working row for Open in VS Code / Show in hall. The green bar is the agent\'s own plan, only when it wrote one.',
+  approve: 'A later step, NOT built and needing your go-ahead: for Claude Code and Copilot CLI (both have approval hooks) the card shows the real request and lets you allow once or deny. Copilot in VS Code and Codex sessions you started yourself cannot be answered from outside, so they keep the "Answer in ..." button. Try Allow once / Deny.',
+  pill: 'Collapsed: a small pill that stays on top. Click it to open the full card again. Drag it anywhere.',
+  empty: 'When no agent has been active lately.',
+  offline: 'When the background service is not running, the widget says so instead of showing old data.',
+}
+function explain() { document.getElementById('explain').innerHTML = (view === 'approve' ? '<span class="warn">Preview only. </span>' : '') + EXPLAIN[view] }
+function setView(v) { view = v; decided = {}; document.querySelectorAll('#views button').forEach((b) => b.classList.toggle('on', b.dataset.v === v)); render() }
+document.querySelectorAll('#views button').forEach((b) => (b.onclick = () => setView(b.dataset.v)))
+document.getElementById('theme').onclick = () => { light = !light; render() }
+document.getElementById('dense').onclick = () => { dense = !dense; render() }
+render()
+</script>
+<script type="module">
+// The realistic renderer for the widget figures: the same hall robots, drawn with real materials, studio reflections,
+// a soft contact shadow and natural motion (sway, breathing, turning to face you when waiting).
+import * as THREE from 'three'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js'
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
+
+const W = 54, H = 64
+// render at a higher resolution than shown, then scale down: smoother edges on a small figure
+const RES = Math.min(3, (window.devicePixelRatio || 1) * 1.5)
+const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true })
+renderer.setPixelRatio(RES)
+renderer.setSize(W, H, false)
+renderer.outputColorSpace = THREE.SRGBColorSpace
+renderer.toneMapping = THREE.ACESFilmicToneMapping
+renderer.toneMappingExposure = 1.05
+// studio reflections, made in code (no image files)
+const pmrem = new THREE.PMREMGenerator(renderer)
+const studio = pmrem.fromScene(new RoomEnvironment(), 0.04).texture
+const camera = new THREE.PerspectiveCamera(22, W / H, 0.05, 50)
+const loader = new GLTFLoader()
+const models = new Map()
+const load = (shape) => { if (!models.has(shape)) models.set(shape, loader.loadAsync('/models/robot-' + shape + '.glb')); return models.get(shape) }
+// paint colours: pearl white, graphite, champagne, slate blue, warm grey, deep teal, soft sand
+const PAINT = ['#e9e6e1', '#5a5f6b', '#d8c7a6', '#7d8fb0', '#b9b2aa', '#3f6f73', '#d9cdb4']
+const figures = new Map()
+const clock = new THREE.Clock()
+
+// a soft round shadow under the feet (a blurred dark disc drawn once on a canvas)
+const shadowTex = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 128
+  const g = c.getContext('2d'); const r = g.createRadialGradient(64, 64, 4, 64, 64, 62)
+  r.addColorStop(0, 'rgba(0,0,0,.55)'); r.addColorStop(.55, 'rgba(0,0,0,.22)'); r.addColorStop(1, 'rgba(0,0,0,0)')
+  g.fillStyle = r; g.fillRect(0, 0, 128, 128)
+  return new THREE.CanvasTexture(c)
+})()
+
+function sceneFor() {
+  const sc = new THREE.Scene()
+  sc.environment = studio
+  sc.environmentIntensity = 0.85
+  const key = new THREE.DirectionalLight(0xfff1e0, 2.4); key.position.set(2.5, 4, 3); sc.add(key)
+  const rim = new THREE.DirectionalLight(0x9fc0ff, 1.6); rim.position.set(-3, 2.5, -3); sc.add(rim)
+  sc.add(new THREE.HemisphereLight(0xe8eeff, 0x1b1e28, 0.35))
+  return sc
+}
+
+/** Real materials for the robot's parts, by the names the models already use. */
+function realistic(m, paint) {
+  const n = m.name
+  const p = new THREE.MeshPhysicalMaterial({ name: n, color: m.color.clone(), map: m.map ?? null, emissive: m.emissive?.clone() ?? new THREE.Color(0), emissiveIntensity: m.emissiveIntensity ?? 1, emissiveMap: m.emissiveMap ?? null, transparent: m.transparent, opacity: m.opacity })
+  if (/Body$/.test(n)) Object.assign(p, { metalness: 0.35, roughness: 0.32, clearcoat: 0.9, clearcoatRoughness: 0.12 }), p.color.set(paint)
+  else if (/Accent$/.test(n)) Object.assign(p, { metalness: 0.6, roughness: 0.3, clearcoat: 0.6, clearcoatRoughness: 0.2 })
+  else if (/Dark/.test(n)) Object.assign(p, { metalness: 0.85, roughness: 0.38 })
+  else if (/Metal/.test(n)) Object.assign(p, { metalness: 1, roughness: 0.22 })
+  else if (/Face|Glass|Shell/.test(n)) Object.assign(p, { metalness: 0.1, roughness: 0.06, clearcoat: 1, clearcoatRoughness: 0.03 })
+  else if (/Eyes|Glow/.test(n)) Object.assign(p, { metalness: 0, roughness: 0.4 })
+  else Object.assign(p, { metalness: 0.4, roughness: 0.45 })
+  return p
+}
+
+async function makeFigure(key, shape) {
+  const gltf = await load(shape)
+  const obj = cloneSkinned(gltf.scene)
+  const n = Number(key)
+  obj.traverse((o) => { if (o.isMesh) o.material = realistic(o.material, PAINT[n % PAINT.length]) })
+  const box = new THREE.Box3().setFromObject(obj)
+  const size = box.getSize(new THREE.Vector3()), centre = box.getCenter(new THREE.Vector3())
+  obj.position.sub(new THREE.Vector3(centre.x, box.min.y, centre.z))
+  const pivot = new THREE.Group(); pivot.add(obj)
+  const sc = sceneFor(); sc.add(pivot)
+  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false }))
+  shadow.rotation.x = -Math.PI / 2; shadow.position.y = 0.002; shadow.scale.setScalar(Math.max(size.x, size.z) * 1.6); sc.add(shadow)
+  return { key, shape, scene: sc, pivot, obj, mixer: new THREE.AnimationMixer(obj), clips: gltf.animations, height: size.y, action: null, clip: null, state: null, phase: n * 1.37, yaw: -0.5 }
+}
+
+function setClip(f, clip, state) {
+  if (f.clip === clip && f.state === state) return
+  const c = THREE.AnimationClip.findByName(f.clips, clip) ?? THREE.AnimationClip.findByName(f.clips, 'idle')
+  const next = f.mixer.clipAction(c)
+  next.reset().setEffectiveTimeScale(state === 'rest' ? 0.4 : 0.92).play()
+  next.time = f.phase % c.duration
+  if (f.action && f.action !== next) f.action.crossFadeTo(next, 0.45, false)
+  f.action = next; f.clip = clip; f.state = state
+  f.obj.traverse((o) => {
+    if (!o.isMesh || !/Eyes|Glow/.test(o.material.name)) return
+    if (o.userData.base === undefined) o.userData.base = o.material.emissiveIntensity
+    o.material.emissiveIntensity = state === 'rest' ? o.userData.base * 0.12 : o.userData.base
+  })
+}
+
+async function bind() {
+  for (const cv of document.querySelectorAll('canvas.fig')) {
+    const key = cv.dataset.key
+    let f = figures.get(key)
+    if (!f || f.shape !== cv.dataset.shape) { f = await makeFigure(key, cv.dataset.shape); figures.set(key, f) }
+    f.canvas = cv
+    cv.width = Math.round(W * RES); cv.height = Math.round(H * RES)
+    f.ctx = cv.getContext('2d')
+    setClip(f, cv.dataset.clip, cv.dataset.state)
+  }
+}
+new MutationObserver(() => bind()).observe(document.getElementById('mount'), { childList: true, subtree: true })
+bind()
+
+// where each state turns the robot: busy ones turn toward their work, waiting ones face you, resting ones half away
+const FACING = { run: -0.62, wait: 0.06, rest: -0.32 }
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(0.05, clock.getDelta())
+  const t = clock.elapsedTime
+  for (const f of figures.values()) {
+    if (!f.canvas || !f.canvas.isConnected) continue
+    f.mixer.update(dt)
+    // natural motion: ease toward the facing of its state, a slow sway, a faint breath
+    f.yaw += ((FACING[f.state] ?? -0.4) - f.yaw) * Math.min(1, dt * 3)
+    f.pivot.rotation.y = f.yaw + Math.sin(t * 0.55 + f.phase) * 0.05
+    const breath = 1 + Math.sin(t * (f.state === 'rest' ? 0.8 : 1.3) + f.phase) * 0.006
+    f.pivot.scale.set(1, breath, 1)
+    const h = f.height
+    // a longer lens from a little below head height: closer to how a product photo frames a figure
+    camera.position.set(h * 0.18, h * 0.6, h * 3.35)
+    camera.lookAt(0, h * 0.5, 0)
+    renderer.render(f.scene, camera)
+    f.ctx.clearRect(0, 0, f.canvas.width, f.canvas.height)
+    f.ctx.drawImage(renderer.domElement, 0, 0)
+  }
+})
+
+</script>
+</body>
+</html>

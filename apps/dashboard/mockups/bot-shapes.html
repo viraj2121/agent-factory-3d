@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>New robot shapes - 3D design options</title>
+<style>
+  * { box-sizing:border-box; }
+  body { margin:0; background:#0b0e16; color:#eef2fa; font:14px/1.45 "Segoe UI",system-ui,sans-serif; }
+  header { padding:20px 28px 4px; max-width:1200px; }
+  h1 { margin:0 0 4px; font-size:21px; }
+  .sub { color:#9aa3b8; }
+  .grid { display:grid; grid-template-columns: 250px repeat(3, 210px); gap:12px 14px; padding:14px 28px 28px; align-items:center; }
+  .colhead { font-size:12px; letter-spacing:.08em; text-transform:uppercase; text-align:center; }
+  .colhead.run { color:#4ee7a0; } .colhead.wait { color:#ffb547; } .colhead.rest { color:#a9b3d0; }
+  .name h2 { margin:0 0 3px; font-size:16px; }
+  .name p { margin:0; color:#9aa3b8; font-size:12.5px; }
+  .cell { width:210px; height:230px; border-radius:14px; background:radial-gradient(circle at 50% 78%, #222a3e 0%, #121725 60%); border:1px solid #232a3e; overflow:hidden; }
+  .cell canvas { width:210px; height:230px; display:block; }
+  .note { margin:0 28px 28px; padding:12px 16px; border:1px dashed #5a4028; border-radius:12px; color:#9aa3b8; max-width:1100px; }
+  .note b { color:#eef2fa; }
+</style>
+</head>
+<body>
+<header>
+  <h1>New robot shapes: six 3D options</h1>
+  <div class="sub">Design mockup, built in code. Each design in its three states: <b style="color:#4ee7a0">working</b>, <b style="color:#ffb547">waiting for you</b>, <b style="color:#a9b3d0">resting</b>. The status light colour follows the state; the body paint can take the tool colour or a neutral finish.</div>
+</header>
+<div class="grid" id="grid"></div>
+<div class="note"><b>How these would be used.</b> Pick one design (or a few, so different agents get different shapes). For the real widget they can stay code-built like these (no files, very light), or I can model the chosen one in Blender for more detail. They are original designs, not copies of film robots.</div>
+
+<script type="module">
+import * as THREE from 'three'
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
+
+const CW = 210, CH = 230
+const RES = Math.min(2, window.devicePixelRatio || 1)
+const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true })
+renderer.setPixelRatio(RES); renderer.setSize(CW, CH, false)
+renderer.outputColorSpace = THREE.SRGBColorSpace
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05
+const env = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture
+const camera = new THREE.PerspectiveCamera(24, CW / CH, 0.1, 50)
+
+const STATE = { run: '#4ee7a0', wait: '#ffb547', rest: '#5d6680' }
+// materials
+const paint = (c) => new THREE.MeshPhysicalMaterial({ color: c, metalness: 0.3, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.1 })
+const steel = () => new THREE.MeshPhysicalMaterial({ color: '#2c3038', metalness: 0.9, roughness: 0.35 })
+const chrome = () => new THREE.MeshPhysicalMaterial({ color: '#c9ced8', metalness: 1, roughness: 0.15 })
+const glass = () => new THREE.MeshPhysicalMaterial({ color: '#0b0f18', metalness: 0.2, roughness: 0.05, clearcoat: 1, clearcoatRoughness: 0.02 })
+const led = (s) => new THREE.MeshStandardMaterial({ color: '#000', emissive: STATE[s], emissiveIntensity: s === 'rest' ? 0.35 : 2.2, toneMapped: false })
+const mesh = (g, m, x = 0, y = 0, z = 0) => { const o = new THREE.Mesh(g, m); o.position.set(x, y, z); return o }
+const pivot = (x = 0, y = 0, z = 0) => { const g = new THREE.Group(); g.position.set(x, y, z); return g }
+
+// ---------- 1. Visor: a sleek humanoid on a hover base
+function visor(s, color) {
+  const root = new THREE.Group(), P = paint(color), L = led(s)
+  root.add(mesh(new THREE.CylinderGeometry(0.34, 0.4, 0.14, 40), steel(), 0, 0.2))
+  const glow = mesh(new THREE.TorusGeometry(0.33, 0.025, 12, 48), L, 0, 0.12); glow.rotation.x = Math.PI / 2; root.add(glow)
+  const body = pivot(0, 0.3); root.add(body)
+  body.add(mesh(new THREE.CapsuleGeometry(0.36, 0.5, 8, 24), P, 0, 0.62))
+  const belt = mesh(new THREE.TorusGeometry(0.36, 0.035, 12, 40), steel(), 0, 0.42); belt.rotation.x = Math.PI / 2; body.add(belt)
+  body.add(mesh(new THREE.CircleGeometry(0.07, 24), L, 0, 0.78, 0.365))
+  const head = pivot(0, 1.25); body.add(head)
+  head.add(mesh(new THREE.SphereGeometry(0.3, 40, 24), P))
+  const vis = mesh(new THREE.SphereGeometry(0.305, 40, 24, Math.PI * 0.08, Math.PI * 0.84, Math.PI * 0.32, Math.PI * 0.3), glass()); head.add(vis)
+  const eyes = new THREE.Group(); head.add(eyes)
+  for (const x of [-0.1, 0.1]) { const e = mesh(new THREE.CapsuleGeometry(0.03, 0.05, 4, 12), L, x, 0.03, 0.29); e.rotation.z = Math.PI / 2; eyes.add(e) }
+  const arms = [-1, 1].map((side) => { const a = pivot(side * 0.44, 0.92); body.add(a); a.add(mesh(new THREE.SphereGeometry(0.09, 20, 16), steel())); a.add(mesh(new THREE.CapsuleGeometry(0.075, 0.38, 6, 16), P, 0, -0.28)); a.add(mesh(new THREE.SphereGeometry(0.08, 20, 16), steel(), 0, -0.55)); return a })
+  return { root, height: 1.75, animate(t) {
+    body.position.y = 0.3 + Math.sin(t * 1.6) * 0.03 - (s === 'rest' ? 0.05 : 0)
+    if (s === 'run') { head.rotation.set(0.28 + Math.sin(t * 2) * 0.03, -0.25, 0); arms.forEach((a, i) => { a.rotation.set(-1.15 + Math.sin(t * 9 + i * Math.PI) * 0.12, 0, i ? -0.25 : 0.25) }) }
+    if (s === 'wait') { head.rotation.set(-0.05, 0.25, Math.sin(t * 1.5) * 0.06); arms[0].rotation.set(0, 0, 0.12); arms[1].rotation.set(0, 0, 2.55 + Math.sin(t * 7) * 0.28) }
+    if (s === 'rest') { head.rotation.set(0.5, 0, 0.08); arms.forEach((a, i) => a.rotation.set(0.05, 0, i ? -0.06 : 0.06)); eyes.scale.y = 0.35 }
+  } }
+}
+
+// ---------- 2. Orbiter: a floating sphere with an eye ring and two little satellites
+function orbiter(s, color) {
+  const root = new THREE.Group(), P = paint(color), L = led(s)
+  const floor = mesh(new THREE.CircleGeometry(0.32, 40), new THREE.MeshBasicMaterial({ color: STATE[s], transparent: true, opacity: s === 'rest' ? 0.08 : 0.22 }), 0, 0.01); floor.rotation.x = -Math.PI / 2; root.add(floor)
+  const body = pivot(0, 0.95); root.add(body)
+  body.add(mesh(new THREE.SphereGeometry(0.5, 48, 32), P))
+  const band = mesh(new THREE.TorusGeometry(0.5, 0.03, 12, 64), steel()); band.rotation.x = Math.PI / 2; body.add(band)
+  const face = pivot(); body.add(face)
+  face.add(mesh(new THREE.SphereGeometry(0.505, 40, 24, Math.PI * 0.22, Math.PI * 0.56, Math.PI * 0.3, Math.PI * 0.32), glass()))
+  const ring = mesh(new THREE.TorusGeometry(0.13, 0.025, 12, 40), L, 0, 0.05, 0.47); face.add(ring)
+  const pupil = mesh(new THREE.SphereGeometry(0.05, 20, 16), L, 0, 0.05, 0.47); face.add(pupil)
+  const fin = mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.25, 8), chrome(), 0, 0.6); body.add(fin); body.add(mesh(new THREE.SphereGeometry(0.035, 16, 12), L, 0, 0.74))
+  const sats = [0, 1].map((i) => { const g = pivot(); root.add(g); g.add(mesh(new THREE.SphereGeometry(0.1, 24, 16), P)); g.add(mesh(new THREE.TorusGeometry(0.1, 0.012, 8, 24), steel())); return g })
+  return { root, height: 1.6, animate(t) {
+    const lift = s === 'rest' ? 0.75 : 0.95
+    body.position.y = lift + Math.sin(t * (s === 'wait' ? 4 : 1.4)) * (s === 'wait' ? 0.07 : 0.04)
+    ring.rotation.z = s === 'run' ? t * 2.5 : 0
+    if (s === 'run') { face.rotation.set(0.25, -0.5 + Math.sin(t * 0.8) * 0.2, 0); sats.forEach((g, i) => g.position.set(Math.cos(t * 1.6 + i * Math.PI) * 0.75, 0.95 + Math.sin(t * 2 + i) * 0.1, Math.sin(t * 1.6 + i * Math.PI) * 0.75)) }
+    if (s === 'wait') { face.rotation.set(-0.05, 0.1, 0); pupil.scale.setScalar(1 + Math.sin(t * 6) * 0.2); sats.forEach((g, i) => g.position.set((i ? 1 : -1) * 0.72, 1.15 + Math.sin(t * 4 + i) * 0.08, 0.1)) }
+    if (s === 'rest') { face.rotation.set(0.6, -0.2, 0); pupil.scale.set(1, 0.3, 1); sats.forEach((g, i) => g.position.set((i ? 1 : -1) * 0.62, 0.12, 0.15)) }
+  } }
+}
+
+// ---------- 3. Crawler: a compact tracked robot with a lens head and a claw arm
+function crawler(s, color) {
+  const root = new THREE.Group(), P = paint(color), L = led(s)
+  for (const x of [-0.42, 0.42]) { root.add(mesh(new RoundedBoxGeometry(0.22, 0.26, 0.9, 4, 0.1), steel(), x, 0.14)); for (const z of [-0.3, 0, 0.3]) { const w = mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.24, 20), chrome(), x, 0.14, z); w.rotation.z = Math.PI / 2; root.add(w) } }
+  const chassis = mesh(new RoundedBoxGeometry(0.7, 0.32, 0.8, 4, 0.08), P, 0, 0.42); root.add(chassis)
+  root.add(mesh(new RoundedBoxGeometry(0.4, 0.05, 0.3, 2, 0.02), L, 0, 0.59, 0.15))
+  const neck = pivot(0, 0.6, -0.15); root.add(neck); neck.add(mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.4, 16), steel(), 0, 0.2))
+  const head = pivot(0, 0.45); neck.add(head)
+  head.add(mesh(new RoundedBoxGeometry(0.52, 0.3, 0.32, 4, 0.08), P))
+  const lenses = [-0.13, 0.13].map((x) => { const g = pivot(x, 0, 0.16); head.add(g); const c = mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.08, 28), steel()); c.rotation.x = Math.PI / 2; g.add(c); const e = mesh(new THREE.CircleGeometry(0.065, 28), L, 0, 0, 0.045); g.add(e); g.add(mesh(new THREE.CircleGeometry(0.08, 28), glass(), 0, 0, 0.042)); return e })
+  const arm = pivot(0.3, 0.55, 0.3); root.add(arm)
+  arm.add(mesh(new THREE.CapsuleGeometry(0.045, 0.35, 6, 12), steel(), 0, 0.2))
+  const fore = pivot(0, 0.42); arm.add(fore); fore.add(mesh(new THREE.CapsuleGeometry(0.04, 0.28, 6, 12), chrome(), 0, 0.16))
+  const claws = [-1, 1].map((side) => { const c = pivot(side * 0.04, 0.33); fore.add(c); c.add(mesh(new RoundedBoxGeometry(0.03, 0.14, 0.05, 2, 0.01), steel(), 0, 0.06)); return c })
+  return { root, height: 1.3, animate(t) {
+    if (s === 'run') { arm.rotation.set(0.9 + Math.sin(t * 2) * 0.15, 0, -0.2); fore.rotation.set(0.8 + Math.sin(t * 2 + 1) * 0.25, 0, 0); claws.forEach((c, i) => (c.rotation.z = (i ? -1 : 1) * (0.25 + Math.sin(t * 4) * 0.25))); neck.rotation.set(0.15, -0.3, 0); head.rotation.set(0.35, 0, 0) }
+    if (s === 'wait') { arm.rotation.set(-0.2, 0, -0.6 + Math.sin(t * 6) * 0.25); fore.rotation.set(0.2, 0, 0); neck.rotation.set(-0.05, 0.25, 0); head.rotation.set(-0.05, 0, Math.sin(t * 1.8) * 0.18); lenses.forEach((e) => e.scale.setScalar(1 + Math.sin(t * 5) * 0.12)) }
+    if (s === 'rest') { arm.rotation.set(1.7, 0, 0.1); fore.rotation.set(1.4, 0, 0); neck.rotation.set(0.6, 0, 0); head.rotation.set(0.3, 0, 0); lenses.forEach((e) => e.scale.set(1, 0.3, 1)) }
+  } }
+}
+
+// ---------- 4. Pebble: a floating egg with a screen face and loose arms
+function pebble(s, color) {
+  const root = new THREE.Group(), P = paint(color), L = led(s)
+  const pts = []; for (let i = 0; i <= 24; i++) { const a = (i / 24) * Math.PI; pts.push(new THREE.Vector2(Math.sin(a) * 0.42 * (1 - 0.18 * Math.cos(a)), -Math.cos(a) * 0.62)) }
+  const body = pivot(0, 1.0); root.add(body)
+  body.add(mesh(new THREE.LatheGeometry(pts, 48), P))
+  const face = mesh(new THREE.SphereGeometry(0.45, 40, 24, Math.PI * 0.22, Math.PI * 0.56, Math.PI * 0.3, Math.PI * 0.24), glass(), 0, 0.12, 0); body.add(face)
+  const eyes = [-0.11, 0.11].map((x) => { const e = mesh(new THREE.CapsuleGeometry(0.035, 0.06, 4, 12), L, x, 0.2, 0.452); body.add(e); return e })
+  const shadow = mesh(new THREE.CircleGeometry(0.3, 40), new THREE.MeshBasicMaterial({ color: '#000', transparent: true, opacity: 0.35 }), 0, 0.01); shadow.rotation.x = -Math.PI / 2; root.add(shadow)
+  const arms = [-1, 1].map((side) => { const a = pivot(side * 0.56, 0.95); root.add(a); const m = mesh(new THREE.CapsuleGeometry(0.06, 0.28, 6, 16), P, 0, -0.14); a.add(m); return a })
+  return { root, height: 1.75, animate(t) {
+    const base = s === 'rest' ? 0.78 : 1.0
+    body.position.y = base + Math.sin(t * 1.5) * 0.04
+    shadow.scale.setScalar(1 - Math.sin(t * 1.5) * 0.05)
+    arms.forEach((a, i) => (a.position.y = body.position.y - 0.05))
+    if (s === 'run') { body.rotation.set(0.12, -0.35, 0); arms.forEach((a, i) => a.rotation.set(-0.9 + Math.sin(t * 8 + i * Math.PI) * 0.18, 0, (i ? -1 : 1) * 0.1)); eyes.forEach((e) => e.scale.set(1, 0.6, 1)) }
+    if (s === 'wait') { body.rotation.set(-0.04, 0.08, Math.sin(t * 1.5) * 0.05); arms[0].rotation.set(0, 0, 0.15); arms[1].rotation.set(0, 0, 2.5 + Math.sin(t * 7) * 0.3) }
+    if (s === 'rest') { body.rotation.set(0.25, 0, 0.1); arms.forEach((a, i) => a.rotation.set(0, 0, (i ? -1 : 1) * 0.05)); eyes.forEach((e) => e.scale.set(1, 0.25, 1)) }
+  } }
+}
+
+// ---------- 5. Arm: a desk-top industrial arm with a status light in the gripper
+function arm(s, color) {
+  const root = new THREE.Group(), P = paint(color), L = led(s)
+  root.add(mesh(new THREE.CylinderGeometry(0.42, 0.48, 0.16, 40), steel(), 0, 0.08))
+  const turret = pivot(0, 0.16); root.add(turret)
+  turret.add(mesh(new THREE.CylinderGeometry(0.26, 0.3, 0.22, 32), P, 0, 0.11))
+  const j = (r) => { const m = mesh(new THREE.CylinderGeometry(r, r, 0.26, 28), chrome()); m.rotation.z = Math.PI / 2; return m }
+  const shoulder = pivot(0, 0.3); turret.add(shoulder); shoulder.add(j(0.13))
+  shoulder.add(mesh(new RoundedBoxGeometry(0.16, 0.6, 0.18, 4, 0.06), P, 0, 0.32))
+  const elbow = pivot(0, 0.62); shoulder.add(elbow); elbow.add(j(0.1))
+  elbow.add(mesh(new RoundedBoxGeometry(0.13, 0.5, 0.15, 4, 0.05), P, 0, 0.26))
+  const wrist = pivot(0, 0.52); elbow.add(wrist); wrist.add(mesh(new THREE.SphereGeometry(0.08, 20, 16), steel()))
+  const hand = pivot(0, 0.06); wrist.add(hand)
+  hand.add(mesh(new THREE.CylinderGeometry(0.07, 0.09, 0.1, 24), steel(), 0, 0.05))
+  hand.add(mesh(new THREE.TorusGeometry(0.075, 0.018, 10, 28), L, 0, 0.1, 0)).rotation.x = Math.PI / 2
+  const fingers = [-1, 1].map((side) => { const f = pivot(side * 0.045, 0.12); hand.add(f); f.add(mesh(new RoundedBoxGeometry(0.03, 0.14, 0.06, 2, 0.01), chrome(), 0, 0.07)); return f })
+  return { root, height: 1.55, animate(t) {
+    if (s === 'run') { turret.rotation.y = -0.5 + Math.sin(t * 0.9) * 0.5; shoulder.rotation.x = 0.55 + Math.sin(t * 1.3) * 0.15; elbow.rotation.x = 0.9 + Math.sin(t * 1.3 + 1) * 0.2; wrist.rotation.x = 0.7; fingers.forEach((f, i) => (f.rotation.z = (i ? -1 : 1) * (0.2 + Math.sin(t * 2.6) * 0.2))) }
+    if (s === 'wait') { turret.rotation.y = 0.15; shoulder.rotation.x = 0.1; elbow.rotation.x = 0.55; wrist.rotation.x = 0.9 + Math.sin(t * 5) * 0.15; hand.rotation.y = t * 1.2; fingers.forEach((f, i) => (f.rotation.z = (i ? -1 : 1) * 0.35)) }
+    if (s === 'rest') { turret.rotation.y = -0.3; shoulder.rotation.x = 1.25; elbow.rotation.x = 2.0; wrist.rotation.x = 0.9; fingers.forEach((f) => (f.rotation.z = 0)) }
+  } }
+}
+
+// ---------- 6. Scout: a small two-legged walker with a dome head and an antenna
+function scout(s, color) {
+  const root = new THREE.Group(), P = paint(color), L = led(s)
+  const hips = pivot(0, 0.62); root.add(hips)
+  const legs = [-1, 1].map((side) => { const l = pivot(side * 0.17, 0); hips.add(l); l.add(mesh(new THREE.CapsuleGeometry(0.07, 0.38, 6, 16), steel(), 0, -0.28)); l.add(mesh(new RoundedBoxGeometry(0.2, 0.08, 0.28, 3, 0.03), P, 0, -0.56, 0.04)); return l })
+  const body = pivot(0, -0.1); hips.add(body)
+  body.add(mesh(new RoundedBoxGeometry(0.6, 0.5, 0.42, 5, 0.12), P, 0, 0.28))
+  body.add(mesh(new RoundedBoxGeometry(0.34, 0.16, 0.02, 3, 0.03), glass(), 0, 0.3, 0.215))
+  const bars = [0, 1, 2].map((i) => { const b = mesh(new THREE.BoxGeometry(0.06, 0.06, 0.01), L, -0.09 + i * 0.09, 0.3, 0.228); body.add(b); return b })
+  const head = pivot(0, 0.6); body.add(head)
+  head.add(mesh(new THREE.SphereGeometry(0.24, 40, 24, 0, Math.PI * 2, 0, Math.PI * 0.55), P))
+  head.add(mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.05, 40), steel(), 0, -0.02))
+  const lensG = pivot(0, 0.06, 0.2); head.add(lensG)
+  const lc = mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.08, 28), steel()); lc.rotation.x = Math.PI / 2; lensG.add(lc)
+  const lens = mesh(new THREE.CircleGeometry(0.05, 28), L, 0, 0, 0.045); lensG.add(lens)
+  const ant = pivot(0.1, 0.2); head.add(ant); ant.add(mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.28, 8), chrome(), 0, 0.14)); const tip = mesh(new THREE.SphereGeometry(0.035, 16, 12), L, 0, 0.3); ant.add(tip)
+  return { root, height: 1.6, animate(t) {
+    if (s === 'run') { const st = Math.sin(t * 4); legs[0].rotation.x = st * 0.25; legs[1].rotation.x = -st * 0.25; hips.position.y = 0.62 + Math.abs(Math.cos(t * 4)) * 0.03; head.rotation.set(0.3, -0.3, 0); bars.forEach((b, i) => b.scale.setScalar(0.6 + 0.5 * Math.abs(Math.sin(t * 6 + i)))) }
+    if (s === 'wait') { legs.forEach((l) => (l.rotation.x = 0)); hips.position.y = 0.62 + Math.abs(Math.sin(t * 3)) * 0.04; head.rotation.set(-0.08, 0.15, Math.sin(t * 2) * 0.12); ant.rotation.z = Math.sin(t * 6) * 0.35; tip.scale.setScalar(1 + Math.sin(t * 6) * 0.25) }
+    if (s === 'rest') { legs[0].rotation.x = -0.6; legs[1].rotation.x = -0.6; hips.position.y = 0.42; head.rotation.set(0.45, 0, 0.1); ant.rotation.z = 0.6; bars.forEach((b) => b.scale.setScalar(0.5)) }
+  } }
+}
+
+const DESIGNS = [
+  { fn: visor, name: 'Visor', text: 'A sleek humanoid on a hover base, with a glass visor and arms. Types while working, waves when it waits, bows its head to rest.', color: '#e9e6e1' },
+  { fn: orbiter, name: 'Orbiter', text: 'A floating sphere with an eye ring and two little satellites that circle it while it works. Bounces and looks at you when it waits; sinks and dims to rest.', color: '#d8c7a6' },
+  { fn: crawler, name: 'Crawler', text: 'A compact tracked robot with two camera lenses and a claw arm that works the bench. Tilts its head at you when it waits; folds up to rest.', color: '#7d8fb0' },
+  { fn: pebble, name: 'Pebble', text: 'A floating egg with a screen face and loose arms. Busy hands while working, a friendly wave when it waits, a sleepy tilt to rest.', color: '#f0ece6' },
+  { fn: arm, name: 'Arm', text: 'A desk-top industrial arm: picks and places while working, turns its lit gripper to you when it waits, folds down to rest. The most "real machine".', color: '#ff8a1f' },
+  { fn: scout, name: 'Scout', text: 'A small two-legged walker with a dome head, a camera eye and an antenna: walks on the spot while working, waves its antenna light when it waits, sits down to rest.', color: '#3f6f73' },
+]
+const STATES = ['run', 'wait', 'rest']
+
+// build the grid: one 2D canvas per cell; one WebGL renderer draws them all in turn
+const grid = document.getElementById('grid')
+grid.innerHTML = '<div></div><div class="colhead run">Working</div><div class="colhead wait">Waiting for you</div><div class="colhead rest">Resting</div>'
+const cells = []
+for (const d of DESIGNS) {
+  const n = document.createElement('div'); n.className = 'name'; n.innerHTML = `<h2>${d.name}</h2><p>${d.text}</p>`; grid.appendChild(n)
+  for (const s of STATES) {
+    const c = document.createElement('div'); c.className = 'cell'
+    const cv = document.createElement('canvas'); cv.width = CW * RES; cv.height = CH * RES; c.appendChild(cv); grid.appendChild(c)
+    const scene = new THREE.Scene(); scene.environment = env; scene.environmentIntensity = 0.85
+    const key = new THREE.DirectionalLight(0xfff1e0, 2.2); key.position.set(2.5, 4, 3); scene.add(key)
+    const rim = new THREE.DirectionalLight(0x9fc0ff, 1.5); rim.position.set(-3, 2.5, -3); scene.add(rim)
+    scene.add(new THREE.HemisphereLight(0xe8eeff, 0x1b1e28, 0.35))
+    const bot = d.fn(s, d.color)
+    const turn = pivot(); turn.add(bot.root); scene.add(turn)
+    cells.push({ cv, ctx: cv.getContext('2d'), scene, bot, turn, s, phase: Math.random() * 6 })
+  }
+}
+
+const clock = new THREE.Clock()
+const FACING = { run: -0.55, wait: 0.05, rest: -0.3 }
+renderer.setAnimationLoop(() => {
+  const t = clock.getElapsedTime()
+  for (const c of cells) {
+    c.bot.animate(t + c.phase)
+    c.turn.rotation.y = FACING[c.s] + Math.sin(t * 0.5 + c.phase) * 0.06
+    const h = c.bot.height
+    camera.position.set(h * 0.35, h * 0.72, h * 2.9)
+    camera.lookAt(0, h * 0.48, 0)
+    renderer.render(c.scene, camera)
+    c.ctx.clearRect(0, 0, c.cv.width, c.cv.height)
+    c.ctx.drawImage(renderer.domElement, 0, 0)
+  }
+})
+</script>
+</body>
+</html>
