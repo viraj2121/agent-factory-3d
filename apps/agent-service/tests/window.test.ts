@@ -24,6 +24,12 @@ describe('windowScript', () => {
     expect(s).toContain(WIDGET_PROFILE_MARK)
     expect(s).toContain("Name='msedge.exe'")
   })
+  it('looks through every window of that Edge for the one titled "Agents", not just its main window (the 3D hall may be open in the same Edge)', () => {
+    const s = windowScript({ pin: true })
+    expect(s).toContain('EnumWindows')
+    expect(s).toContain("'Agents'")
+    expect(s).not.toContain('MainWindowHandle')
+  })
   it('pins with HWND_TOPMOST and unpins with HWND_NOTOPMOST, without moving or resizing', () => {
     const pin = windowScript({ pin: true })
     expect(pin).toContain('[System.IntPtr]::new(-1)')

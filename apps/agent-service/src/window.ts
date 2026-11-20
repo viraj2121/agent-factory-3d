@@ -39,6 +39,9 @@ export function parseWindowRequest(input: unknown): { ok: true; request: WindowR
   return { ok: true, request }
 }
 
+/** C# for Add-Type: finds a visible window of the given processes whose title starts with a prefix, and SetWindowPos. */
+const FINDER = "using System; using System.Runtime.InteropServices; using System.Text;\nnamespace AgentFactoryWidget { public static class Win {\n  public delegate bool EnumProc(IntPtr h, IntPtr p);\n  [DllImport(\"user32.dll\")] public static extern bool EnumWindows(EnumProc cb, IntPtr p);\n  [DllImport(\"user32.dll\")] public static extern bool IsWindowVisible(IntPtr h);\n  [DllImport(\"user32.dll\")] public static extern int GetWindowThreadProcessId(IntPtr h, out int pid);\n  [DllImport(\"user32.dll\", CharSet = CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, StringBuilder s, int n);\n  [DllImport(\"user32.dll\")] public static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);\n  public static IntPtr Find(int[] pids, string prefix) {\n    IntPtr found = IntPtr.Zero;\n    EnumWindows(delegate (IntPtr h, IntPtr p) {\n      if (!IsWindowVisible(h)) return true;\n      int pid; GetWindowThreadProcessId(h, out pid);\n      if (Array.IndexOf(pids, pid) < 0) return true;\n      StringBuilder sb = new StringBuilder(512); GetWindowText(h, sb, 512);\n      if (sb.ToString().StartsWith(prefix)) { found = h; return false; }\n      return true;\n    }, IntPtr.Zero);\n    return found;\n  }\n} }"
+
 const NOSIZE = 0x1, NOMOVE = 0x2, NOZORDER = 0x4, NOACTIVATE = 0x10
 
 /** The PowerShell that finds the widget window and calls SetWindowPos once. Exit code 3: the widget window is not open. */
@@ -50,12 +53,16 @@ export function windowScript(r: WindowRequest): string {
   const h = sized ? Math.round(r.height!) : 0
   return [
     "$ErrorActionPreference = 'Stop'",
-    'Add-Type -Namespace AgentFactoryWidget -Name Win -MemberDefinition \'[DllImport("user32.dll")] public static extern bool SetWindowPos(System.IntPtr h, System.IntPtr after, int x, int y, int cx, int cy, uint flags);\'',
-    `$ids = @(Get-CimInstance Win32_Process -Filter "Name='msedge.exe'" | Where-Object { $_.CommandLine -like '*${WIDGET_PROFILE_MARK}*' } | ForEach-Object { $_.ProcessId })`,
+    // a small window finder: the widget's Edge may hold other windows too (the 3D hall opened from the widget), so look
+    // through all its visible windows for the one whose title starts with "Agents"
+    "Add-Type -TypeDefinition @'",
+    FINDER,
+    "'@",
+    `$ids = [int[]]@(Get-CimInstance Win32_Process -Filter "Name='msedge.exe'" | Where-Object { $_.CommandLine -like '*${WIDGET_PROFILE_MARK}*' } | ForEach-Object { $_.ProcessId })`,
     'if ($ids.Count -eq 0) { exit 3 }',
-    '$w = Get-Process -Id $ids -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1',
-    'if (-not $w) { exit 3 }',
-    `[void][AgentFactoryWidget.Win]::SetWindowPos($w.MainWindowHandle, [System.IntPtr]::new(${after}), 0, 0, ${w}, ${h}, ${flags})`,
+    "$h = [AgentFactoryWidget.Win]::Find($ids, 'Agents')",
+    'if ($h -eq [System.IntPtr]::Zero) { exit 3 }',
+    `[void][AgentFactoryWidget.Win]::SetWindowPos($h, [System.IntPtr]::new(${after}), 0, 0, ${w}, ${h}, ${flags})`,
   ].join('\n')
 }
 
