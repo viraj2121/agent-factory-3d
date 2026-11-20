@@ -1,6 +1,6 @@
 # The edge tab of the agent widget: a small rounded tab on the right edge of the screen, half way down, that stands in for
 # the widget while it is docked. Drawn by Windows itself (WPF, part of Windows), so it has no title bar and nothing is
-# installed. start-widget.cmd starts it hidden; it shows only while the widget window is docked (hidden), shows the
+# installed. start-widget.cmd starts it hidden; it shows only while the widget window is docked (hidden) or minimized, shows the
 # waiting and working counts from the local agent service, and a click brings the widget back. It ends by itself when the
 # widget window is closed. Read-only: it reads /api/snapshot and touches no window but the widget's own.
 
@@ -23,6 +23,7 @@ namespace AgentFactoryTab { public static class Win {
   [DllImport("user32.dll")] public static extern int GetWindowThreadProcessId(IntPtr h, out int pid);
   [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, StringBuilder s, int n);
   [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int cmd);
+  [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr h);
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
   [DllImport("user32.dll")] public static extern int GetWindowLong(IntPtr h, int index);
   [DllImport("user32.dll")] public static extern bool SetLayeredWindowAttributes(IntPtr h, uint key, byte alpha, uint flags);
@@ -44,18 +45,20 @@ namespace AgentFactoryTab { public static class Win {
 [xml]$xaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent" Topmost="True" ShowInTaskbar="False"
-        ResizeMode="NoResize" Width="86" Height="224" ShowActivated="False" Title="Agent widget edge tab">
+        ResizeMode="NoResize" Width="70" Height="212" ShowActivated="False" Title="Agent widget edge tab">
   <Grid>
-    <Border x:Name="Tab" Width="66" HorizontalAlignment="Right" Margin="0,8,0,8" CornerRadius="16,0,0,16" BorderThickness="1,1,0,1"
+    <Border x:Name="Tab" Width="54" HorizontalAlignment="Right" Margin="0,8,0,8" CornerRadius="16,0,0,16" BorderThickness="1,1,0,1" Opacity="0.82"
             BorderBrush="#33FFFFFF" Cursor="Hand" ToolTip="Agents: click to open">
       <Border.Background>
-        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1"><GradientStop Color="#F21C2442" Offset="0"/><GradientStop Color="#F2111522" Offset="1"/></LinearGradientBrush>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1"><GradientStop Color="#B31C2442" Offset="0"/><GradientStop Color="#B3111522" Offset="1"/></LinearGradientBrush>
       </Border.Background>
-      <Border.Effect><DropShadowEffect x:Name="Glow" BlurRadius="18" ShadowDepth="0" Color="#000000" Opacity="0.55"/></Border.Effect>
+      <Border.Effect><DropShadowEffect BlurRadius="12" ShadowDepth="0" Color="#000000" Opacity="0.5"/></Border.Effect>
       <Grid>
+        <TextBlock x:Name="Quit" Text="✕" FontSize="10" Foreground="#889AA3B8" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="3,6,0,0" Padding="4,1,4,2" Cursor="Hand" Background="Transparent" ToolTip="Quit: close the widget and stop it in the background"/>
         <Rectangle x:Name="Accent" Width="3" HorizontalAlignment="Left" Margin="0,18,0,18" RadiusX="1.5" RadiusY="1.5" Fill="#FFB547" Visibility="Collapsed"/>
-        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="2,0,0,0">
-          <Canvas x:Name="Sky" Width="50" Height="50" Margin="0,0,0,6" ClipToBounds="False">
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="3,0,0,0">
+          <Canvas x:Name="Sky" Width="40" Height="40" Margin="0,0,0,4" ClipToBounds="False">
+            <Canvas.RenderTransform><ScaleTransform ScaleX="0.8" ScaleY="0.8"/></Canvas.RenderTransform>
             <Ellipse Canvas.Left="2" Canvas.Top="2" Width="46" Height="46" Stroke="#447F889C" StrokeThickness="1" StrokeDashArray="2 3"/>
             <Ellipse Canvas.Left="11" Canvas.Top="11" Width="28" Height="28" Stroke="#554EE7A0" StrokeThickness="1" StrokeDashArray="2 3"/>
             <Ellipse x:Name="Core" Canvas.Left="15" Canvas.Top="15" Width="20" Height="20">
@@ -66,9 +69,9 @@ namespace AgentFactoryTab { public static class Win {
             <Canvas x:Name="Ring" Width="50" Height="50"><Canvas.RenderTransform><RotateTransform x:Name="Spin" CenterX="25" CenterY="25"/></Canvas.RenderTransform></Canvas>
             <Canvas x:Name="Near" Width="50" Height="50"/>
           </Canvas>
-          <TextBlock x:Name="Waiting" Text="–" FontFamily="Segoe UI Variable Display, Segoe UI" FontWeight="SemiBold" FontSize="24" Foreground="#FF7F889C" HorizontalAlignment="Center"/>
+          <TextBlock x:Name="Waiting" Text="–" FontFamily="Segoe UI Variable Display, Segoe UI" FontWeight="SemiBold" FontSize="20" Foreground="#FF7F889C" HorizontalAlignment="Center"/>
           <TextBlock x:Name="WaitingLabel" Text="waiting" FontFamily="Segoe UI" FontSize="10" Foreground="#FF9AA3B8" HorizontalAlignment="Center" Margin="0,-2,0,6"/>
-          <TextBlock x:Name="Working" Text="–" FontFamily="Segoe UI Variable Display, Segoe UI" FontWeight="SemiBold" FontSize="16" Foreground="#FF4EE7A0" HorizontalAlignment="Center"/>
+          <TextBlock x:Name="Working" Text="–" FontFamily="Segoe UI Variable Display, Segoe UI" FontWeight="SemiBold" FontSize="14" Foreground="#FF4EE7A0" HorizontalAlignment="Center"/>
           <TextBlock Text="working" FontFamily="Segoe UI" FontSize="10" Foreground="#FF9AA3B8" HorizontalAlignment="Center"/>
         </StackPanel>
       </Grid>
@@ -78,7 +81,7 @@ namespace AgentFactoryTab { public static class Win {
 '@
 $win = [Windows.Markup.XamlReader]::Load((New-Object System.Xml.XmlNodeReader $xaml))
 $ui = @{}
-foreach ($n in 'Tab', 'Glow', 'Accent', 'Ring', 'Near', 'Spin', 'CoreMid', 'Waiting', 'WaitingLabel', 'Working') { $ui[$n] = $win.FindName($n) }
+foreach ($n in 'Tab', 'Quit', 'Accent', 'Ring', 'Near', 'Spin', 'CoreMid', 'Waiting', 'WaitingLabel', 'Working') { $ui[$n] = $win.FindName($n) }
 
 # flush with the right edge of the working area (above the taskbar), half way down
 function Set-Place {
@@ -98,7 +101,7 @@ function New-Dot([double]$x, [double]$y, [double]$r, [string]$colour, [double]$a
   return $e
 }
 
-# the counts and the little orbit, from the service
+# the counts and the little orbit, from the service (the amber edge marks that someone waits)
 $script:last = ''
 function Update-Counts {
   try {
@@ -123,7 +126,6 @@ function Update-Counts {
   $alert = $wait.Count -gt 0
   $ui.Waiting.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString($(if ($alert) { '#FFFFB547' } else { '#FF7F889C' }))
   $ui.Accent.Visibility = if ($alert) { 'Visible' } else { 'Collapsed' }
-  $ui.Glow.Color = [System.Windows.Media.ColorConverter]::ConvertFromString($(if ($alert) { '#FFB547' } else { '#000000' }))
   $ui.CoreMid.Color = [System.Windows.Media.ColorConverter]::ConvertFromString($(if ($alert) { '#FFFFD9A0' } else { '#FFCFE4FF' }))
   # working agents circle on the middle ring, waiting ones sit close to you, coloured by tool
   $ui.Ring.Children.Clear(); $ui.Near.Children.Clear()
@@ -140,13 +142,10 @@ function Update-Counts {
   }
 }
 
-# motion: the working ring turns, the amber glow breathes while someone waits
+# motion: the working ring turns
 $spin = New-Object System.Windows.Media.Animation.DoubleAnimation(0, 360, [TimeSpan]::FromSeconds(9))
 $spin.RepeatBehavior = [System.Windows.Media.Animation.RepeatBehavior]::Forever
 $ui.Spin.BeginAnimation([System.Windows.Media.RotateTransform]::AngleProperty, $spin)
-$breathe = New-Object System.Windows.Media.Animation.DoubleAnimation(0.35, 0.9, [TimeSpan]::FromSeconds(1.2))
-$breathe.AutoReverse = $true; $breathe.RepeatBehavior = [System.Windows.Media.Animation.RepeatBehavior]::Forever
-$ui.Glow.BeginAnimation([System.Windows.Media.Effects.DropShadowEffect]::OpacityProperty, $breathe)
 
 # hover: the tab slides out a little
 function Set-TabWidth([double]$to) {
@@ -154,8 +153,11 @@ function Set-TabWidth([double]$to) {
   $an.EasingFunction = New-Object System.Windows.Media.Animation.CubicEase
   $ui.Tab.BeginAnimation([System.Windows.FrameworkElement]::WidthProperty, $an)
 }
-$ui.Tab.Add_MouseEnter({ Set-TabWidth 78 })
-$ui.Tab.Add_MouseLeave({ Set-TabWidth 66 })
+# a little see-through at rest, solid under the mouse
+$ui.Tab.Add_MouseEnter({ Set-TabWidth 64; $ui.Tab.Opacity = 1 })
+$ui.Tab.Add_MouseLeave({ Set-TabWidth 54; $ui.Tab.Opacity = 0.82 })
+$ui.Quit.Add_MouseEnter({ $ui.Quit.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#FFFF6B6B') })
+$ui.Quit.Add_MouseLeave({ $ui.Quit.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#889AA3B8') })
 
 # the widget window: found while it is visible, remembered while it is hidden (docked)
 $script:edge = [IntPtr]::Zero
@@ -166,10 +168,25 @@ function Find-Widget {
   return [AgentFactoryTab.Win]::Find($ids, 'Agents')
 }
 
+# the cross: quit everything, as stop-widget.cmd does (the widget's Edge, then the service and dashboard on this
+# computer's ports 4317 and 5173, only when they are Node), then the tab itself
+$ui.Quit.Add_MouseLeftButtonUp({
+  $_.Handled = $true
+  Get-CimInstance Win32_Process -Filter "Name='msedge.exe'" | Where-Object { $_.CommandLine -like "*$profileMark*" } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+  foreach ($port in 4317, 5173) {
+    Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue | ForEach-Object {
+      $p = Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue
+      if ($p -and $p.ProcessName -eq 'node') { Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue }
+    }
+  }
+  Stop-Tab
+})
+
 # click: bring the widget back, solid, and hide the tab
 $ui.Tab.Add_MouseLeftButtonUp({
   if ($script:edge -ne [IntPtr]::Zero -and [AgentFactoryTab.Win]::IsWindow($script:edge)) {
     [void][AgentFactoryTab.Win]::ShowWindow($script:edge, 5)
+    if ([AgentFactoryTab.Win]::IsIconic($script:edge)) { [void][AgentFactoryTab.Win]::ShowWindow($script:edge, 9) } # minimized: restore it
     if (([AgentFactoryTab.Win]::GetWindowLong($script:edge, -20) -band 0x80000) -ne 0) { [void][AgentFactoryTab.Win]::SetLayeredWindowAttributes($script:edge, 0, 255, 2) }
     [void][AgentFactoryTab.Win]::SetForegroundWindow($script:edge)
   }
@@ -188,7 +205,8 @@ $tick.Add_Tick({
     if ($script:edge -eq [IntPtr]::Zero -and ((Get-Date) - $script:started).TotalSeconds -gt 120) { Stop-Tab } # it never opened
     return
   }
-  if ([AgentFactoryTab.Win]::IsWindowVisible($script:edge)) {
+  # docked (hidden) or minimized: the tab stands in for the widget
+  if ([AgentFactoryTab.Win]::IsWindowVisible($script:edge) -and -not [AgentFactoryTab.Win]::IsIconic($script:edge)) {
     if ($win.IsVisible) { $win.Hide() }
     return
   }

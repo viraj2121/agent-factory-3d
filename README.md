@@ -55,15 +55,39 @@ More: [getting started](docs/getting-started.md), [keys and guides](docs/guides)
 
 ## Desktop widget (Windows)
 
-A small window that stays on top of your other windows and lists every agent session on this computer, each with a little
-3D robot: who is waiting for you, who is working, who is resting. Click a session to see its details right there.
+A small window that stays on top of your other windows and lists every agent session on this computer: who is waiting
+for you, who is working, who is resting. At the top is the **Orbit**: you are the light in the middle and every agent
+circles you. Agents that wait for you sit closest and pull in further the longer they wait; working agents circle fast
+with a trail; resting ones drift at the edge. Colour shows the tool. Click a light or a row to see its details in place.
 
-- Start: double-click `start-widget.cmd` (installs nothing; the first run downloads the packages). It starts the service
-  and the dashboard in the background and opens the widget at the top right.
-- 📌 keeps it on top (or not), ⤡ collapses it to a slim bar with the counts, ⤢ opens it again.
-- Stop: double-click `stop-widget.cmd`.
-- It uses Microsoft Edge in app mode, as a guest (no account, nothing kept), and PowerShell to keep the window on top. If
-  your computer blocks either, the widget still opens, just without that part.
+- **Start:** double-click `start-widget.cmd`. It starts the service and the dashboard in the background (no windows, logs in
+  `%LOCALAPPDATA%\agent-factory-3d\logs`) and opens the widget at the top right of the screen.
+- **📌** keeps it on top of other windows, or not.
+- **◐ Fade:** left alone for 8 seconds, the widget fades to about a third. It turns solid when your mouse comes back or when
+  an agent starts waiting for you. Click ◐ to keep it solid.
+- **⇥ Dock** (or minimize the widget): the widget tucks away and a small tab appears on the right edge of the screen, half
+  way down, with a tiny orbit and the waiting and working counts (an amber edge when someone waits). It is a little see-through
+  and solid under the mouse. Click the tab to bring the widget back, or its small **✕** to quit everything (the widget, the
+  service and the dashboard). The tab is drawn by Windows itself through PowerShell (WPF); nothing is installed.
+- **Stop:** double-click `stop-widget.cmd` (closes the widget, the tab, the service and the dashboard).
+- It uses Microsoft Edge in app mode as a guest (no account, nothing kept) and PowerShell for pinning, fading and the tab. If
+  your computer blocks PowerShell scripts, the widget still opens, just without those parts. `check-setup.cmd` tells you which.
+- The widget shows live data only. With the service off it says so; it never shows demo data.
+
+## Set up on a new computer (Windows, step by step)
+
+No admin rights are needed.
+
+1. Install **Node.js 22.18 or newer** from [nodejs.org](https://nodejs.org) (the per-user installer or the zip is fine).
+2. Get the code: `git clone https://github.com/viraj2121/agent-factory-3d.git` (or download the ZIP from GitHub and unzip it).
+3. Double-click **`check-setup.cmd`**. It checks Node, npm, the two ports, which agent tools it can see, and whether the
+   widget can pin, fade and dock on this computer. It only reads; it changes and installs nothing.
+4. Double-click **`start-widget.cmd`** for the desktop widget, or **`start-factory.bat`** for the 3D hall. The first run
+   installs the packages from the npm registry (behind a company proxy, first run
+   `npm config set proxy http://your-proxy:port` and `npm config set https-proxy http://your-proxy:port`).
+5. Use your agents as usual (Claude Code, GitHub Copilot Chat in VS Code, Codex). They show up within a few seconds.
+
+Tip: right-click `start-widget.cmd` > Show more options > Send to > Desktop (create shortcut) to start it from the desktop.
 
 ## Will it work with my setup?
 
@@ -72,7 +96,7 @@ Short answer: yes for **GitHub Copilot Chat in VS Code** and **Claude Code** on 
 | Tool | Where it reads (read-only) | Notes |
 |---|---|---|
 | Claude Code (terminal or VS Code extension) | `~/.claude/projects` | Sessions and helper agents. Agent files from `.claude/agents` and `~/.claude/agents`. |
-| GitHub Copilot Chat in **VS Code** | `<VS Code user folder>/workspaceStorage/*/chatSessions` (Windows: `%APPDATA%CodeUser`) | Chat and agent-mode sessions, `.github/copilot-instructions.md`, `.github/agents`, MCP config. |
+| GitHub Copilot Chat in **VS Code** | `<VS Code user folder>/workspaceStorage/*/chatSessions` (Windows: `%APPDATA%\Code\User`) | Chat and agent-mode sessions, `.github/copilot-instructions.md`, `.github/agents`, MCP config. |
 | Codex | `~/.codex` | Sessions and subagent threads. |
 | Anything else | `POST /api/hook` | Any tool that can run a command can report; see `apps/agent-service/README.md`. |
 
@@ -129,6 +153,10 @@ npm test              # service and dashboard tests
 npm run typecheck
 npm run smoke         # real-browser check of the main paths (needs Playwright once)
 ```
+
+**Working on this repo with an AI coding agent** (GitHub Copilot, Codex, Claude Code): [AGENTS.md](AGENTS.md) explains the
+layout, the commands, the rules (read-only, never fake data, localhost only) and how to check a change.
+GitHub Copilot reads it through [.github/copilot-instructions.md](.github/copilot-instructions.md).
 
 ## Credits
 
