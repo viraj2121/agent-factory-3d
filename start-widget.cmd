@@ -49,3 +49,7 @@ if errorlevel 1 (
 rem open the widget window and keep it on top; if this computer blocks the script, open it without pinning
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\widget-window.ps1"
 if errorlevel 1 start "" msedge --app=http://localhost:5173/widget.html --window-size=380,680
+
+rem the edge tab: a small tab at the right edge of the screen that stands in for the widget while it is docked (it ends
+rem by itself when the widget is closed)
+powershell -NoProfile -Command "Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File','\"%~dp0scripts\widget-tab.ps1\"'"

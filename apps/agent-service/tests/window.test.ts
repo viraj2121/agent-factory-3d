@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseWindowRequest, windowScript, WIDGET_PROFILE_MARK } from '../src/window.ts'
+import { parseWindowRequest, windowScript, WIDGET_PROFILE_MARK, TAB_SCRIPT_MARK } from '../src/window.ts'
 
 describe('parseWindowRequest', () => {
   it('accepts a pin change, a new size, or both', () => {
@@ -21,6 +21,10 @@ describe('parseWindowRequest', () => {
     for (const bad of [{ x: 10 }, { y: 10 }, { x: 'left', y: 0 }, { x: 30000, y: 0 }, { x: 0, y: -30000 }, { opacity: 5 }, { opacity: 101 }, { opacity: '50' }]) {
       expect(parseWindowRequest(bad).ok).toBe(false)
     }
+  })
+  it('accepts hiding the window (docking it into the edge tab), alone', () => {
+    expect(parseWindowRequest({ hide: true })).toEqual({ ok: true, request: { hide: true } })
+    for (const bad of [{ hide: false }, { hide: 'yes' }, { hide: true, pin: true }, { hide: true, opacity: 50 }]) expect(parseWindowRequest(bad).ok).toBe(false)
   })
   it('refuses anything else: nothing to do, a size alone in one direction, wrong types, sizes out of range, other keys', () => {
     for (const bad of [null, [], 'pin', {}, { pin: 'yes' }, { width: 380 }, { height: 90 }, { width: 10, height: 90 }, { width: 380, height: 5000 }, { width: Number.NaN, height: 90 }, { pin: true, run: 'calc.exe' }]) {
@@ -72,5 +76,14 @@ describe('windowScript', () => {
     expect(s).not.toContain('::SetWindowPos(')
     expect(windowScript({ opacity: 100 })).toContain('SetLayeredWindowAttributes($h, 0, 255, 2)')
     expect(windowScript({ pin: true })).not.toContain('SetLayeredWindowAttributes($h')
+  })
+  it('hides the window only while the edge tab runs, so it can always be brought back (exit 4 when the tab is missing)', () => {
+    const s = windowScript({ hide: true })
+    expect(s).toContain(TAB_SCRIPT_MARK)
+    expect(s).toContain("Name='powershell.exe'")
+    expect(s).toContain('exit 4')
+    expect(s).toContain('ShowWindow($h, 0)')
+    expect(s.indexOf('exit 4')).toBeLessThan(s.indexOf('ShowWindow($h, 0)'))
+    expect(windowScript({ pin: true })).not.toContain('ShowWindow($h')
   })
 })

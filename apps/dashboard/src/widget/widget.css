@@ -99,14 +99,3 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--txt); 
 .sky canvas { display: block; width: 100%; height: 100%; }
 .skytip { position: absolute; display: none; pointer-events: none; padding: 3px 8px; border-radius: 7px; font-size: 11px; white-space: nowrap;
   background: rgba(10, 13, 22, 0.92); border: 1px solid var(--line); color: var(--txt); }
-
-/* docked: only the left edge of the window shows at the right of the screen, as a tab */
-.tab { height: 100%; display: flex; flex-direction: column; align-items: center; gap: 0; padding: 6px 0 4px; border: 0; cursor: pointer; font: inherit; color: var(--txt);
-  background: linear-gradient(180deg, #1a2140, var(--bg)); border-right: 1px solid var(--line); }
-.tab:hover { background: linear-gradient(180deg, #222b52, var(--bg)); }
-.tab .sky { margin: 0 0 4px; width: 50px; border-radius: 50%; border: 0; background: radial-gradient(circle, #1b2340 0%, transparent 70%); }
-.tab .tw { font-size: 22px; line-height: 1; color: var(--grey); font-variant-numeric: tabular-nums; }
-.tab.alert .tw { color: var(--amber); text-shadow: 0 0 12px rgba(255, 181, 71, 0.6); }
-.tab .tr { font-size: 15px; line-height: 1; margin-top: 8px; color: var(--green); font-variant-numeric: tabular-nums; }
-.tab small { font-size: 9.5px; color: var(--dim); }
-.tab.alert { box-shadow: inset 3px 0 0 var(--amber); }

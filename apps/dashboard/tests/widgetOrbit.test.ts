@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dockPlace, FADE_AFTER_MS, FADED, opacityFor, orbitPick, orbitSpot, ALERT_HOLD_MS, TAB } from '../src/widget/orbit'
+import { FADE_AFTER_MS, FADED, opacityFor, orbitPick, orbitSpot, ALERT_HOLD_MS } from '../src/widget/orbit'
 import type { WidgetRow, WidgetState } from '../src/widgetRows'
 
 const row = (key: string, state: WidgetState, sinceMin: number | null = 0): WidgetRow =>
@@ -59,24 +59,5 @@ describe('opacityFor', () => {
   })
   it('never fades when fading is switched off', () => {
     expect(opacityFor({ hovered: false, sinceTouchMs: 60_000, sinceAlertMs: Infinity, enabled: false })).toBe(100)
-  })
-})
-
-describe('dockPlace', () => {
-  const screen = { left: 0, top: 0, width: 1920, height: 1040 }
-  it('leaves only the tab in view at the right edge, in the middle of the height', () => {
-    const p = dockPlace(screen, 520)
-    expect(p.x).toBe(1920 - TAB.width)
-    expect(p.height).toBe(TAB.height)
-    expect(p.y).toBe(Math.round((1040 - TAB.height) / 2))
-    expect(p.width).toBe(520) // Edge keeps app windows wide, so the rest of the window waits off screen
-  })
-  it('works on a second screen and on a screen with the taskbar on top', () => {
-    const p = dockPlace({ left: 1920, top: 48, width: 1280, height: 976 }, 400)
-    expect(p.x).toBe(1920 + 1280 - TAB.width)
-    expect(p.y).toBe(48 + Math.round((976 - TAB.height) / 2))
-  })
-  it('never makes the window narrower than the tab', () => {
-    expect(dockPlace(screen, 0).width).toBeGreaterThanOrEqual(TAB.width)
   })
 })

@@ -11,6 +11,8 @@ export interface WindowChange {
   y?: number
   /** 15 (faint) to 100 (solid). */
   opacity?: number
+  /** Docks the widget: hides it while the edge tab (scripts/widget-tab.ps1) stands in for it. */
+  hide?: true
 }
 
 export type WindowAnswer = { ok: true } | { ok: false; error: string }

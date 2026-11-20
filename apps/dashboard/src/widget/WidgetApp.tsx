@@ -6,13 +6,14 @@ import { waitingText, type ToolFilter } from '../inbox'
 import type { Project } from '../projects'
 import { filterRows, widgetCounts, widgetRows, type WidgetRow, type WidgetState } from '../widgetRows'
 import OrbitSky, { toolColour } from './OrbitSky'
-import { dockPlace, opacityFor, TAB } from './orbit'
+import { opacityFor } from './orbit'
 import { changeWindow, type WindowAnswer } from './windowApi'
 
 // The desktop widget: a small window (Edge in app mode, opened and pinned by start-widget.cmd) that lists every agent session
 // on this computer. Read-only. Live data only: with the service off it says so, never demo data. At the top the Orbit: you
 // in the middle, your agents circling you, the closer the more they need you. The window can be pinned on top, it fades
-// when left alone (and comes back when an agent starts waiting), and it docks to the right edge of the screen as a small tab.
+// when left alone (and comes back when an agent starts waiting), and it docks into a small tab at the right edge of the screen
+// (scripts/widget-tab.ps1, drawn by Windows: the widget hides and the tab brings it back).
 
 const SKY_H = 190
 const TOOLS: { id: ToolFilter; label: string }[] = [
@@ -28,8 +29,6 @@ const GROUPS: { state: WidgetState; label: string }[] = [
   { state: 'rest', label: 'Resting' },
 ]
 const stored = (key: string, fallback: string) => localStorage.getItem(`widget.${key}`) ?? fallback
-/** `?view=tab` shows the docked tab in a plain browser, to check how it looks. */
-const PREVIEW_TAB = new URLSearchParams(location.search).get('view') === 'tab'
 
 /** The app's mark: you in the middle, one agent on its orbit. */
 export function OrbitMark({ size = 28 }: { size?: number }) {
@@ -115,7 +114,11 @@ function useFade(base: string, live: boolean, enabled: boolean, waiting: number)
     root.addEventListener('mouseenter', enter)
     root.addEventListener('mouseleave', leave)
     for (const ev of ['mousemove', 'mousedown', 'keydown', 'wheel'] as const) window.addEventListener(ev, poke, { passive: true })
+    // back from the edge tab (which makes the window solid): start the count again and say the level once more
+    const shown = () => { if (!document.hidden) { poke(); sent.current = -1 } }
+    document.addEventListener('visibilitychange', shown)
     return () => {
+      document.removeEventListener('visibilitychange', shown)
       root.removeEventListener('mouseenter', enter)
       root.removeEventListener('mouseleave', leave)
       for (const ev of ['mousemove', 'mousedown', 'keydown', 'wheel'] as const) window.removeEventListener(ev, poke)
@@ -153,7 +156,6 @@ export default function WidgetApp() {
   const [compact, setCompact] = useState(() => stored('compact', '0') === '1')
   const [pinned, setPinned] = useState(() => stored('pin', '1') === '1')
   const [fade, setFade] = useState(() => stored('fade', '1') === '1')
-  const [docked, setDocked] = useState(PREVIEW_TAB)
   const [problem, setProblem] = useState<string | null>(null)
   useEffect(() => localStorage.setItem('widget.compact', compact ? '1' : '0'), [compact])
   useEffect(() => localStorage.setItem('widget.fade', fade ? '1' : '0'), [fade])
@@ -193,47 +195,15 @@ export default function WidgetApp() {
     }
   }
 
-  // dock to the right edge of the screen, half way down: the window moves so only a small tab shows; a click brings it back
-  // where it was (a window that reports no size, as in some test browsers, is left as it is)
-  const sized = () => window.outerWidth > 0 && window.outerHeight > 0
-  const dock = async () => {
-    if (!sized()) return setProblem('This window cannot be moved here. Open the widget with start-widget.cmd.')
-    localStorage.setItem('widget.place', JSON.stringify({ x: window.screenX, y: window.screenY, w: window.outerWidth, h: window.outerHeight }))
-    const s = window.screen as Screen & { availLeft?: number; availTop?: number }
-    const answer = await changeWindow(live.base, dockPlace({ left: s.availLeft ?? 0, top: s.availTop ?? 0, width: s.availWidth, height: s.availHeight }, window.outerWidth))
-    tell(answer)
-    if (answer.ok) setDocked(true)
-  }
-  const undock = async () => {
-    setDocked(false)
-    if (!sized() || PREVIEW_TAB) return
-    let p: { x?: unknown; y?: unknown; w?: unknown; h?: unknown } = {}
-    try { p = JSON.parse(stored('place', '{}')) } catch { /* a broken note: use the defaults below */ }
-    const num = (v: unknown, d: number) => (typeof v === 'number' && Number.isFinite(v) ? v : d)
-    const s = window.screen as Screen & { availLeft?: number; availTop?: number }
-    const w = Math.max(320, num(p.w, 380)), h = Math.max(320, num(p.h, 680))
-    tell(await changeWindow(live.base, { x: num(p.x, (s.availLeft ?? 0) + s.availWidth - w - 24), y: num(p.y, (s.availTop ?? 0) + 24), width: w, height: h }))
-  }
+  // dock: the widget hides and the edge tab at the right of the screen stands in for it (a click on the tab brings it back);
+  // the service refuses when the tab is not running, so the widget can never get lost
+  const dock = async () => tell(await changeWindow(live.base, { hide: true }))
 
   const offline = live.state === 'offline'
   const connecting = live.state === 'connecting'
   const pinButton = (
     <button className={`ib${pinned ? ' on' : ''}`} onClick={togglePin} title={pinned ? 'Pinned: stays on top of other windows. Click to unpin.' : 'Not pinned. Click to keep it on top of other windows.'} aria-pressed={pinned} aria-label="Keep on top">📌</button>
   )
-
-  if (docked) {
-    // the tab: only the left edge of the window is on screen, so everything sits in that narrow strip
-    const frame = window.outerWidth > 0 ? Math.max(0, (window.outerWidth - window.innerWidth) / 2) : 0
-    return (
-      <button className={`tab${counts.wait > 0 ? ' alert' : ''}`} style={{ width: TAB.width - frame }} onClick={undock} title={problem ?? 'Open the agents panel'} aria-label="Open the agents panel">
-        <OrbitSky rows={rows} mini height={50} />
-        <b className="tw">{offline ? '–' : counts.wait}</b>
-        <small>{counts.wait === 1 ? 'waits' : 'waiting'}</small>
-        <span className="tr">{counts.run}</span>
-        <small>working</small>
-      </button>
-    )
-  }
 
   const pick = (key: string) => {
     setTab('all'); setQuery(''); setTool('all'); setOpen(key)
@@ -255,7 +225,7 @@ export default function WidgetApp() {
         {pinButton}
         <button className={`ib${fade ? ' on' : ''}`} onClick={() => setFade((f) => !f)} title={fade ? 'Fades when you leave it alone (comes back when an agent waits). Click to keep it solid.' : 'Always solid. Click to let it fade when left alone.'} aria-pressed={fade} aria-label="Fade when left alone">◐</button>
         <button className="ib" onClick={() => setCompact((c) => !c)} title={compact ? 'Roomy rows' : 'Compact rows'} aria-label="Toggle compact rows">{compact ? '▤' : '☰'}</button>
-        <button className="ib" onClick={dock} title="Tuck it into the right edge of the screen" aria-label="Dock to the screen edge">⇥</button>
+        <button className="ib" onClick={dock} title="Dock it into a small tab at the right edge of the screen" aria-label="Dock to the screen edge">⇥</button>
       </header>
       {problem && <div className="problem" role="status">{problem}<button onClick={() => setProblem(null)} aria-label="Dismiss">×</button></div>}
 
