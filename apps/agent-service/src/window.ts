@@ -72,7 +72,7 @@ export function parseWindowRequest(input: unknown): { ok: true; request: WindowR
 }
 
 /** C# for Add-Type: finds a visible window of the given processes whose title starts with a prefix, and SetWindowPos. */
-const FINDER = "using System; using System.Runtime.InteropServices; using System.Text;\nnamespace AgentFactoryWidget { public static class Win {\n  public delegate bool EnumProc(IntPtr h, IntPtr p);\n  [DllImport(\"user32.dll\")] public static extern bool EnumWindows(EnumProc cb, IntPtr p);\n  [DllImport(\"user32.dll\")] public static extern bool IsWindowVisible(IntPtr h);\n  [DllImport(\"user32.dll\")] public static extern int GetWindowThreadProcessId(IntPtr h, out int pid);\n  [DllImport(\"user32.dll\", CharSet = CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, StringBuilder s, int n);\n  [DllImport(\"user32.dll\")] public static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);\n  [DllImport(\"user32.dll\")] public static extern bool ShowWindow(IntPtr h, int cmd);\n  [DllImport(\"user32.dll\")] public static extern int GetWindowLong(IntPtr h, int index);\n  [DllImport(\"user32.dll\")] public static extern int SetWindowLong(IntPtr h, int index, int value);\n  [DllImport(\"user32.dll\")] public static extern bool SetLayeredWindowAttributes(IntPtr h, uint key, byte alpha, uint flags);\n  public static IntPtr Find(int[] pids, string prefix) {\n    IntPtr found = IntPtr.Zero;\n    EnumWindows(delegate (IntPtr h, IntPtr p) {\n      if (!IsWindowVisible(h)) return true;\n      int pid; GetWindowThreadProcessId(h, out pid);\n      if (Array.IndexOf(pids, pid) < 0) return true;\n      StringBuilder sb = new StringBuilder(512); GetWindowText(h, sb, 512);\n      if (sb.ToString().StartsWith(prefix)) { found = h; return false; }\n      return true;\n    }, IntPtr.Zero);\n    return found;\n  }\n} }"
+const FINDER = "using System; using System.Runtime.InteropServices; using System.Text;\nnamespace AgentFactoryWidget { public static class Win {\n  public delegate bool EnumProc(IntPtr h, IntPtr p);\n  [DllImport(\"user32.dll\")] public static extern bool EnumWindows(EnumProc cb, IntPtr p);\n  [DllImport(\"user32.dll\")] public static extern bool IsWindowVisible(IntPtr h);\n  [DllImport(\"user32.dll\")] public static extern int GetWindowThreadProcessId(IntPtr h, out int pid);\n  [DllImport(\"user32.dll\", CharSet = CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, StringBuilder s, int n);\n  [DllImport(\"user32.dll\")] public static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);\n  [DllImport(\"user32.dll\")] public static extern bool ShowWindow(IntPtr h, int cmd);\n  [DllImport(\"user32.dll\")] public static extern int GetWindowLong(IntPtr h, int index);\n  [DllImport(\"user32.dll\")] public static extern int SetWindowLong(IntPtr h, int index, int value);\n  [DllImport(\"user32.dll\")] public static extern bool SetLayeredWindowAttributes(IntPtr h, uint key, byte alpha, uint flags);\n  public static IntPtr FindOther(int[] pids, string prefix) {\n    IntPtr found = IntPtr.Zero;\n    EnumWindows(delegate (IntPtr h, IntPtr p) {\n      if (!IsWindowVisible(h)) return true;\n      int pid; GetWindowThreadProcessId(h, out pid);\n      if (Array.IndexOf(pids, pid) < 0) return true;\n      StringBuilder sb = new StringBuilder(512); GetWindowText(h, sb, 512);\n      string t = sb.ToString();\n      if (t.Length > 0 && !t.StartsWith(prefix)) { found = h; return false; }\n      return true;\n    }, IntPtr.Zero);\n    return found;\n  }\n  public static IntPtr Find(int[] pids, string prefix) {\n    IntPtr found = IntPtr.Zero;\n    EnumWindows(delegate (IntPtr h, IntPtr p) {\n      if (!IsWindowVisible(h)) return true;\n      int pid; GetWindowThreadProcessId(h, out pid);\n      if (Array.IndexOf(pids, pid) < 0) return true;\n      StringBuilder sb = new StringBuilder(512); GetWindowText(h, sb, 512);\n      if (sb.ToString().StartsWith(prefix)) { found = h; return false; }\n      return true;\n    }, IntPtr.Zero);\n    return found;\n  }\n} }"
 
 const NOSIZE = 0x1, NOMOVE = 0x2, NOZORDER = 0x4, NOACTIVATE = 0x10
 
@@ -117,6 +117,56 @@ export function windowScript(r: WindowRequest): string {
     lines.push(`[void][AgentFactoryWidget.Win]::SetLayeredWindowAttributes($h, 0, ${alpha}, ${LWA_ALPHA})`)
   }
   return lines.join('\n')
+}
+
+const HALL_ORIGIN = /^http:\/\/(localhost|127\.0\.0\.1):\d{2,5}$/
+const PROJECT_ID = /^[a-z0-9-]{1,80}$/
+
+/** The address "Open 3D hall" opens: the dashboard that asked (only a localhost address is accepted, else the default one),
+ *  with one project when given by a plain id. Nothing else can get into the address. */
+export function hallUrl(origin: string | undefined, project?: string): string {
+  const base = origin && HALL_ORIGIN.test(origin) ? origin : 'http://localhost:5173'
+  return project && PROJECT_ID.test(project) ? `${base}/?project=${project}` : `${base}/`
+}
+
+/** The body of POST /api/open-hall: nothing, or one project id. */
+export function parseHallRequest(input: unknown): { ok: true; project?: string } | { ok: false; error: string } {
+  if (input === undefined) return { ok: true }
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return { ok: false, error: 'Send a JSON object.' }
+  const o = input as Record<string, unknown>
+  if (Object.keys(o).some((k) => k !== 'project')) return { ok: false, error: 'Only project is allowed.' }
+  if ('project' in o && typeof o.project !== 'string') return { ok: false, error: 'project must be text.' }
+  return { ok: true, project: o.project as string | undefined }
+}
+
+/** PowerShell that opens the hall in the widget's own (guest) Edge, maximized: asks Edge to start maximized, then maximizes
+ *  the new window itself, because Edge ignores the flag when it hands the address to a window that is already running. */
+export function hallScript(url: string): string {
+  return [
+    "$ErrorActionPreference = 'Stop'",
+    "Add-Type -TypeDefinition @'",
+    FINDER,
+    "'@",
+    "$profileDir = Join-Path $env:LOCALAPPDATA 'agent-factory-3d\\widget-edge'",
+    `Start-Process -FilePath 'msedge' -ArgumentList @("--user-data-dir=$profileDir", '--guest', '--no-first-run', '--start-maximized', '--new-window', '${url}')`,
+    `for ($i = 0; $i -lt 25; $i++) {`,
+    `  Start-Sleep -Milliseconds 300`,
+    `  $ids = [int[]]@(Get-CimInstance Win32_Process -Filter "Name='msedge.exe'" | Where-Object { $_.CommandLine -like '*${WIDGET_PROFILE_MARK}*' } | ForEach-Object { $_.ProcessId })`,
+    `  if ($ids.Count -eq 0) { continue }`,
+    `  $h = [AgentFactoryWidget.Win]::FindOther($ids, 'Agents')`,
+    `  if ($h -ne [System.IntPtr]::Zero) { [void][AgentFactoryWidget.Win]::ShowWindow($h, 3); break }`,
+    `}`,
+  ].join('\n')
+}
+
+export type HallOpener = (url: string) => Promise<WindowResult>
+export const hallOpener: HallOpener = (url) => {
+  if (process.platform !== 'win32') return Promise.resolve({ ok: false, status: 501, error: 'Opening the hall from the widget works on Windows only.' })
+  return new Promise((resolve) => {
+    execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', hallScript(url)], { timeout: 20000, windowsHide: true }, (err) => {
+      resolve(err ? { ok: false, status: 500, error: 'This computer did not allow opening the 3D hall.' } : { ok: true })
+    })
+  })
 }
 
 export type WindowResult = { ok: true } | { ok: false; status: number; error: string }

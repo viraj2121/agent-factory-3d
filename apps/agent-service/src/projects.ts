@@ -16,6 +16,8 @@ export interface ProjectDeps {
   runs?: SubagentRun[]
   /** Project folders (projectKey) left out of the hub by the settings. */
   hidden?: ReadonlySet<string>
+  /** Tools left out by the settings: their sessions, runs and agent files are dropped before anything is built. */
+  hiddenTools?: ReadonlySet<string>
   /** Display names from the settings, keyed by projectKey. */
   names?: Record<string, string>
   /** Folders with agent setup files but maybe no recent session; added as idle projects. */
@@ -32,7 +34,12 @@ function projectId(path: string): string {
 }
 
 /** Groups sessions of all agents by folder and turns each group into what the hub shows for one project. */
-export function buildProjects(all: AgentSession[], deps: ProjectDeps): ProjectView[] {
+export function buildProjects(allSessions: AgentSession[], depsIn: ProjectDeps): ProjectView[] {
+  const off = depsIn.hiddenTools
+  const all = off?.size ? allSessions.filter((s) => !off.has(s.agent)) : allSessions
+  const deps: ProjectDeps = off?.size
+    ? { ...depsIn, runs: depsIn.runs?.filter((r) => !off.has(r.agent)), definitionsFor: depsIn.definitionsFor && ((p) => depsIn.definitionsFor!(p).filter((d) => !off.has(d.agent))) }
+    : depsIn
   // one session per agent + id; a file-based record wins over a hook report of the same session
   const unique = new Map<string, AgentSession>()
   for (const s of all) {

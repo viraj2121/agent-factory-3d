@@ -63,12 +63,15 @@ with a trail; resting ones drift at the edge. Colour shows the tool. Click a lig
 - **Start:** double-click `start-widget.cmd`. It starts the service and the dashboard in the background (no windows, logs in
   `%LOCALAPPDATA%\agent-factory-3d\logs`) and opens the widget at the top right of the screen.
 - **📌** keeps it on top of other windows, or not.
-- **◐ Fade:** left alone for 8 seconds, the widget fades to about a third. It turns solid when your mouse comes back or when
-  an agent starts waiting for you. Click ◐ to keep it solid.
+- **☀ / ☾** switches the widget between a dark and a light look (remembered).
+- **◌ Fade:** left alone for 8 seconds, the widget fades to about a third. It turns solid when your mouse comes back or when
+  an agent starts waiting for you. Click ◌ to keep it solid.
 - **⇥ Dock** (or minimize the widget): the widget tucks away and a small tab appears on the right edge of the screen, half
   way down, with a tiny orbit and the waiting and working counts (an amber edge when someone waits). It is a little see-through
   and solid under the mouse. Click the tab to bring the widget back, or its small **✕** to quit everything (the widget, the
   service and the dashboard). The tab is drawn by Windows itself through PowerShell (WPF); nothing is installed.
+- **Open 3D hall** (and "Show in the 3D hall" on a session) opens the hall in a full-size window.
+- **Which tools:** Settings > Agents > "Which tools to show" switches Claude Code, Codex, Copilot or other agents off or on for the hub, the widget and the tab.
 - **Stop:** double-click `stop-widget.cmd` (closes the widget, the tab, the service and the dashboard).
 - It uses Microsoft Edge in app mode as a guest (no account, nothing kept) and PowerShell for pinning, fading and the tab. If
   your computer blocks PowerShell scripts, the widget still opens, just without those parts. `check-setup.cmd` tells you which.
@@ -87,7 +90,7 @@ No admin rights are needed.
    `npm config set proxy http://your-proxy:port` and `npm config set https-proxy http://your-proxy:port`).
 5. Use your agents as usual (Claude Code, GitHub Copilot Chat in VS Code, Codex). They show up within a few seconds.
 
-Tip: right-click `start-widget.cmd` > Show more options > Send to > Desktop (create shortcut) to start it from the desktop.
+Optional: double-click **`create-shortcuts.cmd`** to put "Agent widget" and "Stop agent widget" on the desktop with the app icon.
 
 ## Will it work with my setup?
 

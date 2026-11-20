@@ -54,7 +54,7 @@ namespace AgentFactoryTab { public static class Win {
       </Border.Background>
       <Border.Effect><DropShadowEffect BlurRadius="12" ShadowDepth="0" Color="#000000" Opacity="0.5"/></Border.Effect>
       <Grid>
-        <TextBlock x:Name="Quit" Text="✕" FontSize="10" Foreground="#889AA3B8" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="3,6,0,0" Padding="4,1,4,2" Cursor="Hand" Background="Transparent" ToolTip="Quit: close the widget and stop it in the background"/>
+        <TextBlock x:Name="Quit" Text="&#x2715;" FontSize="10" Foreground="#889AA3B8" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="3,6,0,0" Padding="4,1,4,2" Cursor="Hand" Background="Transparent" ToolTip="Quit: close the widget and stop it in the background"/>
         <Rectangle x:Name="Accent" Width="3" HorizontalAlignment="Left" Margin="0,18,0,18" RadiusX="1.5" RadiusY="1.5" Fill="#FFB547" Visibility="Collapsed"/>
         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="3,0,0,0">
           <Canvas x:Name="Sky" Width="40" Height="40" Margin="0,0,0,4" ClipToBounds="False">
@@ -69,9 +69,9 @@ namespace AgentFactoryTab { public static class Win {
             <Canvas x:Name="Ring" Width="50" Height="50"><Canvas.RenderTransform><RotateTransform x:Name="Spin" CenterX="25" CenterY="25"/></Canvas.RenderTransform></Canvas>
             <Canvas x:Name="Near" Width="50" Height="50"/>
           </Canvas>
-          <TextBlock x:Name="Waiting" Text="–" FontFamily="Segoe UI Variable Display, Segoe UI" FontWeight="SemiBold" FontSize="20" Foreground="#FF7F889C" HorizontalAlignment="Center"/>
+          <TextBlock x:Name="Waiting" Text="&#x2013;" FontFamily="Segoe UI Variable Display, Segoe UI" FontWeight="SemiBold" FontSize="20" Foreground="#FF7F889C" HorizontalAlignment="Center"/>
           <TextBlock x:Name="WaitingLabel" Text="waiting" FontFamily="Segoe UI" FontSize="10" Foreground="#FF9AA3B8" HorizontalAlignment="Center" Margin="0,-2,0,6"/>
-          <TextBlock x:Name="Working" Text="–" FontFamily="Segoe UI Variable Display, Segoe UI" FontWeight="SemiBold" FontSize="14" Foreground="#FF4EE7A0" HorizontalAlignment="Center"/>
+          <TextBlock x:Name="Working" Text="&#x2013;" FontFamily="Segoe UI Variable Display, Segoe UI" FontWeight="SemiBold" FontSize="14" Foreground="#FF4EE7A0" HorizontalAlignment="Center"/>
           <TextBlock Text="working" FontFamily="Segoe UI" FontSize="10" Foreground="#FF9AA3B8" HorizontalAlignment="Center"/>
         </StackPanel>
       </Grid>
@@ -107,7 +107,7 @@ function Update-Counts {
   try {
     $snap = Invoke-RestMethod -Uri "$service/api/snapshot" -TimeoutSec 2
   } catch {
-    $ui.Waiting.Text = '–'; $ui.Working.Text = '–'; $ui.Tab.ToolTip = 'The agent service is not running'
+    $ui.Waiting.Text = '-'; $ui.Working.Text = '-'; $ui.Tab.ToolTip = 'The agent service is not running'
     return
   }
   $wait = @(); $run = @()

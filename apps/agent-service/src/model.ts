@@ -209,6 +209,8 @@ export interface ServiceSettings {
   roots: string[]
   /** Projects left out of the hub (sky and tabs). */
   hiddenProjects: HiddenProject[]
+  /** Tools the hub leaves out entirely: their sessions, helper runs and agent files are not shown (Settings > Agents). */
+  hiddenTools: AgentKind[]
   /** Display names, keyed by the project folder (compared without case). */
   projectNames: Record<string, string>
   /** The dashboard's own display choices (quality, labels, tour...). Plain values only. */

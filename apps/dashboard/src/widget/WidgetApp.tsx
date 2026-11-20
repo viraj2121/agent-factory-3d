@@ -7,7 +7,7 @@ import type { Project } from '../projects'
 import { filterRows, widgetCounts, widgetRows, type WidgetRow, type WidgetState } from '../widgetRows'
 import OrbitSky, { toolColour } from './OrbitSky'
 import { opacityFor } from './orbit'
-import { changeWindow, type WindowAnswer } from './windowApi'
+import { changeWindow, openHall, type WindowAnswer } from './windowApi'
 
 // The desktop widget: a small window (Edge in app mode, opened and pinned by start-widget.cmd) that lists every agent session
 // on this computer. Read-only. Live data only: with the service off it says so, never demo data. At the top the Orbit: you
@@ -51,7 +51,7 @@ function timeText(row: WidgetRow, now: number): string {
   return row.state === 'run' && row.sinceMs !== null && row.sinceMs < 60_000 ? 'now' : agoText(row.entry.lastSeenAt, now)
 }
 
-function Row({ row, now, project, open, onToggle }: { row: WidgetRow; now: number; project: Project | undefined; open: boolean; onToggle: () => void }) {
+function Row({ row, now, project, open, onToggle, onHall }: { row: WidgetRow; now: number; project: Project | undefined; open: boolean; onToggle: () => void; onHall: (projectId: string) => void }) {
   const colour = toolColour(row.entry.agent)
   const details = open && project ? crewDetails(row.entry, project, now) : null
   return (
@@ -80,7 +80,7 @@ function Row({ row, now, project, open, onToggle }: { row: WidgetRow; now: numbe
           </dl>
           <div className="dlinks">
             {details.links.map((l) => <a key={l.href} href={l.href}>{l.label}</a>)}
-            <a href={`/?project=${encodeURIComponent(row.projectId)}`} target="_blank" rel="noreferrer">Show in the 3D hall</a>
+            <a href={`/?project=${encodeURIComponent(row.projectId)}`} onClick={(e) => { e.preventDefault(); onHall(row.projectId) }}>Show in the 3D hall</a>
           </div>
           <p className="dnote">Only titles, tool names, counts and times are read, never the messages. States are inferred from timing.</p>
         </div>
@@ -156,9 +156,14 @@ export default function WidgetApp() {
   const [compact, setCompact] = useState(() => stored('compact', '0') === '1')
   const [pinned, setPinned] = useState(() => stored('pin', '1') === '1')
   const [fade, setFade] = useState(() => stored('fade', '1') === '1')
+  const [light, setLight] = useState(() => stored('theme', 'dark') === 'light')
   const [problem, setProblem] = useState<string | null>(null)
   useEffect(() => localStorage.setItem('widget.compact', compact ? '1' : '0'), [compact])
   useEffect(() => localStorage.setItem('widget.fade', fade ? '1' : '0'), [fade])
+  useEffect(() => {
+    localStorage.setItem('widget.theme', light ? 'light' : 'dark')
+    document.documentElement.classList.toggle('light', light)
+  }, [light])
 
   // live data only: no demo projects in the widget
   const projects = useMemo(() => (live.state === 'live' && live.snapshot ? projectsFromSnapshot(live.snapshot) : []), [live.state, live.snapshot])
@@ -223,7 +228,8 @@ export default function WidgetApp() {
         </div>
         <span className="sp" />
         {pinButton}
-        <button className={`ib${fade ? ' on' : ''}`} onClick={() => setFade((f) => !f)} title={fade ? 'Fades when you leave it alone (comes back when an agent waits). Click to keep it solid.' : 'Always solid. Click to let it fade when left alone.'} aria-pressed={fade} aria-label="Fade when left alone">◐</button>
+        <button className="ib" onClick={() => setLight((l) => !l)} title={light ? 'Switch to the dark look' : 'Switch to the light look'} aria-pressed={light} aria-label="Light or dark look">{light ? '☾' : '☀'}</button>
+        <button className={`ib${fade ? ' on' : ''}`} onClick={() => setFade((f) => !f)} title={fade ? 'Fades when you leave it alone (comes back when an agent waits). Click to keep it solid.' : 'Always solid. Click to let it fade when left alone.'} aria-pressed={fade} aria-label="Fade when left alone">◌</button>
         <button className="ib" onClick={() => setCompact((c) => !c)} title={compact ? 'Roomy rows' : 'Compact rows'} aria-label="Toggle compact rows">{compact ? '▤' : '☰'}</button>
         <button className="ib" onClick={dock} title="Dock it into a small tab at the right edge of the screen" aria-label="Dock to the screen edge">⇥</button>
       </header>
@@ -268,7 +274,7 @@ export default function WidgetApp() {
               <section key={g.state}>
                 <div className="group"><span>{g.label}</span><span>{list.length}</span></div>
                 {list.map((r) => (
-                  <Row key={r.key} row={r} now={now} project={byId.get(r.projectId)} open={open === r.key} onToggle={() => setOpen((cur) => (cur === r.key ? null : r.key))} />
+                  <Row key={r.key} row={r} now={now} project={byId.get(r.projectId)} open={open === r.key} onToggle={() => setOpen((cur) => (cur === r.key ? null : r.key))} onHall={(id) => void openHall(live.base, id)} />
                 ))}
               </section>
             )
@@ -277,7 +283,7 @@ export default function WidgetApp() {
       </main>
 
       <footer className="foot">
-        <a className="main" href="/" target="_blank" rel="noreferrer">Open 3D hall</a>
+        <button className="main" onClick={() => void openHall(live.base)} title="Opens the 3D hall in a full-size window">Open 3D hall</button>
         <span className="sp" />
         <small>Read-only · this computer · click a session or a light for details</small>
       </footer>

@@ -71,6 +71,7 @@ export class Scanner {
       now,
       discovered: this.discovered,
       hidden: new Set(settings.hiddenProjects.map((h) => projectKey(h.path))),
+      hiddenTools: new Set(settings.hiddenTools),
       names: settings.projectNames,
       runs: [...claude.runs, ...codex.runs],
       mcpFor: (path) => this.mcp.forProject(path),

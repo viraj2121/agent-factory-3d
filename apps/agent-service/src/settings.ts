@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
-import type { DisplayValue, HiddenProject, ServiceSettings } from './model.ts'
+import type { AgentKind, DisplayValue, HiddenProject, ServiceSettings } from './model.ts'
 import { asRecord, projectKey } from './util.ts'
 
 // Settings of the hub, kept in one JSON file (~/.ai-factory/settings.json) so they survive restarts and can be read
@@ -10,7 +10,7 @@ import { asRecord, projectKey } from './util.ts'
 
 export type { DisplayValue, HiddenProject, ServiceSettings } from './model.ts'
 
-export const DEFAULT_SETTINGS: ServiceSettings = { version: 1, days: null, roots: [], hiddenProjects: [], projectNames: {}, display: {} }
+export const DEFAULT_SETTINGS: ServiceSettings = { version: 1, days: null, roots: [], hiddenProjects: [], hiddenTools: [], projectNames: {}, display: {} }
 
 const NOTE = 'Settings of the AI Software Factory hub. Changed from the Settings panel; safe to edit by hand while the service is stopped.'
 const LIMITS = { roots: 20, hidden: 200, names: 200, display: 40, path: 400, projectName: 60, hiddenName: 120, displayKey: 40, displayText: 100 }
@@ -23,6 +23,21 @@ function checkDays(v: unknown): Checked<number | null> {
   if (v === null || v === undefined) return { value: null, problems: [] }
   if (typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 365) return { value: v, problems: [] }
   return { value: null, problems: ['days must be a whole number from 1 to 365'] }
+}
+
+export const TOOL_KINDS: readonly AgentKind[] = ['claude-code', 'codex', 'copilot', 'other']
+
+function checkTools(v: unknown): Checked<AgentKind[]> {
+  if (v === undefined) return { value: [], problems: [] }
+  if (!Array.isArray(v)) return { value: [], problems: ['hiddenTools must be a list of tools'] }
+  const value: AgentKind[] = []
+  const problems: string[] = []
+  for (const t of v) {
+    const kind = TOOL_KINDS.find((k) => k === t)
+    if (!kind) problems.push(`tool ${JSON.stringify(t)} is not one of ${TOOL_KINDS.join(', ')}`)
+    else if (!value.includes(kind)) value.push(kind)
+  }
+  return { value, problems }
 }
 
 function checkRoots(v: unknown): Checked<string[]> {
@@ -105,15 +120,16 @@ export function parseSettings(input: unknown): { settings: ServiceSettings; prob
   const days = checkDays(rec.days)
   const roots = checkRoots(rec.roots)
   const hidden = checkHidden(rec.hiddenProjects)
+  const tools = checkTools(rec.hiddenTools)
   const names = checkNames(rec.projectNames, {}, false)
   const display = checkDisplay(rec.display, {})
   return {
-    settings: { version: 1, days: days.value, roots: roots.value, hiddenProjects: hidden.value, projectNames: names.value, display: display.value },
-    problems: [...days.problems, ...roots.problems, ...hidden.problems, ...names.problems, ...display.problems],
+    settings: { version: 1, days: days.value, roots: roots.value, hiddenProjects: hidden.value, hiddenTools: tools.value, projectNames: names.value, display: display.value },
+    problems: [...days.problems, ...roots.problems, ...hidden.problems, ...tools.problems, ...names.problems, ...display.problems],
   }
 }
 
-const PATCH_KEYS = new Set(['days', 'roots', 'hiddenProjects', 'projectNames', 'display'])
+const PATCH_KEYS = new Set(['days', 'roots', 'hiddenProjects', 'hiddenTools', 'projectNames', 'display'])
 
 /**
  * One change from the Settings panel. All of it applies or none of it does. `days`, `roots` and `hiddenProjects`
@@ -140,6 +156,11 @@ export function applyPatch(current: ServiceSettings, patch: unknown): { ok: true
     const c = checkHidden(rec.hiddenProjects)
     problems.push(...c.problems)
     next.hiddenProjects = c.value
+  }
+  if ('hiddenTools' in rec) {
+    const c = checkTools(rec.hiddenTools)
+    problems.push(...c.problems)
+    next.hiddenTools = c.value
   }
   if ('projectNames' in rec) {
     const c = checkNames(rec.projectNames, current.projectNames, true)

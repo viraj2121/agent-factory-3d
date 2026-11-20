@@ -27,7 +27,7 @@ npm start               # start the service and the dashboard together
 npm run smoke           # real-browser check (needs: cd apps/dashboard && npm i -D playwright && npx playwright install chromium)
 ```
 
-On Windows: `check-setup.cmd` (checks the computer), `start-widget.cmd` / `stop-widget.cmd` (desktop widget),
+On Windows: `check-setup.cmd` (checks the computer), `create-shortcuts.cmd` (desktop shortcuts with the app icon), `start-widget.cmd` / `stop-widget.cmd` (desktop widget),
 `start-factory.bat` (3D hall).
 
 ## Rules that must not be broken

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseWindowRequest, windowScript, WIDGET_PROFILE_MARK, TAB_SCRIPT_MARK } from '../src/window.ts'
+import { hallScript, hallUrl, parseWindowRequest, windowScript, WIDGET_PROFILE_MARK, TAB_SCRIPT_MARK } from '../src/window.ts'
 
 describe('parseWindowRequest', () => {
   it('accepts a pin change, a new size, or both', () => {
@@ -85,5 +85,37 @@ describe('windowScript', () => {
     expect(s).toContain('ShowWindow($h, 0)')
     expect(s.indexOf('exit 4')).toBeLessThan(s.indexOf('ShowWindow($h, 0)'))
     expect(windowScript({ pin: true })).not.toContain('ShowWindow($h')
+  })
+})
+
+describe('hallUrl (what "Open 3D hall" opens)', () => {
+  it('opens the dashboard that asked, or the default one', () => {
+    expect(hallUrl('http://localhost:5173')).toBe('http://localhost:5173/')
+    expect(hallUrl('http://127.0.0.1:5180')).toBe('http://127.0.0.1:5180/')
+    expect(hallUrl(undefined)).toBe('http://localhost:5173/')
+  })
+  it('never opens another address, whatever the Origin says', () => {
+    expect(hallUrl('https://evil.example')).toBe('http://localhost:5173/')
+    expect(hallUrl('http://localhost:5173.evil.example')).toBe('http://localhost:5173/')
+    expect(hallUrl("http://localhost:5173'; calc")).toBe('http://localhost:5173/')
+  })
+  it('can open one project, by a plain id only', () => {
+    expect(hallUrl('http://localhost:5173', 'atlas-app-1a2b3c')).toBe('http://localhost:5173/?project=atlas-app-1a2b3c')
+    expect(hallUrl('http://localhost:5173', "x'; calc")).toBe('http://localhost:5173/')
+    expect(hallUrl('http://localhost:5173', '../..')).toBe('http://localhost:5173/')
+  })
+})
+
+describe('hallScript', () => {
+  it('starts Edge maximized in the widget profile, then maximizes the new window itself in case Edge ignored the flag', () => {
+    const s = hallScript('http://localhost:5173/')
+    expect(s).toContain('--start-maximized')
+    expect(s).toContain('--new-window')
+    expect(s).toContain("'http://localhost:5173/'")
+    expect(s).toContain('ShowWindow($h, 3)')
+    expect(s).toContain(WIDGET_PROFILE_MARK)
+  })
+  it('only maximizes a window that is not the widget itself', () => {
+    expect(hallScript('http://localhost:5173/')).toContain("FindOther($ids, 'Agents')")
   })
 })

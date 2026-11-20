@@ -1,4 +1,4 @@
-import type { HiddenProject, ServiceSettings } from './wire'
+import type { AgentKind, HiddenProject, ServiceSettings } from './wire'
 
 // Talks to /api/settings of the agent service: reads the saved settings and sends one change at a time.
 // The service checks every change and writes ~/.ai-factory/settings.json.
@@ -15,7 +15,7 @@ export interface SettingsView {
   effectiveDays: number
 }
 
-export type SettingsPatch = Partial<Pick<ServiceSettings, 'days' | 'roots' | 'hiddenProjects' | 'projectNames' | 'display'>>
+export type SettingsPatch = Partial<Pick<ServiceSettings, 'days' | 'roots' | 'hiddenProjects' | 'hiddenTools' | 'projectNames' | 'display'>>
 
 /** The same folder, however it is spelled (slashes, case, a trailing slash). */
 const sameFolder = (a: string, b: string): boolean => {
@@ -30,6 +30,19 @@ export function hidePatch(view: SettingsView, project: HiddenProject): SettingsP
 
 export function showPatch(view: SettingsView, path: string): SettingsPatch {
   return { hiddenProjects: view.settings.hiddenProjects.filter((h) => !sameFolder(h.path, path)) }
+}
+
+/** The tools the hub can leave out, in the order of the switches. */
+export const TOOL_CHOICES: { id: AgentKind; label: string; note: string }[] = [
+  { id: 'claude-code', label: 'Claude Code', note: 'Terminal and VS Code extension' },
+  { id: 'codex', label: 'Codex', note: 'Sessions and helper threads' },
+  { id: 'copilot', label: 'GitHub Copilot', note: 'Copilot Chat in VS Code' },
+  { id: 'other', label: 'Other agents', note: 'Anything that reports itself with POST /api/hook' },
+]
+
+export function toolPatch(view: SettingsView, tool: AgentKind, show: boolean): SettingsPatch {
+  const list = view.settings.hiddenTools
+  return { hiddenTools: show ? list.filter((t) => t !== tool) : list.includes(tool) ? list : [...list, tool] }
 }
 
 export function renamePatch(path: string, name: string): SettingsPatch {
@@ -52,7 +65,7 @@ export function parseSettingsView(input: unknown): SettingsView | null {
   if (!Array.isArray(s.roots) || !Array.isArray(s.hiddenProjects) || !isObj(s.projectNames) || !isObj(s.display)) return null
   if (s.days !== null && typeof s.days !== 'number') return null
   return {
-    settings: s as unknown as ServiceSettings,
+    settings: { ...(s as unknown as ServiceSettings), hiddenTools: Array.isArray(s.hiddenTools) ? (s.hiddenTools as AgentKind[]) : [] },
     file: input.file,
     problems: Array.isArray(input.problems) ? input.problems.filter((p): p is string => typeof p === 'string') : [],
     effectiveDays: typeof input.effectiveDays === 'number' ? input.effectiveDays : 7,

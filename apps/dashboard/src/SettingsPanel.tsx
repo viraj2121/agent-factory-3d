@@ -6,7 +6,7 @@ import { DEFAULT_UI, TOUR_CHOICES, uiStore, useUi, type LabelMode, type MotionMo
 import type { LiveState } from './live/liveProjects'
 import { THEMES, THEME_IDS, type ThemeId } from './themes'
 import type { Scenery } from './scenery'
-import { hidePatch, renamePatch, rootsPatch, showPatch, type SettingsPatch, type SettingsView } from './live/settingsApi'
+import { hidePatch, renamePatch, rootsPatch, showPatch, type SettingsPatch, type SettingsView, toolPatch, TOOL_CHOICES } from './live/settingsApi'
 
 type Section = 'projects' | 'agents' | 'display' | 'sound' | 'about'
 const SECTIONS: { id: Section; icon: string; label: string }[] = [
@@ -160,6 +160,13 @@ function AgentsSection({ view, change, state, base }: { view: SettingsView | nul
             onChange={(v) => void change({ days: v === 0 ? null : v })}
           />
         </Row>
+      </Card>
+      <Card title="Which tools to show" note="Switch a tool off and the hub, the desktop widget and the edge tab leave out its sessions, helper agents and agent files, in every project. It is remembered; nothing is changed in the tool itself.">
+        {TOOL_CHOICES.map((t) => (
+          <Row key={t.id} title={t.label} hint={t.note}>
+            <Switch label={`Show ${t.label}`} on={!view.settings.hiddenTools.includes(t.id)} onChange={(show) => void change(toolPatch(view, t.id, show))} />
+          </Row>
+        ))}
       </Card>
       <Card title="Folders to look in" note="Projects with agent setup files (CLAUDE.md, AGENTS.md, .github/agents and so on) are found here, besides the folders next to where agents were used. Up to 4 levels deep.">
         <ul className="set-list">

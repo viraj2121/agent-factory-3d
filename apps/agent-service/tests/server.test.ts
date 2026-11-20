@@ -22,6 +22,7 @@ let store: SettingsStore
 let settingsFile = ''
 let port = 0
 const windowCalls: unknown[] = []
+const hallCalls: string[] = []
 let windowAnswer: { ok: true } | { ok: false; status: number; error: string } = { ok: true }
 
 function call(method: string, path: string, opts: { headers?: Record<string, string>; body?: string; host?: string } = {}) {
@@ -52,7 +53,7 @@ beforeAll(async () => {
   writeFileSync(join(project, '.mcp.json'), JSON.stringify({ mcpServers: { demo: { command: 'node', args: ['s.js', '--token', 'SECRETTOKEN'], env: { K: 'SECRETENV' } } } }))
   settingsFile = join(root, 'ai-factory', 'settings.json')
   store = new SettingsStore(settingsFile)
-  service = createService({ scanner: new Scanner({ home, vscodeUser, settings: () => store.get() }), token: TOKEN, origins: allowedOrigins(undefined), intervalMs: 100, settings: store, windowControl: async (r) => { windowCalls.push(r); return windowAnswer } })
+  service = createService({ scanner: new Scanner({ home, vscodeUser, settings: () => store.get() }), token: TOKEN, origins: allowedOrigins(undefined), intervalMs: 100, settings: store, windowControl: async (r) => { windowCalls.push(r); return windowAnswer }, hallOpener: async (url) => { hallCalls.push(url); return { ok: true } } })
   port = await service.listen(0)
 })
 
@@ -226,5 +227,25 @@ describe('POST /api/window (the desktop widget pins or resizes its own window)',
     windowAnswer = { ok: true }
     expect(r.status).toBe(404)
     expect(JSON.parse(r.text).error).toMatch(/not open/)
+  })
+})
+
+describe('POST /api/open-hall (the widget opens the 3D hall in a maximized window)', () => {
+  const origin = 'http://localhost:5173'
+  it('refuses a request that is neither from the dashboard page nor carries the token', async () => {
+    const r = await call('POST', '/api/open-hall', { body: '{}', headers: { 'content-type': 'application/json' } })
+    expect(r.status).toBe(403)
+  })
+  it('opens the dashboard address, with one project when given', async () => {
+    hallCalls.length = 0
+    expect((await call('POST', '/api/open-hall', { body: '{}', headers: { origin } })).status).toBe(200)
+    expect((await call('POST', '/api/open-hall', { body: JSON.stringify({ project: 'atlas-app-1a2b3c' }), headers: { origin } })).status).toBe(200)
+    expect(hallCalls).toEqual(['http://localhost:5173/', 'http://localhost:5173/?project=atlas-app-1a2b3c'])
+  })
+  it('refuses a body with anything else in it', async () => {
+    hallCalls.length = 0
+    const r = await call('POST', '/api/open-hall', { body: JSON.stringify({ url: 'https://evil.example' }), headers: { origin } })
+    expect(r.status).toBe(400)
+    expect(hallCalls).toEqual([])
   })
 })

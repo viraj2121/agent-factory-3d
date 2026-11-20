@@ -28,3 +28,16 @@ export async function changeWindow(base: string, change: WindowChange): Promise<
     return { ok: false, error: 'The agent service is not running.' }
   }
 }
+
+/** Opens the 3D hall (or one project of it) in a maximized window, through the service. When that does not work (an older
+ *  service, no permission), the page opens it in a new window instead. */
+export async function openHall(base: string, project?: string): Promise<WindowAnswer> {
+  try {
+    const res = await fetch(`${base}/api/open-hall`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(project ? { project } : {}) })
+    if (res.ok) return { ok: true }
+  } catch {
+    /* fall through to the plain window below */
+  }
+  window.open(project ? `/?project=${encodeURIComponent(project)}` : '/', '_blank', 'noopener')
+  return { ok: true }
+}

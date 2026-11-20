@@ -6,6 +6,25 @@ import { DEFAULT_SETTINGS, SettingsStore, applyPatch, parseSettings } from '../s
 
 const tempFile = () => join(mkdtempSync(join(tmpdir(), 'settings-')), 'sub', 'settings.json')
 
+describe('hiddenTools (which tools the hub leaves out)', () => {
+  it('is empty by default and keeps a valid list, without repeats', () => {
+    expect(DEFAULT_SETTINGS.hiddenTools).toEqual([])
+    expect(parseSettings({ hiddenTools: ['codex', 'copilot', 'codex'] }).settings.hiddenTools).toEqual(['codex', 'copilot'])
+  })
+  it('drops names that are not a tool, and says so', () => {
+    const r = parseSettings({ hiddenTools: ['codex', 'vim', 7] })
+    expect(r.settings.hiddenTools).toEqual(['codex'])
+    expect(r.problems.length).toBe(2)
+  })
+  it('is replaced by a change (so a tool can be shown again), all or nothing', () => {
+    const a = applyPatch(DEFAULT_SETTINGS, { hiddenTools: ['codex'] })
+    expect(a.ok && a.settings.hiddenTools).toEqual(['codex'])
+    const b = applyPatch(a.ok ? a.settings : DEFAULT_SETTINGS, { hiddenTools: [] })
+    expect(b.ok && b.settings.hiddenTools).toEqual([])
+    expect(applyPatch(DEFAULT_SETTINGS, { hiddenTools: ['nope'], days: 5 }).ok).toBe(false)
+  })
+})
+
 describe('parseSettings', () => {
   it('gives the defaults for nothing, garbage or a list', () => {
     for (const bad of [undefined, null, 'x', 5, [], {}]) expect(parseSettings(bad).settings).toEqual(DEFAULT_SETTINGS)
@@ -18,6 +37,7 @@ describe('parseSettings', () => {
       roots: ['E:\\Code', '/home/me/work'],
       hiddenProjects: [{ path: 'E:/Work/Old', name: 'Old' }],
       projectNames: { 'e:/work/app': 'Shop front' },
+      hiddenTools: ['copilot'],
       display: { quality: 'high', labels: 'names', fps: false, tourSeconds: 60 },
     }
     expect(parseSettings(input)).toEqual({ settings: input, problems: [] })

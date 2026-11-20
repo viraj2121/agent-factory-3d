@@ -134,6 +134,14 @@ describe('buildProjects', () => {
     expect(p.agents).toEqual({ planning: 1, development: 1, review: 0 })
   })
 
+  it('leaves out the sessions, helper runs and agent files of hidden tools, and a project with nothing else goes with them', () => {
+    const sessions = [session({ projectPath: 'E:/Work/App' }), session({ agent: 'codex', agentLabel: 'Codex', projectPath: 'E:/Work/App' }), session({ agent: 'codex', agentLabel: 'Codex', projectPath: 'E:/Work/CodexOnly' })]
+    const list = buildProjects(sessions, { ...deps, hiddenTools: new Set(['codex']) })
+    expect(list.map((x) => x.path)).toEqual(['E:/Work/App'])
+    expect(list[0].sessions.map((x) => x.agent)).toEqual(['claude-code'])
+    expect(list[0].roster.every((r) => r.agent !== 'codex')).toBe(true)
+    expect(buildProjects(sessions, deps)).toHaveLength(2)
+  })
   it('leaves hidden projects out, active or found by files, and lets the next ones take their place', () => {
     const sessions = [session({ projectPath: 'E:/Work/Secret' }), session({ projectPath: 'E:/Work/App' })]
     const extra = Array.from({ length: 10 }, (_, i) => ({ path: 'E:/idle/' + i, mtime: 100 - i }))

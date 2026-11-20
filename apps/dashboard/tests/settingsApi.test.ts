@@ -1,11 +1,23 @@
 import { describe, expect, it } from 'vitest'
-import { hidePatch, parseSettingsView, renamePatch, rootsPatch, showPatch, type SettingsView } from '../src/live/settingsApi'
+import { hidePatch, parseSettingsView, renamePatch, rootsPatch, showPatch, toolPatch, type SettingsView } from '../src/live/settingsApi'
 
 const view = (over: Partial<SettingsView['settings']> = {}): SettingsView => ({
-  settings: { version: 1, days: null, roots: [], hiddenProjects: [], projectNames: {}, display: {}, ...over },
+  settings: { version: 1, days: null, roots: [], hiddenProjects: [], hiddenTools: [], projectNames: {}, display: {}, ...over },
   file: 'C:/Users/me/.ai-factory/settings.json',
   problems: [],
   effectiveDays: 7,
+})
+
+describe('toolPatch (which tools the hub shows)', () => {
+  it('hiding a tool adds it once, showing it takes it out', () => {
+    expect(toolPatch(view(), 'codex', false)).toEqual({ hiddenTools: ['codex'] })
+    expect(toolPatch(view({ hiddenTools: ['codex'] }), 'codex', false)).toEqual({ hiddenTools: ['codex'] })
+    expect(toolPatch(view({ hiddenTools: ['codex', 'copilot'] }), 'codex', true)).toEqual({ hiddenTools: ['copilot'] })
+  })
+  it('an older service that sends no list is read as nothing hidden', () => {
+    const v = parseSettingsView({ settings: { version: 1, days: null, roots: [], hiddenProjects: [], projectNames: {}, display: {} }, file: 'f', problems: [], effectiveDays: 7 })
+    expect(v?.settings.hiddenTools).toEqual([])
+  })
 })
 
 describe('patches', () => {

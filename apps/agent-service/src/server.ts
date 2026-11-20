@@ -5,7 +5,7 @@ import type { Snapshot } from './model.ts'
 import { fingerprint, type Scanner } from './scanner.ts'
 import { checkRequest, tokenMatches } from './security.ts'
 import type { SettingsStore } from './settings.ts'
-import { parseWindowRequest, windowControl as defaultWindowControl, type WindowControl } from './window.ts'
+import { hallOpener as defaultHallOpener, hallUrl, parseHallRequest, parseWindowRequest, windowControl as defaultWindowControl, type HallOpener, type WindowControl } from './window.ts'
 
 export interface ServiceOptions {
   scanner: Scanner
@@ -17,6 +17,8 @@ export interface ServiceOptions {
   settings?: SettingsStore
   /** Pins or resizes the desktop widget's own window (tests pass a fake). */
   windowControl?: WindowControl
+  /** Opens the 3D hall in a maximized window (tests pass a fake). */
+  hallOpener?: HallOpener
 }
 
 const MAX_BODY = 16 * 1024
@@ -28,7 +30,7 @@ export interface Service {
   close(): Promise<void>
 }
 
-export function createService({ scanner, token, origins, intervalMs = 2000, settings, windowControl = defaultWindowControl }: ServiceOptions): Service {
+export function createService({ scanner, token, origins, intervalMs = 2000, settings, windowControl = defaultWindowControl, hallOpener = defaultHallOpener }: ServiceOptions): Service {
   const clients = new Set<ServerResponse>()
   let latest: Snapshot | null = null
   let latestPrint = ''
@@ -142,6 +144,26 @@ export function createService({ scanner, token, origins, intervalMs = 2000, sett
         const parsed = parseWindowRequest(json)
         if (!parsed.ok) return send(res, 400, { error: parsed.error }, cors)
         const result = await windowControl(parsed.request)
+        return result.ok ? send(res, 200, { ok: true }, cors) : send(res, result.status, { error: result.error }, cors)
+      }
+      if (req.method === 'POST' && url.pathname === '/api/open-hall') {
+        if (!origin && !tokenMatches(req.headers.authorization, token)) return send(res, 403, { error: 'Opening the hall needs the dashboard page or the bearer token.' }, cors)
+        const body = await readBody(req)
+        if (body === null) {
+          res.once('finish', () => req.destroy())
+          return send(res, 413, { error: 'Body too large or unreadable.' }, { ...cors, Connection: 'close' })
+        }
+        let json: unknown
+        if (body.trim()) {
+          try {
+            json = JSON.parse(body)
+          } catch {
+            return send(res, 400, { error: 'Body must be JSON.' }, cors)
+          }
+        }
+        const parsed = parseHallRequest(json)
+        if (!parsed.ok) return send(res, 400, { error: parsed.error }, cors)
+        const result = await hallOpener(hallUrl(origin, parsed.project))
         return result.ok ? send(res, 200, { ok: true }, cors) : send(res, result.status, { error: result.error }, cors)
       }
       if (req.method === 'POST' && url.pathname === '/api/hook') {
