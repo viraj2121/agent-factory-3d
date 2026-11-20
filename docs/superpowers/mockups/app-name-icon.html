@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Name and icon for the agent panel</title>
+<style>
+  body { margin: 0; color: #e9edf5; font: 14px/1.45 "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+         background: radial-gradient(1100px 600px at 15% 0%, #23315c, transparent 60%), radial-gradient(900px 600px at 95% 90%, #3d2550, transparent 60%), #0e1119; min-height: 100vh; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 36px 24px 60px; }
+  h1 { font-size: 22px; margin: 0 0 4px; font-weight: 600; } .lead { color: #b8bfce; margin: 0 0 26px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 20px; }
+  .opt { background: #141a28e6; border: 1px solid #ffffff18; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+  .opt.rec { border-color: #9cc7ff88; box-shadow: 0 0 0 1px #9cc7ff33, 0 20px 50px #0006; }
+  .opt h2 { margin: 0; font-size: 20px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .opt h2 small { font-size: 11px; font-weight: 500; color: #0b0d12; background: #9cc7ff; padding: 2px 8px; border-radius: 999px; }
+  .opt p { margin: 0; color: #b8bfce; font-size: 13px; }
+  .big { display: flex; align-items: end; gap: 14px; }
+  .big svg { filter: drop-shadow(0 10px 24px #0008); }
+  .sizes { display: flex; align-items: end; gap: 10px; color: #8b93a7; font-size: 11px; }
+  .sizes div { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .tb { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; border-radius: 8px; background: #202020; font: 12px "Segoe UI", sans-serif; color: #ddd; }
+  .tb span { white-space: nowrap; }
+  .tb .x { margin-left: auto; color: #999; letter-spacing: 10px; }
+  .task { display: flex; gap: 4px; align-items: center; height: 44px; padding: 0 10px; border-radius: 8px; background: #1c1c1cee; }
+  .task span { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 6px; position: relative; }
+  .task span.on { background: #ffffff14; } .task span.on::after { content: ''; position: absolute; bottom: 1px; width: 14px; height: 3px; border-radius: 2px; background: #9cc7ff; }
+  .task i { width: 22px; height: 22px; border-radius: 5px; background: #ffffff22; display: block; }
+  .task .badge { position: absolute; right: 1px; top: 1px; min-width: 14px; height: 14px; border-radius: 7px; background: #ffb547; color: #1a1206; font: 700 9px/14px Segoe UI; text-align: center; }
+  .meaning { font-size: 12.5px; color: #c9cfdc; border-left: 2px solid #ffffff22; padding-left: 10px; }
+  .note { margin-top: 26px; color: #8b93a7; font-size: 12.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>A name and an icon for the agent panel</h1>
+  <p class="lead">Four ideas. Each is shown big, at the small sizes Windows uses, in the window's title bar and on the taskbar. All icons are drawn in code from the Orbit idea, so they match the panel and the 3D solar system.</p>
+  <div class="grid" id="grid"></div>
+  <p class="note">The name also becomes the window title (with the waiting count, for example "Perigee (2 waiting)"); the widget's window is found by that title, so the name is set in one place in the code. I have not checked trademarks; a quick search before publishing is wise.</p>
+</div>
+<script>
+const ICON = {
+  // you in the middle, one agent on its orbit
+  orbit: (s, id) => `<svg width="${s}" height="${s}" viewBox="0 0 64 64"><defs><radialGradient id="c${id}"><stop offset="0" stop-color="#fff"/><stop offset=".45" stop-color="#ffd08a"/><stop offset="1" stop-color="#ff9a3c" stop-opacity="0"/></radialGradient><linearGradient id="b${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1d2640"/><stop offset="1" stop-color="#0e1220"/></linearGradient></defs>
+    <rect width="64" height="64" rx="16" fill="url(#b${id})"/><ellipse cx="32" cy="32" rx="24" ry="14" fill="none" stroke="#9cc7ff" stroke-opacity=".6" stroke-width="2.4" transform="rotate(-24 32 32)"/>
+    <circle cx="32" cy="32" r="14" fill="url(#c${id})"/><circle cx="52" cy="22.5" r="5" fill="#4ee7a0"/></svg>`,
+  // the closest point of an orbit: the agent that needs you sits there, amber
+  perigee: (s, id) => `<svg width="${s}" height="${s}" viewBox="0 0 64 64"><defs><radialGradient id="c${id}"><stop offset="0" stop-color="#fff"/><stop offset=".5" stop-color="#cfe4ff"/><stop offset="1" stop-color="#5b8cff" stop-opacity="0"/></radialGradient></defs>
+    <rect width="64" height="64" rx="16" fill="#101626"/><ellipse cx="36" cy="32" rx="22" ry="15" fill="none" stroke="#ffffff" stroke-opacity=".28" stroke-width="2"/>
+    <circle cx="23" cy="32" r="11" fill="url(#c${id})"/><circle cx="14" cy="32" r="5.5" fill="#ffb547"/><circle cx="14" cy="32" r="9" fill="none" stroke="#ffb547" stroke-opacity=".5" stroke-width="1.6"/>
+    <circle cx="54" cy="26" r="3.4" fill="#4ee7a0"/><circle cx="44" cy="45" r="2.6" fill="#7f889c"/></svg>`,
+  // a lantern of light with the crew round it
+  crewlight: (s, id) => `<svg width="${s}" height="${s}" viewBox="0 0 64 64"><defs><radialGradient id="c${id}"><stop offset="0" stop-color="#fff"/><stop offset=".4" stop-color="#ffe0a8"/><stop offset="1" stop-color="#ffb547" stop-opacity="0"/></radialGradient></defs>
+    <rect width="64" height="64" rx="16" fill="#17131f"/><circle cx="32" cy="32" r="20" fill="url(#c${id})"/>
+    ${[0, 1, 2, 3, 4].map((i) => { const a = -Math.PI / 2 + i * 2 * Math.PI / 5; return `<circle cx="${32 + Math.cos(a) * 22}" cy="${32 + Math.sin(a) * 22}" r="3.6" fill="${['#e8835f', '#5b8cff', '#a77bff', '#4ee7a0', '#7f889c'][i]}"/>` }).join('')}</svg>`,
+  // concentric rings: needs you, working, resting
+  rings: (s, id) => `<svg width="${s}" height="${s}" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#0f1422"/>
+    <circle cx="32" cy="32" r="24" fill="none" stroke="#7f889c" stroke-opacity=".55" stroke-width="2.2"/><circle cx="32" cy="32" r="16" fill="none" stroke="#4ee7a0" stroke-opacity=".75" stroke-width="2.4"/>
+    <circle cx="32" cy="32" r="8" fill="none" stroke="#ffb547" stroke-width="3"/><circle cx="32" cy="32" r="3" fill="#fff"/><circle cx="48" cy="32" r="3.4" fill="#4ee7a0"/><circle cx="32" cy="24" r="3.4" fill="#ffb547"/></svg>`,
+}
+const OPTS = [
+  { k: 'perigee', n: 'Perigee', rec: true, d: 'Perigee is the point of an orbit closest to the centre. In our panel the agent that needs you most is pulled closest to you, so the name says what the panel does. Short, unusual, easy to remember.' },
+  { k: 'orbit', n: 'Agent Orbit', d: 'Plain and clear: your agents, in orbit round you. Easy for anyone to understand at first sight; less distinctive.' },
+  { k: 'crewlight', n: 'Crewlight', d: 'You are the light your crew gathers round. Warm and friendly, ties back to the robot crew of the 3D hall.' },
+  { k: 'rings', n: 'Three Rings', d: 'Named after the three rings of the panel: needs you, working, resting. Calm and graphic; the icon reads well even at 16 pixels.' },
+]
+document.getElementById('grid').innerHTML = OPTS.map((o, i) => `<div class="opt${o.rec ? ' rec' : ''}">
+  <h2>${o.n}${o.rec ? '<small>my pick</small>' : ''}</h2>
+  <div class="big">${ICON[o.k](96, i + 'a')}<div class="sizes"><div>${ICON[o.k](32, i + 'b')}32</div><div>${ICON[o.k](20, i + 'c')}20</div><div>${ICON[o.k](16, i + 'd')}16</div></div></div>
+  <div class="tb">${ICON[o.k](16, i + 'e')}<span>${o.n} (2 waiting)</span><span class="x">– ▢ ✕</span></div>
+  <div class="task"><span><i></i></span><span><i></i></span><span class="on">${ICON[o.k](24, i + 'f')}</span><span><i></i></span></div>
+  <p class="meaning">${o.d}</p></div>`).join('')
+</script>
+</body>
+</html>

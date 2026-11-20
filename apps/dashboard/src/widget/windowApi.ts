@@ -1,4 +1,4 @@
-// Asks the local agent service to pin, unpin or resize the widget's own window (POST /api/window). The page itself is not
+// Asks the local agent service to pin, unpin, resize, move (dock) or fade the widget's own window (POST /api/window). The page itself is not
 // allowed to change its window, so the service does it with one Windows call. Only works when the widget was opened by
 // start-widget.cmd (that is how the service finds the window).
 
@@ -6,6 +6,11 @@ export interface WindowChange {
   pin?: boolean
   width?: number
   height?: number
+  /** Top left corner on the screen (both or neither). */
+  x?: number
+  y?: number
+  /** 15 (faint) to 100 (solid). */
+  opacity?: number
 }
 
 export type WindowAnswer = { ok: true } | { ok: false; error: string }

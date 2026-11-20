@@ -64,7 +64,7 @@ $TOPMOST = [System.IntPtr]::new(-1)
 $NOMOVE_NOSIZE_SHOW = [uint32](0x0002 -bor 0x0001 -bor 0x0040)
 for ($i = 0; $i -lt 30; $i++) {
   Start-Sleep -Milliseconds 500
-  $ids = [int[]]@(Get-CimInstance Win32_Process -Filter "Name='msedge.exe'" | Where-Object { $_.CommandLine -like '*agent-factory-3dwidget-edge*' } | ForEach-Object { $_.ProcessId })
+  $ids = [int[]]@(Get-CimInstance Win32_Process -Filter "Name='msedge.exe'" | Where-Object { $_.CommandLine -like "*$profileDir*" } | ForEach-Object { $_.ProcessId })
   if ($ids.Count -eq 0) { continue }
   $h = [AgentFactoryWidget.Win]::Find($ids, 'Agents')
   if ($h -ne [System.IntPtr]::Zero) {

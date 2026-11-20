@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process'
 
-// The desktop widget's window: pin it on top, unpin it, or change its size (collapse and expand). This touches nothing but
+// The desktop widget's window: pin it on top, unpin it, change its size (collapse and expand), move it (dock it to the screen
+// edge) and make it see-through (it fades when left alone). This touches nothing but
 // the widget's own Edge window, found by the private profile folder it was started with (scripts/widget-window.ps1). The
 // script is built from fixed text and whole numbers only; nothing from a request is pasted in as text. Windows only.
 
@@ -13,9 +14,19 @@ export interface WindowRequest {
   /** New outer size in pixels (both or neither). */
   width?: number
   height?: number
+  /** New place of the top left corner in screen pixels (both or neither). May be partly off screen: docked to the screen
+   *  edge, only a small tab of the widget stays in view. */
+  x?: number
+  y?: number
+  /** How solid the window is, from 15 (faint) to 100 (solid). It fades when left alone. */
+  opacity?: number
 }
 
-const KEYS = new Set(['pin', 'width', 'height'])
+const KEYS = new Set(['pin', 'width', 'height', 'x', 'y', 'opacity'])
+/** No screen is this far from the main one, so a place beyond it is a mistake. */
+const FAR = 20000
+/** The faintest the window may get, so it can never be lost. */
+const FAINTEST = 15
 const MIN = 60
 const MAX = 3000
 
@@ -35,23 +46,41 @@ export function parseWindowRequest(input: unknown): { ok: true; request: WindowR
     request.width = Math.round(w)
     request.height = Math.round(h)
   }
-  if (request.pin === undefined && request.width === undefined) return { ok: false, error: 'Nothing to do.' }
+  if ('x' in o || 'y' in o) {
+    const x = o.x, y = o.y
+    if (typeof x !== 'number' || typeof y !== 'number' || !Number.isFinite(x) || !Number.isFinite(y)) return { ok: false, error: 'Give both x and y as numbers.' }
+    if (Math.abs(x) > FAR || Math.abs(y) > FAR) return { ok: false, error: `x and y must be between -${FAR} and ${FAR}.` }
+    request.x = Math.round(x)
+    request.y = Math.round(y)
+  }
+  if ('opacity' in o) {
+    const v = o.opacity
+    if (typeof v !== 'number' || !Number.isFinite(v) || v < FAINTEST || v > 100) return { ok: false, error: `opacity must be a number from ${FAINTEST} to 100.` }
+    request.opacity = Math.round(v)
+  }
+  if (request.pin === undefined && request.width === undefined && request.x === undefined && request.opacity === undefined) return { ok: false, error: 'Nothing to do.' }
   return { ok: true, request }
 }
 
 /** C# for Add-Type: finds a visible window of the given processes whose title starts with a prefix, and SetWindowPos. */
-const FINDER = "using System; using System.Runtime.InteropServices; using System.Text;\nnamespace AgentFactoryWidget { public static class Win {\n  public delegate bool EnumProc(IntPtr h, IntPtr p);\n  [DllImport(\"user32.dll\")] public static extern bool EnumWindows(EnumProc cb, IntPtr p);\n  [DllImport(\"user32.dll\")] public static extern bool IsWindowVisible(IntPtr h);\n  [DllImport(\"user32.dll\")] public static extern int GetWindowThreadProcessId(IntPtr h, out int pid);\n  [DllImport(\"user32.dll\", CharSet = CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, StringBuilder s, int n);\n  [DllImport(\"user32.dll\")] public static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);\n  public static IntPtr Find(int[] pids, string prefix) {\n    IntPtr found = IntPtr.Zero;\n    EnumWindows(delegate (IntPtr h, IntPtr p) {\n      if (!IsWindowVisible(h)) return true;\n      int pid; GetWindowThreadProcessId(h, out pid);\n      if (Array.IndexOf(pids, pid) < 0) return true;\n      StringBuilder sb = new StringBuilder(512); GetWindowText(h, sb, 512);\n      if (sb.ToString().StartsWith(prefix)) { found = h; return false; }\n      return true;\n    }, IntPtr.Zero);\n    return found;\n  }\n} }"
+const FINDER = "using System; using System.Runtime.InteropServices; using System.Text;\nnamespace AgentFactoryWidget { public static class Win {\n  public delegate bool EnumProc(IntPtr h, IntPtr p);\n  [DllImport(\"user32.dll\")] public static extern bool EnumWindows(EnumProc cb, IntPtr p);\n  [DllImport(\"user32.dll\")] public static extern bool IsWindowVisible(IntPtr h);\n  [DllImport(\"user32.dll\")] public static extern int GetWindowThreadProcessId(IntPtr h, out int pid);\n  [DllImport(\"user32.dll\", CharSet = CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, StringBuilder s, int n);\n  [DllImport(\"user32.dll\")] public static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);\n  [DllImport(\"user32.dll\")] public static extern int GetWindowLong(IntPtr h, int index);\n  [DllImport(\"user32.dll\")] public static extern int SetWindowLong(IntPtr h, int index, int value);\n  [DllImport(\"user32.dll\")] public static extern bool SetLayeredWindowAttributes(IntPtr h, uint key, byte alpha, uint flags);\n  public static IntPtr Find(int[] pids, string prefix) {\n    IntPtr found = IntPtr.Zero;\n    EnumWindows(delegate (IntPtr h, IntPtr p) {\n      if (!IsWindowVisible(h)) return true;\n      int pid; GetWindowThreadProcessId(h, out pid);\n      if (Array.IndexOf(pids, pid) < 0) return true;\n      StringBuilder sb = new StringBuilder(512); GetWindowText(h, sb, 512);\n      if (sb.ToString().StartsWith(prefix)) { found = h; return false; }\n      return true;\n    }, IntPtr.Zero);\n    return found;\n  }\n} }"
 
 const NOSIZE = 0x1, NOMOVE = 0x2, NOZORDER = 0x4, NOACTIVATE = 0x10
 
-/** The PowerShell that finds the widget window and calls SetWindowPos once. Exit code 3: the widget window is not open. */
+const GWL_EXSTYLE = -20, WS_EX_LAYERED = 0x80000, LWA_ALPHA = 2
+
+/** The PowerShell that finds the widget window, calls SetWindowPos once (pin, size, place) and sets how see-through it is.
+ *  Exit code 3: the widget window is not open. */
 export function windowScript(r: WindowRequest): string {
   const sized = r.width !== undefined && r.height !== undefined
+  const moved = r.x !== undefined && r.y !== undefined
   const after = r.pin === undefined ? 0 : r.pin ? -1 : -2 // HWND_TOPMOST, HWND_NOTOPMOST
-  const flags = NOMOVE | NOACTIVATE | (sized ? 0 : NOSIZE) | (r.pin === undefined ? NOZORDER : 0)
+  const flags = NOACTIVATE | (moved ? 0 : NOMOVE) | (sized ? 0 : NOSIZE) | (r.pin === undefined ? NOZORDER : 0)
   const w = sized ? Math.round(r.width!) : 0
   const h = sized ? Math.round(r.height!) : 0
-  return [
+  const x = moved ? Math.round(r.x!) : 0
+  const y = moved ? Math.round(r.y!) : 0
+  const lines = [
     "$ErrorActionPreference = 'Stop'",
     // a small window finder: the widget's Edge may hold other windows too (the 3D hall opened from the widget), so look
     // through all its visible windows for the one whose title starts with "Agents"
@@ -62,8 +91,16 @@ export function windowScript(r: WindowRequest): string {
     'if ($ids.Count -eq 0) { exit 3 }',
     "$h = [AgentFactoryWidget.Win]::Find($ids, 'Agents')",
     'if ($h -eq [System.IntPtr]::Zero) { exit 3 }',
-    `[void][AgentFactoryWidget.Win]::SetWindowPos($h, [System.IntPtr]::new(${after}), 0, 0, ${w}, ${h}, ${flags})`,
-  ].join('\n')
+  ]
+  if (r.pin !== undefined || sized || moved) lines.push(`[void][AgentFactoryWidget.Win]::SetWindowPos($h, [System.IntPtr]::new(${after}), ${x}, ${y}, ${w}, ${h}, ${flags})`)
+  if (r.opacity !== undefined) {
+    // one alpha for the whole window (a layered window); at 100 it is solid again
+    const alpha = Math.round((Math.min(100, Math.max(FAINTEST, r.opacity)) / 100) * 255)
+    lines.push(`$ex = [AgentFactoryWidget.Win]::GetWindowLong($h, ${GWL_EXSTYLE})`)
+    lines.push(`[void][AgentFactoryWidget.Win]::SetWindowLong($h, ${GWL_EXSTYLE}, ($ex -bor 0x${WS_EX_LAYERED.toString(16)}))`)
+    lines.push(`[void][AgentFactoryWidget.Win]::SetLayeredWindowAttributes($h, 0, ${alpha}, ${LWA_ALPHA})`)
+  }
+  return lines.join('\n')
 }
 
 export type WindowResult = { ok: true } | { ok: false; status: number; error: string }

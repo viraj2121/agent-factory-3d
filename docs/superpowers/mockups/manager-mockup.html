@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Agent Manager - design mockup (sample data)</title>
+<style>
+  /* Windows 11 (Fluent) inspired: Segoe UI Variable, layered neutral surfaces, 4-8 px radii, one accent colour */
+  :root {
+    --font: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+    --accent: #4cc2ff; --accent-strong: #0067c0;
+    --bg: #1c1c1c; --mica: #202020; --layer: #2b2b2b; --layer2: #323232; --layer3: #3a3a3a;
+    --stroke: rgba(255,255,255,.08); --stroke2: rgba(255,255,255,.14);
+    --txt: #ffffff; --txt2: rgba(255,255,255,.786); --txt3: rgba(255,255,255,.544);
+    --wait: #fce100; --wait-bg: rgba(252,225,0,.12); --run: #6ccb5f; --run-bg: rgba(108,203,95,.12); --rest: #9a9a9a; --rest-bg: rgba(255,255,255,.06);
+    --danger: #ff99a4; --sel: rgba(255,255,255,.07);
+  }
+  .light {
+    --accent: #0067c0; --bg: #f3f3f3; --mica: #f3f3f3; --layer: #fbfbfb; --layer2: #ffffff; --layer3: #f0f0f0;
+    --stroke: rgba(0,0,0,.07); --stroke2: rgba(0,0,0,.12);
+    --txt: #1a1a1a; --txt2: rgba(0,0,0,.62); --txt3: rgba(0,0,0,.45);
+    --wait: #9d5d00; --wait-bg: rgba(157,93,0,.1); --run: #0f7b0f; --run-bg: rgba(15,123,15,.09); --rest: #6b6b6b; --rest-bg: rgba(0,0,0,.05);
+    --danger: #c42b1c; --sel: rgba(0,0,0,.05);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; font: 14px/20px var(--font); background: #0d1117; color: var(--txt); }
+  .page { padding: 18px 24px 32px; }
+  .ctl { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; color: #c9d1d9; font-size: 13px; flex-wrap: wrap; }
+  .ctl b { color: #fff; font-size: 15px; margin-right: 8px; }
+  .ctl button { padding: 5px 12px; border-radius: 6px; border: 1px solid #30363d; background: #161b22; color: #c9d1d9; cursor: pointer; font: inherit; }
+  .ctl button.on { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+  .ctl .note { margin-left: auto; color: #8b949e; }
+
+  /* ---------- window frame ---------- */
+  .win { width: 1240px; height: 760px; border-radius: 8px; overflow: hidden; background: var(--mica); border: 1px solid var(--stroke2); box-shadow: 0 30px 80px rgba(0,0,0,.55); display: grid; grid-template-rows: 32px 1fr 26px; color: var(--txt); }
+  .titlebar { display: flex; align-items: center; gap: 10px; padding-left: 14px; font-size: 12px; color: var(--txt2); }
+  .titlebar .sp { flex: 1; }
+  .cap { width: 46px; height: 32px; display: flex; align-items: center; justify-content: center; color: var(--txt2); }
+  .cap svg { width: 10px; height: 10px; }
+  .logo { width: 16px; height: 16px; }
+  .body { display: grid; grid-template-columns: 228px 1fr 360px; min-height: 0; }
+
+  /* ---------- navigation ---------- */
+  nav { padding: 4px 6px 8px; display: flex; flex-direction: column; gap: 2px; }
+  .navitem { display: flex; align-items: center; gap: 12px; height: 36px; padding: 0 10px 0 12px; border-radius: 5px; color: var(--txt); cursor: pointer; position: relative; font-size: 14px; }
+  .navitem:hover { background: var(--sel); }
+  .navitem.on { background: var(--sel); }
+  .navitem.on::before { content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 2px; background: var(--accent); }
+  .navitem svg { width: 16px; height: 16px; flex: none; color: var(--txt2); }
+  .navitem .badge { margin-left: auto; min-width: 20px; height: 18px; padding: 0 6px; border-radius: 9px; font-size: 11px; line-height: 18px; text-align: center; background: var(--layer3); color: var(--txt2); }
+  .navitem .badge.wait { background: var(--wait); color: #000; font-weight: 600; }
+  .light .navitem .badge.wait { color: #fff; }
+  .navsep { height: 1px; background: var(--stroke); margin: 8px 8px; }
+  .navlabel { font-size: 12px; color: var(--txt3); padding: 8px 12px 2px; }
+  nav .bottom { margin-top: auto; }
+
+  /* ---------- content ---------- */
+  main { background: var(--layer); border-top-left-radius: 8px; border: 1px solid var(--stroke); border-right: 0; border-bottom: 0; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  .cmd { display: flex; align-items: center; gap: 8px; padding: 16px 20px 8px; }
+  .cmd h1 { margin: 0; font: 600 20px/28px var(--font); }
+  .live { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--txt3); margin-left: 10px; }
+  .live i { width: 6px; height: 6px; border-radius: 50%; background: var(--run); }
+  .cmd .sp { flex: 1; }
+  .search { display: flex; align-items: center; gap: 8px; width: 260px; height: 32px; padding: 0 10px; border-radius: 4px; background: var(--layer2); border: 1px solid var(--stroke); border-bottom-color: var(--stroke2); color: var(--txt3); font-size: 13px; }
+  .search svg { width: 14px; height: 14px; }
+  .search input { border: 0; outline: 0; background: transparent; color: var(--txt); font: inherit; width: 100%; }
+  .btn { height: 32px; padding: 0 12px; border-radius: 4px; border: 1px solid var(--stroke); border-bottom-color: var(--stroke2); background: var(--layer2); color: var(--txt); font: 13px var(--font); display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  .btn svg { width: 14px; height: 14px; }
+  .btn.accent { background: var(--accent); border-color: transparent; color: #000; }
+  .light .btn.accent { color: #fff; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 6px 20px 12px; }
+  .card { padding: 12px 14px; border-radius: 6px; background: var(--layer2); border: 1px solid var(--stroke); cursor: pointer; text-align: left; color: var(--txt); font: inherit; }
+  .card.on { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .card .k { font-size: 12px; color: var(--txt2); display: flex; align-items: center; gap: 6px; }
+  .card .v { font: 600 28px/36px var(--font); }
+  .card .s { font-size: 12px; color: var(--txt3); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+  .filters { display: flex; gap: 6px; padding: 0 20px 10px; align-items: center; }
+  .chip { height: 28px; padding: 0 10px; border-radius: 14px; border: 1px solid var(--stroke2); background: transparent; color: var(--txt2); font: 12.5px var(--font); display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  .chip.on { background: var(--accent); border-color: transparent; color: #000; }
+  .light .chip.on { color: #fff; }
+  .filters .sp { flex: 1; }
+  .filters small { color: var(--txt3); font-size: 12px; }
+
+  .tablewrap { flex: 1; overflow: auto; padding: 0 12px 12px; min-height: 0; }
+  table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+  th { position: sticky; top: 0; background: var(--layer); text-align: left; font-weight: 400; color: var(--txt2); padding: 8px 8px; border-bottom: 1px solid var(--stroke); white-space: nowrap; cursor: pointer; user-select: none; }
+  th .ar { opacity: .7; font-size: 10px; margin-left: 4px; }
+  th.na { color: var(--txt3); }
+  td { padding: 0 8px; height: 40px; border-bottom: 1px solid var(--stroke); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+  tr.row { cursor: pointer; }
+  tr.row:hover td { background: var(--sel); }
+  tr.row.sel td { background: var(--sel); }
+  tr.row.sel td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+  .pill { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 11px; font-size: 12px; }
+  .pill.wait { background: var(--wait-bg); color: var(--wait); } .pill.run { background: var(--run-bg); color: var(--run); } .pill.rest { background: var(--rest-bg); color: var(--rest); }
+  .pill .dot { width: 6px; height: 6px; background: currentColor; }
+  .tool { display: inline-flex; align-items: center; gap: 6px; }
+  .tool i { width: 16px; height: 16px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font: 700 8.5px var(--font); color: #fff; font-style: normal; }
+  .agentname { font-weight: 600; }
+  .muted { color: var(--txt3); }
+  .old { color: var(--danger); }
+
+  /* ---------- detail pane ---------- */
+  aside { background: var(--layer); border-top: 1px solid var(--stroke); border-left: 1px solid var(--stroke); display: flex; flex-direction: column; min-height: 0; }
+  .dhead { padding: 16px 18px 12px; border-bottom: 1px solid var(--stroke); }
+  .dhead .t { display: flex; align-items: center; gap: 8px; }
+  .dhead h2 { margin: 0; font: 600 16px/22px var(--font); }
+  .dhead .sub { color: var(--txt2); font-size: 12.5px; margin-top: 2px; }
+  .dbody { flex: 1; overflow: auto; padding: 6px 18px 16px; }
+  .sect { margin-top: 14px; }
+  .sect h3 { margin: 0 0 6px; font: 600 12px var(--font); color: var(--txt2); text-transform: none; letter-spacing: .01em; display: flex; align-items: center; gap: 6px; }
+  .tag-plan { font: 500 10.5px var(--font); color: var(--accent); border: 1px solid currentColor; border-radius: 8px; padding: 0 6px; }
+  .kv { display: grid; grid-template-columns: 112px 1fr; gap: 6px 10px; font-size: 13px; }
+  .kv dt { color: var(--txt3); } .kv dd { margin: 0; }
+  .progress { height: 4px; border-radius: 2px; background: var(--layer3); overflow: hidden; margin-top: 6px; }
+  .progress i { display: block; height: 100%; background: var(--accent); }
+  .timeline { list-style: none; margin: 0; padding: 0; }
+  .timeline li { display: grid; grid-template-columns: 52px 14px 1fr; gap: 8px; font-size: 12.5px; padding: 3px 0; }
+  .timeline .tm { color: var(--txt3); text-align: right; font-variant-numeric: tabular-nums; }
+  .timeline .ln { position: relative; }
+  .timeline .ln::before { content: ''; position: absolute; left: 6px; top: -6px; bottom: -6px; width: 1px; background: var(--stroke2); }
+  .timeline .ln::after { content: ''; position: absolute; left: 3px; top: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--txt3); }
+  .timeline li.now .ln::after { background: var(--wait); }
+  .actions { display: flex; flex-wrap: wrap; gap: 6px; }
+  .ro { margin-top: 8px; font-size: 12px; color: var(--txt3); }
+  .statusbar { display: flex; align-items: center; gap: 14px; padding: 0 14px; font-size: 12px; color: var(--txt3); border-top: 1px solid var(--stroke); background: var(--mica); }
+  .statusbar .sp { flex: 1; }
+
+  /* ---------- mini mode (the always-on-top companion) ---------- */
+  .mini { width: 340px; border-radius: 8px; overflow: hidden; background: var(--mica); border: 1px solid var(--stroke2); box-shadow: 0 30px 80px rgba(0,0,0,.55); color: var(--txt); }
+  .mini .titlebar { height: 32px; }
+  .mini .mbody { background: var(--layer); border-top: 1px solid var(--stroke); padding: 10px 10px 8px; }
+  .mini .mcards { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin-bottom: 8px; }
+  .mini .mcard { padding: 6px 8px; border-radius: 6px; background: var(--layer2); border: 1px solid var(--stroke); }
+  .mini .mcard b { display: block; font: 600 18px/24px var(--font); }
+  .mini .mcard span { font-size: 11px; color: var(--txt2); }
+  .mrow { display: grid; grid-template-columns: 8px 1fr auto; gap: 2px 10px; align-items: center; padding: 7px 8px; border-radius: 5px; }
+  .mrow:hover { background: var(--sel); }
+  .mrow .nm { font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mrow .ds { grid-column: 2 / 4; font-size: 12px; color: var(--txt2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mrow .tm { font-size: 12px; color: var(--txt3); }
+  .mrow.wait .tm { color: var(--wait); }
+  .mgroup { font-size: 11.5px; color: var(--txt3); padding: 8px 8px 2px; }
+  .mfoot { display: flex; gap: 6px; padding: 8px 10px; border-top: 1px solid var(--stroke); background: var(--layer); }
+  .mfoot .btn { flex: 1; justify-content: center; height: 28px; }
+  .hidden { display: none !important; }
+
+  /* ---------- motion ---------- */
+  .page { position: relative; overflow: hidden; }
+  .page::before, .page::after { content: ''; position: absolute; width: 620px; height: 620px; border-radius: 50%; filter: blur(110px); opacity: .32; z-index: 0; pointer-events: none; animation: drift 18s ease-in-out infinite alternate; }
+  .page::before { background: #1f6feb; left: -160px; top: 60px; }
+  .page::after { background: #8957e5; right: 40px; top: 360px; animation-delay: -9s; }
+  .page > * { position: relative; z-index: 1; }
+  @keyframes drift { to { transform: translate(120px, -60px) scale(1.15); } }
+  .win, .mini { backdrop-filter: blur(30px) saturate(1.4); background: color-mix(in srgb, var(--mica) 88%, transparent); }
+  .card { position: relative; overflow: hidden; transition: transform .18s ease, box-shadow .18s ease; }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0,0,0,.25); }
+  .card.glow::after { content: ''; position: absolute; inset: -1px; border-radius: 6px; pointer-events: none; box-shadow: inset 0 0 0 1px var(--wait), 0 0 24px -4px var(--wait); opacity: .55; animation: breathe 2.4s ease-in-out infinite; }
+  @keyframes breathe { 50% { opacity: .12; } }
+  .spark { position: absolute; right: 12px; top: 12px; width: 70px; height: 24px; opacity: .9; }
+  .spark path.l { fill: none; stroke-width: 1.6; stroke-dasharray: 220; stroke-dashoffset: 220; animation: draw 1.4s ease-out forwards; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  .live i { animation: livepulse 1.6s ease-in-out infinite; }
+  @keyframes livepulse { 0%,100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--run) 70%, transparent); } 50% { box-shadow: 0 0 0 5px transparent; } }
+  tr.row { animation: rowin .32s ease both; }
+  @keyframes rowin { from { opacity: 0; transform: translateY(6px); } }
+  tr.row td { transition: background .12s ease; }
+  tr.row.wait td:first-child { box-shadow: inset 3px 0 0 var(--wait); }
+  tr.row.wait td { background-image: linear-gradient(90deg, transparent, color-mix(in srgb, var(--wait) 9%, transparent), transparent); background-size: 300% 100%; animation: shimmer 3.2s linear infinite; }
+  @keyframes shimmer { from { background-position: 150% 0; } to { background-position: -150% 0; } }
+  .pill.wait .dot { animation: livepulse 1.4s ease-in-out infinite; color: var(--wait); }
+  td.qa { width: 76px; padding-right: 10px; }
+  .qa span { display: inline-flex; gap: 2px; opacity: 0; transform: translateX(6px); transition: opacity .15s, transform .15s; }
+  tr.row:hover .qa span, tr.row.sel .qa span { opacity: 1; transform: none; }
+  .qa button { width: 28px; height: 28px; border-radius: 4px; border: 0; background: transparent; color: var(--txt2); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+  .qa button:hover { background: var(--layer3); color: var(--txt); }
+  .qa svg { width: 15px; height: 15px; }
+  aside .dhead, aside .dbody { animation: paneIn .28s ease both; }
+  @keyframes paneIn { from { opacity: 0; transform: translateX(14px); } }
+  .timeline li { animation: rowin .3s ease both; }
+  .timeline li:nth-child(2) { animation-delay: .06s; } .timeline li:nth-child(3) { animation-delay: .12s; } .timeline li:nth-child(4) { animation-delay: .18s; }
+  .btn, .chip { transition: background .12s, transform .08s; }
+  .btn:active:not(:disabled), .chip:active { transform: scale(.97); }
+  .chip:not(.on):hover { background: var(--sel); }
+  .kbd { font: 11px var(--font); padding: 1px 5px; border-radius: 4px; border: 1px solid var(--stroke2); color: var(--txt3); margin-left: 6px; }
+  /* toast */
+  .toast { position: absolute; right: 22px; bottom: 40px; width: 330px; padding: 12px 14px; border-radius: 8px; background: var(--layer2); border: 1px solid var(--stroke2); box-shadow: 0 18px 40px rgba(0,0,0,.45); display: grid; grid-template-columns: 30px 1fr auto; gap: 4px 10px; align-items: center; transform: translateY(20px); opacity: 0; pointer-events: none; transition: transform .35s cubic-bezier(.2,.9,.3,1.2), opacity .25s; z-index: 5; }
+  .toast.show { transform: none; opacity: 1; pointer-events: auto; }
+  .toast .ic { width: 30px; height: 30px; border-radius: 50%; background: var(--wait-bg); color: var(--wait); display: flex; align-items: center; justify-content: center; grid-row: span 2; }
+  .toast b { font-size: 13px; } .toast small { grid-column: 2; color: var(--txt2); font-size: 12px; }
+  .toast .demo { grid-column: 3; grid-row: 1; font-size: 10px; color: var(--txt3); border: 1px solid var(--stroke2); border-radius: 6px; padding: 0 5px; }
+  .toast .go { grid-column: 3; grid-row: 2; }
+  /* command palette */
+  .palette { position: absolute; inset: 0; background: rgba(0,0,0,.35); display: flex; justify-content: center; align-items: flex-start; padding-top: 90px; z-index: 6; opacity: 0; pointer-events: none; transition: opacity .15s; }
+  .palette.show { opacity: 1; pointer-events: auto; }
+  .pbox { width: 560px; border-radius: 8px; background: var(--layer2); border: 1px solid var(--stroke2); box-shadow: 0 30px 70px rgba(0,0,0,.5); overflow: hidden; transform: scale(.97); transition: transform .15s; }
+  .palette.show .pbox { transform: none; }
+  .pbox input { width: 100%; height: 46px; border: 0; border-bottom: 1px solid var(--stroke); background: transparent; color: var(--txt); font: 15px var(--font); padding: 0 16px; outline: none; }
+  .pitem { display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 16px; font-size: 13.5px; cursor: pointer; }
+  .pitem.on, .pitem:hover { background: var(--sel); }
+  .pitem .k { margin-left: auto; }
+  .win { position: relative; }
+  .notes { max-width: 1240px; margin-top: 16px; padding: 12px 16px; border: 1px dashed #3d444d; border-radius: 8px; color: #8b949e; font-size: 13px; line-height: 1.55; }
+  .notes b { color: #c9d1d9; }
+</style>
+</head>
+<body>
+<div class="page" id="page">
+  <div class="ctl">
+    <b>Agent Manager</b>
+    <button data-v="full" class="on">Full window</button>
+    <button data-v="mini">Mini (always on top)</button>
+    <button id="theme">Light / dark</button>
+    <span class="note">Design mockup · sample data · Windows 11 style</span>
+  </div>
+
+  <!-- ===================== FULL WINDOW ===================== -->
+  <div class="win" id="full">
+    <div class="titlebar">
+      <svg class="logo" viewBox="0 0 16 16"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="#4cc2ff"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="#6ccb5f"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="#fce100"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="#9a9a9a"/></svg>
+      Agent Manager
+      <span class="sp"></span>
+      <span class="cap"><svg viewBox="0 0 10 10"><path d="M0 5h10" stroke="currentColor"/></svg></span>
+      <span class="cap"><svg viewBox="0 0 10 10"><rect x=".5" y=".5" width="9" height="9" fill="none" stroke="currentColor"/></svg></span>
+      <span class="cap"><svg viewBox="0 0 10 10"><path d="M0 0l10 10M10 0L0 10" stroke="currentColor"/></svg></span>
+    </div>
+    <div class="body">
+      <nav>
+        <div class="navitem"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.5" y="1.5" width="5" height="5" rx="1"/><rect x="9.5" y="1.5" width="5" height="5" rx="1"/><rect x="1.5" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/></svg>Overview</div>
+        <div class="navitem on"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M2 4h12M2 8h12M2 12h12"/></svg>Sessions<span class="badge" id="nb-all"></span></div>
+        <div class="navitem"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="8" cy="8" r="6.2"/><path d="M8 4.5V8l2.5 1.5"/></svg>Waiting for you<span class="badge wait" id="nb-wait"></span></div>
+        <div class="navitem"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M2.5 8a5.5 5.5 0 1 0 1.6-3.9M2.5 2.5v2.2h2.2"/></svg>History</div>
+        <div class="navsep"></div>
+        <div class="navlabel">Projects</div>
+        <div class="navitem"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M1.5 4.5v8h13v-7H8L6.5 3.5h-5z"/></svg>Atlas App</div>
+        <div class="navitem"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M1.5 4.5v8h13v-7H8L6.5 3.5h-5z"/></svg>Beacon Metrics</div>
+        <div class="navitem"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M1.5 4.5v8h13v-7H8L6.5 3.5h-5z"/></svg>Relay Pipeline</div>
+        <div class="bottom">
+          <div class="navitem"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M5 2h6l3 5-3 5H5L2 7z"/><circle cx="8" cy="7" r="1.6"/></svg>3D hall</div>
+          <div class="navitem"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="8" cy="8" r="2.2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4"/></svg>Settings</div>
+        </div>
+      </nav>
+
+      <main>
+        <div class="cmd">
+          <h1>Sessions</h1><span class="live"><i></i>Live · updated 2 s ago</span>
+          <span class="sp"></span>
+          <label class="search"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg><input id="q" placeholder="Search agents, projects, models"></label>
+          <button class="btn" title="Columns"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.5" y="2.5" width="13" height="11" rx="1"/><path d="M6 2.5v11M10.5 2.5v11"/></svg>Columns</button>
+        </div>
+        <div class="cards" id="cards"></div>
+        <div class="filters" id="filters"></div>
+        <div class="tablewrap"><table><thead><tr id="thead"></tr></thead><tbody id="tbody"></tbody></table></div>
+      </main>
+
+      <aside id="detail"></aside>
+    </div>
+    <div class="toast" id="toast"><span class="ic"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="6.2"/><path d="M8 4.5V8l2.5 1.5"/></svg></span><b id="toastTitle"></b><span class="demo">demo event</span><small id="toastText"></small><button class="btn go" id="toastGo">View</button></div>
+    <div class="palette" id="palette"><div class="pbox"><input id="pin" placeholder="Type a command or an agent name"><div id="plist"></div></div></div>
+    <div class="statusbar"><span>Read-only</span><span>This computer</span><span>Reading: Claude Code · Codex · Copilot (VS Code)</span><span class="sp"></span><span>↑ ↓ move · Enter open · / search · Ctrl K commands</span><span>States are inferred from activity</span></div>
+  </div>
+
+  <!-- ===================== MINI (always on top) ===================== -->
+  <div class="mini hidden" id="mini">
+    <div class="titlebar"><svg class="logo" viewBox="0 0 16 16"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="#4cc2ff"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="#6ccb5f"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="#fce100"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="#9a9a9a"/></svg>Agents<span class="sp"></span><span class="cap" title="Pinned on top"><svg viewBox="0 0 10 10"><path d="M3 1h4l-.6 3 1.6 1.6H2L3.6 4z M5 5.6V9.5" fill="none" stroke="currentColor"/></svg></span><span class="cap"><svg viewBox="0 0 10 10"><path d="M0 0l10 10M10 0L0 10" stroke="currentColor"/></svg></span></div>
+    <div class="mbody" id="mbody"></div>
+    <div class="mfoot"><button class="btn">Open manager</button><button class="btn">3D hall</button></div>
+  </div>
+
+  <div class="notes" id="notes"></div>
+</div>
+
+<script>
+const TOOL = { claude: { n: 'Claude Code', c: '#d97757', a: 'CC' }, codex: { n: 'Codex', c: '#4a7cf7', a: 'CX' }, 'copilot': { n: 'Copilot · VS Code', c: '#8957e5', a: 'GH' } }
+// sample sessions (made up). "na" fields are not read today and show as a dash.
+const ROWS = [
+  { id: 1, st: 'wait', name: 'Claude Code', tool: 'claude', proj: 'Beacon Metrics', doing: 'A step is waiting (maybe for your permission) · running a command', model: 'claude-opus', active: 34, last: 12, calls: 41, plan: [4, 9], started: '10:08' },
+  { id: 2, st: 'wait', name: 'test-runner', tool: 'codex', proj: 'Relay Pipeline', doing: 'Waiting for your reply', model: 'gpt-5-codex', active: 18, last: 4, calls: 23, plan: null, started: '10:24' },
+  { id: 3, st: 'run', name: 'Copilot', tool: 'copilot', proj: 'Atlas App', doing: 'editing files', model: 'not reported', active: 9, last: 0, calls: 12, plan: null, started: '10:33' },
+  { id: 4, st: 'run', name: 'Claude Code', tool: 'claude', proj: 'Atlas App', doing: 'running a command · Checkout page refactor', model: 'claude-sonnet', active: 52, last: 0, calls: 88, plan: [3, 7], started: '09:50' },
+  { id: 5, st: 'run', name: 'docs-writer', tool: 'claude', proj: 'Pocket Kit', doing: 'reading code', model: 'claude-haiku', active: 6, last: 1, calls: 9, plan: null, started: '10:36', parent: 'Claude Code (Pocket Kit)' },
+  { id: 6, st: 'rest', name: 'Codex', tool: 'codex', proj: 'Relay Pipeline', doing: 'resting', model: 'gpt-5-codex', active: 41, last: 125, calls: 57, plan: [6, 6], started: '07:58' },
+  { id: 7, st: 'rest', name: 'reviewer', tool: 'claude', proj: 'Atlas App', doing: 'resting', model: 'claude-sonnet', active: 12, last: 48, calls: 15, plan: null, started: '09:12', parent: 'Claude Code (Atlas App)' },
+  { id: 8, st: 'rest', name: 'Copilot', tool: 'copilot', proj: 'Beacon Metrics', doing: 'resting', model: 'not reported', active: 22, last: 190, calls: 31, plan: null, started: '06:40' },
+]
+const COLS = [
+  { k: 'st', n: 'State', w: 120 }, { k: 'name', n: 'Agent' }, { k: 'tool', n: 'Tool' }, { k: 'proj', n: 'Project' }, { k: 'doing', n: 'Doing now' },
+  { k: 'last', n: 'Last activity' }, { k: 'qa', n: '', na: true },
+]
+const ORDER = { wait: 0, run: 1, rest: 2 }
+let sel = 1, state = 'all', tool = 'all', q = '', sortKey = 'st', sortDir = 1, view = 'full'
+
+// sample activity for the little graphs on the cards (made up, labelled as sample in the notes)
+const SPARK = [[1,1,2,1,2,3,2,2], [2,3,3,4,3,5,4,3], [5,4,4,3,4,3,4,4], [3,4,5,6,7,8,9,8]]
+function spark(i, c) {
+  const d = SPARK[i], max = Math.max(...d), pts = d.map((v, j) => [j * (84 / (d.length - 1)), 24 - (v / max) * 20])
+  const line = pts.map((p, j) => (j ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ')
+  return '<svg class="spark" viewBox="0 0 84 26"><path d="' + line + ' L84 26 L0 26 Z" fill="' + c + '" opacity=".12"/><path class="l" d="' + line + '" stroke="' + c + '"/></svg>'
+}
+let counted = false
+function countUp() {
+  document.querySelectorAll('.card .v').forEach((el) => {
+    const to = Number(el.dataset.to)
+    if (counted) { el.textContent = to; return }
+    const t0 = performance.now()
+    const step = (t) => { const k = Math.min(1, (t - t0) / 700); el.textContent = Math.round(to * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(step) }
+    requestAnimationFrame(step)
+  })
+  counted = true
+}
+const ICON_CODE = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M5.5 4L2 8l3.5 4M10.5 4L14 8l-3.5 4"/></svg>'
+const ICON_HALL = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M5 2h6l3 5-3 5H5L2 7z"/><circle cx="8" cy="7" r="1.6"/></svg>'
+const pill = (s) => `<span class="pill ${s}"><span class="dot"></span>${s === 'wait' ? 'Waiting for you' : s === 'run' ? 'Working' : 'Resting'}</span>`
+const toolCell = (t) => `<span class="tool"><i style="background:${TOOL[t].c}">${TOOL[t].a}</i>${TOOL[t].n.split(' · ')[0]}</span>`
+const mins = (m) => (m < 1 ? 'just now' : m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60} min`)
+const ago = (m, s) => (s === 'wait' ? `waiting ${mins(m)}` : m < 1 ? 'now' : `${mins(m)} ago`)
+
+function shown() {
+  const ql = q.trim().toLowerCase()
+  return ROWS.filter((r) => (state === 'all' || r.st === state) && (tool === 'all' || r.tool === tool) && (!ql || [r.name, r.proj, r.model, TOOL[r.tool].n].some((v) => v.toLowerCase().includes(ql))))
+    .sort((a, b) => {
+      const va = sortKey === 'st' ? ORDER[a.st] : a[sortKey], vb = sortKey === 'st' ? ORDER[b.st] : b[sortKey]
+      return (va > vb ? 1 : va < vb ? -1 : 0) * sortDir || ORDER[a.st] - ORDER[b.st]
+    })
+}
+
+function render() {
+  const n = (s) => ROWS.filter((r) => r.st === s).length
+  document.getElementById('nb-all').textContent = ROWS.length
+  document.getElementById('nb-wait').textContent = n('wait')
+  const oldest = Math.max(...ROWS.filter((r) => r.st === 'wait').map((r) => r.last))
+  document.getElementById('cards').innerHTML = [
+    ['wait', 'Waiting for you', n('wait'), `oldest ${mins(oldest)}`, 'var(--wait)'],
+    ['run', 'Working', n('run'), 'across 3 projects', 'var(--run)'],
+    ['rest', 'Resting', n('rest'), 'idle in the last 7 days', 'var(--rest)'],
+    ['all', 'Sessions today', ROWS.length, '3 tools', 'var(--accent)'],
+  ].map(([k, label, v, s, c], i) => `<button class="card ${state === k && k !== 'all' ? 'on' : ''} ${k === 'wait' && v > 0 ? 'glow' : ''}" data-s="${k}"><div class="k"><span class="dot" style="background:${c}"></span>${label}</div><div class="v" data-to="${v}">0</div><div class="s">${s}</div>${spark(i, c)}</button>`).join('')
+  countUp()
+  document.getElementById('filters').innerHTML = [['all', 'All tools'], ['claude', 'Claude Code'], ['codex', 'Codex'], ['copilot', 'Copilot']]
+    .map(([k, l]) => `<button class="chip ${tool === k ? 'on' : ''}" data-t="${k}">${l}</button>`).join('') + `<span class="sp"></span><small>${shown().length} of ${ROWS.length} sessions</small>`
+  document.getElementById('thead').innerHTML = COLS.map((c) => `<th class="${c.na ? 'na' : ''}" data-k="${c.k}" title="${c.na ? 'Not read yet: needs the token counts from each tool' : 'Sort'}">${c.n}${sortKey === c.k ? `<span class="ar">${sortDir > 0 ? '▲' : '▼'}</span>` : ''}</th>`).join('')
+  document.getElementById('tbody').innerHTML = shown().map((r, i) => `<tr class="row ${r.st} ${sel === r.id ? 'sel' : ''}" data-id="${r.id}" style="animation-delay:${i * 25}ms">
+    <td>${pill(r.st)}</td><td class="agentname">${r.name}</td><td>${toolCell(r.tool)}</td><td>${r.proj}</td><td class="muted" title="${r.doing}">${r.doing}</td>
+    <td class="${r.st === 'wait' && r.last >= 10 ? 'old' : ''}">${ago(r.last, r.st)}</td><td class="qa"><span><button title="Open in VS Code">${ICON_CODE}</button><button title="Show in 3D hall">${ICON_HALL}</button></span></td></tr>`).join('')
+  renderDetail()
+  renderMini()
+  bind()
+}
+
+function renderDetail() {
+  const r = ROWS.find((x) => x.id === sel) ?? ROWS[0]
+  const plan = r.plan ? `<div class="sect"><h3>Plan</h3><div>${r.plan[0]} of ${r.plan[1]} tasks done</div><div class="progress"><i style="width:${(r.plan[0] / r.plan[1]) * 100}%"></i></div></div>` : `<div class="sect"><h3>Plan</h3><div class="muted">This agent wrote no plan.</div></div>`
+  document.getElementById('detail').innerHTML = `
+    <div class="dhead"><div class="t">${toolCell(r.tool).replace(TOOL[r.tool].n, '')}<h2>${r.name}</h2></div><div class="sub">${r.proj} · started ${r.started}</div><div style="margin-top:8px">${pill(r.st)}</div></div>
+    <div class="dbody">
+      <div class="sect"><h3>Now</h3><div>${r.doing}</div></div>
+      <div class="sect"><h3>Details</h3><dl class="kv">
+        <dt>Kind</dt><dd>${r.parent ? 'Helper agent' : 'Session'} of ${TOOL[r.tool].n}</dd>
+        ${r.parent ? `<dt>Started by</dt><dd>${r.parent}</dd>` : ''}
+        <dt>Model</dt><dd>${r.model}</dd><dt>Active for</dt><dd>${mins(r.active)}</dd><dt>Last activity</dt><dd>${ago(r.last, r.st)}</dd>
+        <dt>Tool calls</dt><dd>${r.calls}</dd><dt>Tokens / cost</dt><dd class="muted">— not read yet</dd></dl></div>
+      ${plan}
+      <div class="sect"><h3>Recent steps <span class="tag-plan">planned</span></h3><ul class="timeline">
+        <li class="${r.st === 'wait' ? 'now' : ''}"><span class="tm">now</span><span class="ln"></span><span>${r.st === 'wait' ? 'Waiting for you' : r.doing}</span></li>
+        <li><span class="tm">-1 min</span><span class="ln"></span><span>running a command</span></li><li><span class="tm">-3 min</span><span class="ln"></span><span>editing files</span></li><li><span class="tm">-6 min</span><span class="ln"></span><span>reading code</span></li></ul>
+        <div class="ro">Tool names and times only, never the messages or what the commands were.</div></div>
+      <div class="sect"><h3>Open</h3><div class="actions"><button class="btn">Project in VS Code</button><button class="btn">Show in 3D hall</button></div></div>
+      <div class="sect"><h3>Respond <span class="tag-plan">later step</span></h3><div class="actions"><button class="btn accent" disabled>Allow</button><button class="btn" disabled>Deny</button><button class="btn" disabled>Stop</button></div>
+        <div class="ro">Read-only for now. Allow and deny need the read-only rule lifted (Claude Code and Copilot CLI only).</div></div>
+    </div>`
+}
+
+function renderMini() {
+  const g = (s, label) => { const list = ROWS.filter((r) => r.st === s); return list.length ? `<div class="mgroup">${label} · ${list.length}</div>` + list.map((r) => `<div class="mrow ${r.st}"><span class="dot" style="background:var(--${r.st})"></span><span class="nm">${r.name} <span class="muted" style="font-weight:400">· ${r.proj}</span></span><span class="tm">${ago(r.last, r.st)}</span><span class="ds">${r.doing}</span></div>`).join('') : '' }
+  const n = (s) => ROWS.filter((r) => r.st === s).length
+  document.getElementById('mbody').innerHTML = `<div class="mcards"><div class="mcard"><b style="color:var(--wait)">${n('wait')}</b><span>waiting</span></div><div class="mcard"><b style="color:var(--run)">${n('run')}</b><span>working</span></div><div class="mcard"><b style="color:var(--rest)">${n('rest')}</b><span>resting</span></div></div>` + g('wait', 'Waiting for you') + g('run', 'Working')
+}
+
+function bind() {
+  document.querySelectorAll('#cards .card').forEach((c) => (c.onclick = () => { state = c.dataset.s === state || c.dataset.s === 'all' ? 'all' : c.dataset.s; render() }))
+  document.querySelectorAll('#filters .chip').forEach((c) => (c.onclick = () => { tool = c.dataset.t; render() }))
+  document.querySelectorAll('#thead th').forEach((th) => (th.onclick = () => { const k = th.dataset.k; if (k === 'cost' || k === 'qa') return; if (sortKey === k) sortDir *= -1; else { sortKey = k; sortDir = 1 } render() }))
+  document.querySelectorAll('#tbody tr').forEach((tr) => (tr.onclick = () => { sel = Number(tr.dataset.id); render() }))
+}
+document.getElementById('q').oninput = (e) => { q = e.target.value; render() }
+
+// keyboard: up and down move the selection, / searches, Ctrl+K opens the command palette, Esc closes it
+const palette = document.getElementById('palette'), pin = document.getElementById('pin')
+const CMDS = [
+  ['Show agents waiting for you', () => { state = 'wait'; render() }, 'W'],
+  ['Show working agents', () => { state = 'run'; render() }, 'R'],
+  ['Show everything', () => { state = 'all'; tool = 'all'; q = ''; document.getElementById('q').value = ''; render() }, 'A'],
+  ['Only Claude Code', () => { tool = 'claude'; render() }, ''],
+  ['Only Codex', () => { tool = 'codex'; render() }, ''],
+  ['Switch light or dark', () => document.getElementById('page').classList.toggle('light'), 'T'],
+  ['Open the 3D hall', () => {}, 'H'],
+  ...ROWS.map((r) => ['Go to ' + r.name + ' · ' + r.proj, () => { state = 'all'; sel = r.id; render() }, '']),
+]
+let pIdx = 0
+function plist() {
+  const ql = pin.value.toLowerCase(), items = CMDS.filter((c) => c[0].toLowerCase().includes(ql)).slice(0, 8)
+  pIdx = Math.min(pIdx, Math.max(0, items.length - 1))
+  document.getElementById('plist').innerHTML = items.map((c, i) => '<div class="pitem ' + (i === pIdx ? 'on' : '') + '" data-i="' + i + '">' + c[0] + (c[2] ? '<span class="kbd k">' + c[2] + '</span>' : '') + '</div>').join('')
+  document.querySelectorAll('.pitem').forEach((el) => (el.onclick = () => { items[Number(el.dataset.i)][1](); closeP() }))
+  return items
+}
+const openP = () => { palette.classList.add('show'); pin.value = ''; pIdx = 0; plist(); setTimeout(() => pin.focus(), 30) }
+const closeP = () => palette.classList.remove('show')
+pin.oninput = () => { pIdx = 0; plist() }
+palette.onclick = (e) => { if (e.target === palette) closeP() }
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); return palette.classList.contains('show') ? closeP() : openP() }
+  if (palette.classList.contains('show')) {
+    const items = plist()
+    if (e.key === 'Escape') closeP()
+    if (e.key === 'ArrowDown') { pIdx = Math.min(items.length - 1, pIdx + 1); plist(); e.preventDefault() }
+    if (e.key === 'ArrowUp') { pIdx = Math.max(0, pIdx - 1); plist(); e.preventDefault() }
+    if (e.key === 'Enter' && items[pIdx]) { items[pIdx][1](); closeP() }
+    return
+  }
+  if (e.target.tagName === 'INPUT') return
+  if (e.key === '/') { e.preventDefault(); document.getElementById('q').focus() }
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault()
+    const list = shown(), i = list.findIndex((r) => r.id === sel)
+    const next = list[Math.max(0, Math.min(list.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1)))]
+    if (next) { sel = next.id; render() }
+  }
+})
+
+// a demo event: an agent starts waiting, a toast slides in (in the real app this comes from the live data)
+const toast = document.getElementById('toast')
+function demoToast() {
+  const r = ROWS.find((x) => x.st === 'wait' && x.id !== sel) ?? ROWS[1]
+  document.getElementById('toastTitle').textContent = r.name + ' is waiting for you'
+  document.getElementById('toastText').textContent = r.proj + ' · ' + TOOL[r.tool].n
+  document.getElementById('toastGo').onclick = () => { sel = r.id; state = 'all'; render(); toast.classList.remove('show') }
+  toast.classList.add('show')
+  setTimeout(() => toast.classList.remove('show'), 6000)
+}
+setTimeout(demoToast, 2500)
+setInterval(demoToast, 22000)
+// "updated N s ago" keeps counting, as the real one would between snapshots
+let ageS = 2
+setInterval(() => { ageS = ageS >= 4 ? 1 : ageS + 1; const el = document.querySelector('.live'); if (el) el.lastChild.textContent = 'Live · updated ' + ageS + ' s ago' }, 1000)
+document.getElementById('theme').onclick = () => { document.getElementById('page').classList.toggle('light'); }
+document.querySelectorAll('.ctl button[data-v]').forEach((b) => (b.onclick = () => {
+  view = b.dataset.v
+  document.querySelectorAll('.ctl button[data-v]').forEach((x) => x.classList.toggle('on', x === b))
+  document.getElementById('full').classList.toggle('hidden', view !== 'full')
+  document.getElementById('mini').classList.toggle('hidden', view !== 'mini')
+}))
+document.getElementById('notes').innerHTML = `<b>What is real and what is not yet.</b> Everything in the table comes from what the service reads today (state, agent, tool, project, what it is doing, model, how long, last activity, tool calls, plan), except two things marked plainly: <b>Tokens / cost</b> (a dash: not read yet) and <b>Recent steps</b> (marked "planned": the service keeps only the current step today, it would need to keep the last few tool names and times). <b>Allow / Deny / Stop</b> are shown greyed out as a later step. The <b>Mini</b> window is the always-on-top companion: no robots, the same calm style, and a button to open the full manager. The 3D hall stays available from the sidebar. <b>Motion and interactions:</b> counters count up, the waiting card breathes, waiting rows shimmer, rows slide in when you filter, quick actions appear on hover, the detail pane slides in, ↑ ↓ move, / searches, <b>Ctrl+K</b> opens the command palette, and a toast slides in when an agent starts waiting (here a labelled demo event). The little graphs on the cards are <b>sample</b> activity; the real ones would count sessions per 10 minutes.`
+render()
+</script>
+</body>
+</html>

@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Agent manager: three ideas of our own</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --bg: #07090f; --ink: #e9edf5; --dim: #8b93a7; --faint: #3a4152; --wait: #ffb547; --run: #5ee08a; --rest: #7d8597;
+          --claude: #e8835f; --codex: #5b8cff; --copilot: #a77bff; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 14px/1.45 "Segoe UI Variable", "Segoe UI", system-ui, sans-serif; overflow: hidden; }
+  header { position: fixed; inset: 0 0 auto 0; height: 64px; display: flex; align-items: center; gap: 18px; padding: 0 22px; z-index: 5;
+           background: linear-gradient(#07090fee, #07090f00); }
+  header h1 { font-size: 15px; font-weight: 600; margin: 0; letter-spacing: .02em; }
+  header h1 small { color: var(--dim); font-weight: 400; margin-left: 8px; }
+  .tabs { display: flex; gap: 6px; margin-left: 12px; }
+  .tabs button { background: #ffffff0d; color: var(--dim); border: 1px solid #ffffff14; border-radius: 999px; padding: 7px 14px; cursor: pointer; font: inherit; }
+  .tabs button.on { color: #0b0d12; background: var(--ink); border-color: var(--ink); }
+  .tabs button b { font-weight: 600; margin-right: 6px; }
+  .sample { margin-left: auto; color: var(--wait); border: 1px dashed #ffb54766; border-radius: 6px; padding: 4px 10px; font-size: 12px; }
+  .view { position: fixed; inset: 0; display: none; }
+  .view.on { display: block; }
+  canvas { display: block; width: 100%; height: 100%; }
+  .explain { position: fixed; left: 22px; bottom: 20px; max-width: 430px; z-index: 4; background: #0d111acc; backdrop-filter: blur(12px);
+             border: 1px solid #ffffff12; border-radius: 12px; padding: 14px 16px; color: var(--dim); font-size: 13px; }
+  .explain { cursor: pointer; } .explain:not(.open) p { display: none; } .explain h2::after { content: '  ▸ what is this?'; color: var(--dim); font-weight: 400; font-size: 12px; } .explain.open h2::after { content: '  ▾'; }
+  .explain h2 { margin: 0 0 6px; font-size: 15px; color: var(--ink); font-weight: 600; }
+  .explain p { margin: 0 0 6px; }
+  .explain .real { color: var(--run); } .explain .plan { color: var(--wait); }
+  /* detail card shared by the ideas */
+  #card { position: fixed; right: 22px; top: 84px; width: 330px; z-index: 6; background: #0f1420e6; backdrop-filter: blur(16px);
+          border: 1px solid #ffffff18; border-radius: 16px; padding: 18px; transform: translateX(380px); opacity: 0; transition: transform .35s cubic-bezier(.2,.8,.2,1), opacity .35s; }
+  #card.on { transform: none; opacity: 1; }
+  #card .top { display: flex; align-items: center; gap: 10px; }
+  #card .tool { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; font-weight: 700; font-size: 12px; color: #fff; }
+  #card h3 { margin: 0; font-size: 17px; }
+  #card .sub { color: var(--dim); font-size: 12px; }
+  #card .state { display: inline-block; margin: 12px 0 6px; padding: 3px 10px; border-radius: 999px; font-size: 12px; }
+  #card .now { font-size: 15px; margin: 6px 0 12px; }
+  #card dl { display: grid; grid-template-columns: 110px 1fr; gap: 6px 10px; margin: 0; font-size: 13px; }
+  #card dt { color: var(--dim); } #card dd { margin: 0; }
+  #card .btns { display: flex; gap: 8px; margin-top: 16px; }
+  #card .btns button { flex: 1; background: #ffffff10; color: var(--ink); border: 1px solid #ffffff1c; border-radius: 9px; padding: 8px; font: inherit; font-size: 13px; cursor: pointer; }
+  #card .btns button:hover { background: #ffffff1c; }
+  #card .x { margin-left: auto; background: none; border: 0; color: var(--dim); font-size: 18px; cursor: pointer; }
+  #tip { position: fixed; pointer-events: none; z-index: 7; background: #0f1420ee; border: 1px solid #ffffff1c; border-radius: 8px; padding: 6px 10px; font-size: 12px; display: none; }
+  /* idea C: crew deck */
+  #deck { position: absolute; inset: 84px 22px 70px; display: flex; flex-wrap: wrap; gap: 22px; align-content: flex-start; justify-content: center; perspective: 1100px; overflow: auto; padding-top: 14px; }
+  .c { width: 210px; height: 280px; position: relative; transform-style: preserve-3d; transition: transform .6s cubic-bezier(.2,.8,.2,1); cursor: pointer; }
+  .c.flip { transform: rotateY(180deg) !important; }
+  .face { position: absolute; inset: 0; border-radius: 18px; padding: 16px; backface-visibility: hidden; overflow: hidden;
+          background: linear-gradient(160deg, #1a2030, #0d1119); border: 1px solid #ffffff16; box-shadow: 0 20px 40px #0008; }
+  .face::before { content: ''; position: absolute; inset: -40% -40% auto auto; width: 220px; height: 220px; border-radius: 50%; background: var(--tc); opacity: .18; filter: blur(30px); }
+  .back { transform: rotateY(180deg); }
+  .c.wait .front { border-color: #ffb54788; box-shadow: 0 0 0 1px #ffb54744, 0 18px 50px #ffb54733; animation: knock 3.2s infinite; }
+  @keyframes knock { 0%, 80%, 100% { translate: 0 0; } 84% { translate: 0 -8px; } 88% { translate: 0 0; } 92% { translate: 0 -5px; } 96% { translate: 0 0; } }
+  .c.rest .front { filter: saturate(.3) brightness(.75); }
+  .emblem { width: 64px; height: 64px; margin: 4px 0 12px; }
+  .c h4 { margin: 0; font-size: 17px; } .c .p { color: var(--dim); font-size: 12px; }
+  .c .doing { margin-top: 14px; font-size: 14px; min-height: 42px; }
+  .c .foot { position: absolute; left: 16px; right: 16px; bottom: 14px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--dim); }
+  .c .pill { padding: 2px 9px; border-radius: 999px; font-size: 11px; }
+  .c .back dl { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; font-size: 12px; margin: 10px 0 0; }
+  .c .back dt { color: var(--dim); } .c .back dd { margin: 0; }
+  .c .back h5 { margin: 0; font-size: 14px; }
+  .c .back .act { position: absolute; left: 16px; right: 16px; bottom: 14px; display: flex; gap: 6px; }
+  .c .back .act span { flex: 1; text-align: center; padding: 6px; border-radius: 8px; background: #ffffff10; font-size: 11px; }
+  .lane-label { font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Agent manager <small>three ideas of our own, pick one to build</small></h1>
+  <div class="tabs">
+    <button data-v="gravity" class="on"><b>A</b>Gravity</button>
+    <button data-v="rivers"><b>B</b>Rivers of work</button>
+    <button data-v="deck"><b>C</b>Crew deck</button>
+  </div>
+  <div class="sample">Sample data, not your agents</div>
+</header>
+
+<section class="view on" id="v-gravity"><canvas id="cg"></canvas>
+  <div class="explain"><h2>A · Gravity</h2>
+    <p>You are the light in the middle. Every agent is a small world that orbits you. <b>How close it is shows how much it needs you</b>: agents waiting for you sink to the inner ring and pull in further the longer they wait, sending pulses towards you. Working agents circle fast and leave a trail. Resting agents drift slowly at the edge and fade.</p>
+    <p>Colour = tool (coral Claude Code, blue Codex, violet Copilot). Hover for a name, click for details.</p>
+    <p class="real">Real today: who waits, works or rests, wait time, tool, project, model, tool calls, plan.</p>
+  </div></section>
+
+<section class="view" id="v-rivers"><canvas id="cr"></canvas>
+  <div class="explain"><h2>B · Rivers of work</h2>
+    <p>Time flows left to right, ending at <b>now</b>. Each agent is a river: wide when it is busy, thin when it is quiet, a dotted trickle when it rests. Sparks float along it with the work. <b>A waiting agent is a dammed river</b>: it stops, and an amber knot at "now" grows with every minute it waits.</p>
+    <p>You see in one look what happened in the last two hours, not only what is happening now. Click a river for details.</p>
+    <p class="plan">Needs a new piece: the service would keep a short history of each agent's activity (planned).</p>
+  </div></section>
+
+<section class="view" id="v-deck"><div id="deck"></div>
+  <div class="explain"><h2>C · Crew deck</h2>
+    <p>Every agent is a card you can hold. Cards tilt towards your mouse like real ones. <b>A card that needs you knocks</b>: it hops up now and then, glowing amber. Resting cards go grey. Click a card to flip it over for the details.</p>
+    <p>The emblem on each card is drawn from its name, so an agent always keeps its own look.</p>
+    <p class="real">Real today: everything on the cards.</p>
+  </div></section>
+
+<aside id="card"></aside>
+<div id="tip"></div>
+
+<script>
+// ---- sample crew (labelled as sample on the page) ----
+const TOOL = { claude: { n: 'Claude Code', a: 'CC', c: '#e8835f' }, codex: { n: 'Codex', a: 'CX', c: '#5b8cff' }, copilot: { n: 'Copilot', a: 'GH', c: '#a77bff' } }
+const ST = { wait: { n: 'Waiting for you', c: '#ffb547' }, run: { n: 'Working', c: '#5ee08a' }, rest: { n: 'Resting', c: '#7d8597' } }
+const CREW = [
+  { id: 1, name: 'Claude Code', tool: 'claude', project: 'Beacon Metrics', st: 'wait', mins: 12, doing: 'A step is waiting (maybe for your permission)', model: 'claude-sonnet', calls: 41, plan: [2, 5], active: 38 },
+  { id: 2, name: 'test-runner', tool: 'codex', project: 'Relay Pipeline', st: 'wait', mins: 4, doing: 'Waiting for your reply', model: 'gpt-5-codex', calls: 17, plan: null, active: 55 },
+  { id: 3, name: 'Copilot', tool: 'copilot', project: 'Atlas App', st: 'run', mins: 0, doing: 'Editing files', model: 'not reported', calls: 26, plan: null, active: 64 },
+  { id: 4, name: 'Claude Code', tool: 'claude', project: 'Atlas App', st: 'run', mins: 0, doing: 'Running a command · Checkout page refactor', model: 'claude-sonnet', calls: 88, plan: [3, 7], active: 52 },
+  { id: 5, name: 'docs-writer', tool: 'claude', project: 'Pocket Kit', st: 'run', mins: 1, doing: 'Reading code', model: 'claude-haiku', calls: 12, plan: [1, 3], active: 35 },
+  { id: 6, name: 'Codex', tool: 'codex', project: 'Relay Pipeline', st: 'rest', mins: 120, doing: 'Resting', model: 'gpt-5-codex', calls: 64, plan: [4, 4], active: 70 },
+  { id: 7, name: 'reviewer', tool: 'claude', project: 'Atlas App', st: 'rest', mins: 48, doing: 'Resting', model: 'claude-opus', calls: 33, plan: null, active: 25 },
+  { id: 8, name: 'Copilot', tool: 'copilot', project: 'Beacon Metrics', st: 'rest', mins: 180, doing: 'Resting', model: 'not reported', calls: 8, plan: null, active: 6 },
+]
+const ago = (m, st) => st === 'wait' ? `waiting ${m} min` : m === 0 ? 'now' : m < 60 ? `${m} min ago` : `${Math.round(m / 60)} h ago`
+const hash = (s) => { let h = 2166136261; for (const ch of s) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return h >>> 0 }
+const rnd = (seed) => () => ((seed = Math.imul(seed ^ (seed >>> 15), 2246822507) + 1 >>> 0) / 4294967296)
+
+// ---- detail card ----
+const card = document.getElementById('card')
+function openCard(a) {
+  const t = TOOL[a.tool], s = ST[a.st]
+  card.innerHTML = `<div class="top"><div class="tool" style="background:${t.c}">${t.a}</div><div><h3>${a.name}</h3><div class="sub">${t.n} · ${a.project}</div></div><button class="x" title="Close">×</button></div>
+    <span class="state" style="background:${s.c}22;color:${s.c}">● ${s.n}</span>
+    <div class="now">${a.doing}</div>
+    <dl><dt>Last activity</dt><dd>${ago(a.mins, a.st)}</dd><dt>Active for</dt><dd>${a.active} min</dd><dt>Model</dt><dd>${a.model}</dd><dt>Tool calls</dt><dd>${a.calls}</dd>
+    <dt>Plan</dt><dd>${a.plan ? `${a.plan[0]} of ${a.plan[1]} tasks` : 'no plan shared'}</dd></dl>
+    <div class="btns"><button>Open in VS Code</button><button>Show in 3D hall</button></div>`
+  card.querySelector('.x').onclick = () => card.classList.remove('on')
+  card.classList.add('on')
+}
+addEventListener('keydown', (e) => { if (e.key === 'Escape') card.classList.remove('on') })
+const tip = document.getElementById('tip')
+function showTip(a, x, y) { if (!a) { tip.style.display = 'none'; return } tip.style.display = 'block'; tip.style.left = x + 14 + 'px'; tip.style.top = y + 10 + 'px'; tip.innerHTML = `<b>${a.name}</b> · ${a.project}<br><span style="color:${ST[a.st].c}">${ago(a.mins, a.st)}</span>` }
+
+function fit(cv) { const d = Math.min(devicePixelRatio, 2); cv.width = innerWidth * d; cv.height = innerHeight * d; const g = cv.getContext('2d'); g.setTransform(d, 0, 0, d, 0, 0); return g }
+
+// ---- A: gravity ----
+const cg = document.getElementById('cg'); let gg = fit(cg)
+const stars = Array.from({ length: 220 }, (_, i) => { const r = rnd(i + 7); return [r(), r(), r() * 1.3 + .2, r()] })
+const orbs = CREW.map((a) => { const r = rnd(hash(a.name + a.project)); return { a, ang: r() * Math.PI * 2, spd: a.st === 'run' ? .35 + r() * .25 : a.st === 'rest' ? .03 + r() * .02 : .0, x: 0, y: 0, rad: 0, trail: [] } })
+let hoverG = null
+function drawGravity(t) {
+  const W = innerWidth, H = innerHeight, cx = W * .56, cy = H * .54, S = Math.min(W, H) / 900
+  gg.fillStyle = '#07090f'; gg.fillRect(0, 0, W, H)
+  for (const [x, y, s, p] of stars) { gg.globalAlpha = .25 + .35 * Math.sin(t * .8 + p * 20) ** 2; gg.fillStyle = '#cfd8ff'; gg.fillRect(x * W, y * H, s, s) }
+  gg.globalAlpha = 1
+  const rings = [[130 * S, 'needs you', '#ffb547'], [235 * S, 'working', '#5ee08a'], [345 * S, 'resting', '#7d8597']]
+  for (const [r, n, c] of rings) { gg.strokeStyle = c + '30'; gg.setLineDash([2, 6]); gg.lineWidth = 1; gg.beginPath(); gg.ellipse(cx, cy, r, r * .82, 0, 0, 7); gg.stroke(); gg.setLineDash([]); gg.fillStyle = c + '99'; gg.font = '11px Segoe UI'; gg.textAlign = 'center'; gg.fillText(n.toUpperCase(), cx, cy - r * .82 - 8); gg.textAlign = 'left' }
+  const waiting = CREW.filter((a) => a.st === 'wait').length
+  // the core: you
+  const pulse = 1 + .06 * Math.sin(t * 2.4)
+  const core = gg.createRadialGradient(cx, cy, 0, cx, cy, 90 * S * pulse)
+  core.addColorStop(0, '#fff'); core.addColorStop(.18, waiting ? '#ffd9a0' : '#cfe8ff'); core.addColorStop(.45, waiting ? '#ffb54755' : '#5b8cff44'); core.addColorStop(1, '#0000')
+  gg.fillStyle = core; gg.beginPath(); gg.arc(cx, cy, 90 * S * pulse, 0, 7); gg.fill()
+  gg.fillStyle = '#0b0d12'; gg.font = `600 ${13 * Math.max(S, .8)}px Segoe UI`; gg.textAlign = 'center'; gg.fillText('YOU', cx, cy + 4); gg.textAlign = 'left'
+  for (const o of orbs) {
+    const a = o.a
+    o.ang += o.spd * 0.016
+    let r = a.st === 'wait' ? (130 - Math.min(a.mins, 15) * 3.2) * S : a.st === 'run' ? 235 * S : 345 * S
+    if (a.st === 'wait') { r += Math.sin(t * 1.6 + a.id) * 4 * S; o.ang += Math.sin(t * .5 + a.id) * .0015 }
+    o.x = cx + Math.cos(o.ang) * r; o.y = cy + Math.sin(o.ang) * r * .82
+    const size = (a.st === 'rest' ? 9 : 13) * Math.max(S, .75) * (hoverG === o ? 1.25 : 1)
+    o.rad = size + 6
+    const tc = TOOL[a.tool].c, sc = ST[a.st].c
+    if (a.st === 'run') { // comet trail
+      for (let k = 1; k < 26; k++) { const aa = o.ang - k * .028; gg.globalAlpha = (1 - k / 26) * .5; gg.fillStyle = tc; gg.beginPath(); gg.arc(cx + Math.cos(aa) * r, cy + Math.sin(aa) * r * .82, size * (1 - k / 30) * .6, 0, 7); gg.fill() }
+      gg.globalAlpha = 1
+    }
+    if (a.st === 'wait') { // pulses towards you
+      for (let k = 0; k < 3; k++) { const f = ((t * .55 + k / 3 + a.id * .13) % 1); const px = o.x + (cx - o.x) * f, py = o.y + (cy - o.y) * f
+        gg.globalAlpha = Math.sin(f * Math.PI) * .9; gg.fillStyle = '#ffb547'; gg.beginPath(); gg.arc(px, py, 2.6, 0, 7); gg.fill() }
+      const ring = (t * .8 + a.id * .3) % 1; gg.globalAlpha = 1 - ring; gg.strokeStyle = '#ffb547'; gg.lineWidth = 2; gg.beginPath(); gg.arc(o.x, o.y, size + ring * 26, 0, 7); gg.stroke(); gg.globalAlpha = 1
+    }
+    const glow = gg.createRadialGradient(o.x, o.y, 0, o.x, o.y, size * 2.6); glow.addColorStop(0, tc + (a.st === 'rest' ? '33' : '88')); glow.addColorStop(1, '#0000')
+    gg.fillStyle = glow; gg.beginPath(); gg.arc(o.x, o.y, size * 2.6, 0, 7); gg.fill()
+    const body = gg.createRadialGradient(o.x - size * .35, o.y - size * .4, size * .1, o.x, o.y, size)
+    body.addColorStop(0, '#fff'); body.addColorStop(.25, tc); body.addColorStop(1, a.st === 'rest' ? '#1a1d26' : '#1b1020')
+    gg.globalAlpha = a.st === 'rest' ? .55 : 1; gg.fillStyle = body; gg.beginPath(); gg.arc(o.x, o.y, size, 0, 7); gg.fill()
+    gg.strokeStyle = sc; gg.lineWidth = 2; gg.beginPath(); gg.arc(o.x, o.y, size + 3, 0, 7); gg.stroke(); gg.globalAlpha = 1
+    gg.fillStyle = a.st === 'rest' ? '#8b93a7aa' : '#e9edf5'; gg.font = '12px Segoe UI'; gg.textAlign = 'center'
+    gg.fillText(a.name, o.x, o.y + size + 18); gg.fillStyle = '#8b93a7'; gg.font = '10px Segoe UI'; gg.fillText(a.project, o.x, o.y + size + 31); gg.textAlign = 'left'
+  }
+}
+const pickG = (x, y) => orbs.find((o) => Math.hypot(o.x - x, o.y - y) < o.rad)
+cg.addEventListener('mousemove', (e) => { hoverG = pickG(e.clientX, e.clientY); cg.style.cursor = hoverG ? 'pointer' : 'default'; showTip(hoverG && hoverG.a, e.clientX, e.clientY) })
+cg.addEventListener('click', (e) => { const o = pickG(e.clientX, e.clientY); if (o) openCard(o.a) })
+
+// ---- B: rivers ----
+const cr = document.getElementById('cr'); let gr = fit(cr)
+const SPAN = 120 // minutes shown
+const order = [...CREW].sort((p, q) => ({ wait: 0, run: 1, rest: 2 }[p.st] - { wait: 0, run: 1, rest: 2 }[q.st]))
+function activity(a, m) { // m = minutes before now; 0..1 (sample shape)
+  if (a.st !== 'run' && m < a.mins) return 0
+  if (m > a.mins + a.active) return 0
+  const s = hash(a.name + a.project) % 100
+  const v = .45 + .3 * Math.sin(m * .21 + s) + .2 * Math.sin(m * .63 + s * 2) + .25 * Math.max(0, Math.sin(m * .09 + s)) ** 6
+  return Math.max(.08, Math.min(1, v))
+}
+const sparks = order.map((a) => Array.from({ length: a.st === 'rest' ? 0 : 26 }, (_, i) => ({ f: (i / 26 + (hash(a.name + i) % 97) / 970) % 1, o: (hash(a.project + i) % 100) / 100 - .5 })))
+let laneHit = []
+function drawRivers(t) {
+  const W = innerWidth, H = innerHeight, L = 220, R = W - 120, top = 110, lane = Math.min(64, (H - top - 40) / order.length)
+  gr.fillStyle = '#07090f'; gr.fillRect(0, 0, W, H)
+  const X = (m) => R - (m / SPAN) * (R - L)
+  // time grid
+  gr.font = '11px Segoe UI'; gr.fillStyle = '#8b93a7'
+  for (let m = 0; m <= SPAN; m += 15) { const x = X(m); gr.strokeStyle = '#ffffff0a'; gr.beginPath(); gr.moveTo(x, top - 14); gr.lineTo(x, top + lane * order.length); gr.stroke(); gr.fillText(m === 0 ? '' : `-${m} min`, x - 18, top - 20) }
+  // now edge
+  const ng = gr.createLinearGradient(R - 40, 0, R + 10, 0); ng.addColorStop(0, '#5b8cff00'); ng.addColorStop(1, '#5b8cff33'); gr.fillStyle = ng; gr.fillRect(R - 40, top - 14, 50, lane * order.length + 14)
+  gr.strokeStyle = '#cfe8ff'; gr.lineWidth = 1.5; gr.beginPath(); gr.moveTo(R, top - 14); gr.lineTo(R, top + lane * order.length); gr.stroke()
+  gr.fillStyle = '#cfe8ff'; gr.font = '600 12px Segoe UI'; gr.fillText('NOW', R - 14, top - 20)
+  laneHit = []
+  order.forEach((a, i) => {
+    const y = top + lane * i + lane / 2, tc = TOOL[a.tool].c, maxW = lane * .42
+    laneHit.push({ a, y0: y - lane / 2, y1: y + lane / 2 })
+    // label
+    gr.fillStyle = tc; gr.beginPath(); gr.roundRect(22, y - 11, 22, 22, 6); gr.fill(); gr.fillStyle = '#fff'; gr.font = '700 9px Segoe UI'; gr.fillText(TOOL[a.tool].a, 26, y + 3)
+    gr.fillStyle = a.st === 'rest' ? '#8b93a7' : '#e9edf5'; gr.font = '600 13px Segoe UI'; gr.fillText(a.name, 54, y - 2)
+    gr.fillStyle = '#8b93a7'; gr.font = '11px Segoe UI'; gr.fillText(a.project, 54, y + 13)
+    // ribbon
+    const pts = []; for (let m = SPAN; m >= 0; m -= 1) pts.push([X(m), activity(a, m) * maxW])
+    const grad = gr.createLinearGradient(L, 0, R, 0); grad.addColorStop(0, tc + '10'); grad.addColorStop(1, tc + (a.st === 'rest' ? '55' : 'dd'))
+    gr.fillStyle = grad; gr.beginPath(); gr.moveTo(pts[0][0], y)
+    for (const [x, w] of pts) gr.lineTo(x, y - w - Math.sin(x * .02 + t * 1.5) * w * .08)
+    for (let k = pts.length - 1; k >= 0; k--) gr.lineTo(pts[k][0], y + pts[k][1] + Math.sin(pts[k][0] * .02 + t * 1.5) * pts[k][1] * .08)
+    gr.closePath(); gr.fill()
+    // the quiet part: a dotted trickle (resting) or the dam and the knot (waiting)
+    if (a.st !== 'run') {
+      gr.setLineDash([2, 5]); gr.strokeStyle = (a.st === 'wait' ? '#ffb547' : '#7d8597') + 'aa'; gr.lineWidth = 1.5; gr.beginPath(); gr.moveTo(Math.max(L, X(a.mins)), y); gr.lineTo(R, y); gr.stroke(); gr.setLineDash([])
+    }
+    if (a.st === 'wait') {
+      gr.fillStyle = '#ffb547'; gr.fillRect(X(a.mins) - 2, y - maxW * .8, 4, maxW * 1.6) // the dam
+      const k = 7 + a.mins * .8 + Math.sin(t * 3 + a.id) * 1.5
+      const kg = gr.createRadialGradient(R, y, 0, R, y, k * 2.4); kg.addColorStop(0, '#ffe2b0'); kg.addColorStop(.35, '#ffb547'); kg.addColorStop(1, '#ffb54700')
+      gr.fillStyle = kg; gr.beginPath(); gr.arc(R, y, k * 2.4, 0, 7); gr.fill()
+      gr.fillStyle = '#ffb547'; gr.font = '600 12px Segoe UI'; gr.fillText(`${a.mins} min`, R + k * 1.4 + 8, y + 4)
+    } else if (a.st === 'run') {
+      const g2 = gr.createRadialGradient(R, y, 0, R, y, 16); g2.addColorStop(0, '#fff'); g2.addColorStop(.3, tc); g2.addColorStop(1, '#0000'); gr.fillStyle = g2; gr.beginPath(); gr.arc(R, y, 16, 0, 7); gr.fill()
+    } else { gr.fillStyle = '#7d8597'; gr.font = '11px Segoe UI'; gr.fillText(ago(a.mins, a.st), R + 10, y + 4) }
+    // sparks flowing to now
+    for (const s of sparks[i]) {
+      s.f = (s.f + 0.0016 * (a.st === 'run' ? 1.6 : 1)) % 1
+      const m = SPAN * (1 - s.f), act = activity(a, m); if (act === 0) continue
+      gr.globalAlpha = .9 * Math.min(1, act * 1.5); gr.fillStyle = '#fff'; gr.beginPath(); gr.arc(X(m), y + s.o * act * maxW * 1.4, 1.4, 0, 7); gr.fill()
+    }
+    gr.globalAlpha = 1
+    if (hoverR === a) { gr.strokeStyle = '#ffffff22'; gr.strokeRect(14, y - lane / 2 + 2, W - 28, lane - 4) }
+  })
+}
+let hoverR = null
+const pickR = (y) => (laneHit.find((l) => y >= l.y0 && y < l.y1) || {}).a
+cr.addEventListener('mousemove', (e) => { hoverR = pickR(e.clientY); cr.style.cursor = hoverR ? 'pointer' : 'default' })
+cr.addEventListener('click', (e) => { const a = pickR(e.clientY); if (a) openCard(a) })
+
+// ---- C: crew deck ----
+function emblem(a) { // a small badge drawn from the agent's name: same name, same badge
+  const r = rnd(hash(a.name + a.tool)), tc = TOOL[a.tool].c, n = 3 + Math.floor(r() * 4), rot = r() * 60
+  let s = `<svg class="emblem" viewBox="-50 -50 100 100"><circle r="46" fill="none" stroke="${tc}" stroke-opacity=".35" stroke-width="2"/>`
+  for (let i = 0; i < n; i++) { const ang = rot + i * 360 / n, l = 18 + r() * 20; s += `<g transform="rotate(${ang})"><rect x="-4" y="-${l + 6}" width="8" height="${l}" rx="4" fill="${tc}" fill-opacity="${.5 + r() * .5}"/></g>` }
+  return s + `<circle r="12" fill="${tc}"/><circle r="5" fill="#fff" fill-opacity=".85"/></svg>`
+}
+const deck = document.getElementById('deck')
+deck.innerHTML = order.map((a) => { const t = TOOL[a.tool], s = ST[a.st]
+  return `<div class="c ${a.st}" data-id="${a.id}" style="--tc:${t.c}">
+    <div class="face front">${emblem(a)}<h4>${a.name}</h4><div class="p">${t.n} · ${a.project}</div><div class="doing">${a.doing}</div>
+      <div class="foot"><span class="pill" style="background:${s.c}22;color:${s.c}">${s.n}</span><span>${ago(a.mins, a.st)}</span></div></div>
+    <div class="face back"><h5>${a.name}</h5><div class="p">${a.project}</div>
+      <dl><dt>Model</dt><dd>${a.model}</dd><dt>Active for</dt><dd>${a.active} min</dd><dt>Tool calls</dt><dd>${a.calls}</dd><dt>Plan</dt><dd>${a.plan ? `${a.plan[0]} of ${a.plan[1]}` : 'none shared'}</dd></dl>
+      <div class="act"><span>VS Code</span><span>3D hall</span></div></div></div>` }).join('')
+deck.querySelectorAll('.c').forEach((el) => {
+  el.addEventListener('mousemove', (e) => { if (el.classList.contains('flip')) return; const b = el.getBoundingClientRect(); const x = (e.clientX - b.left) / b.width - .5, y = (e.clientY - b.top) / b.height - .5; el.style.transform = `rotateY(${x * 18}deg) rotateX(${-y * 18}deg) translateZ(10px)` })
+  el.addEventListener('mouseleave', () => { if (!el.classList.contains('flip')) el.style.transform = '' })
+  el.addEventListener('click', () => { el.classList.toggle('flip'); if (!el.classList.contains('flip')) el.style.transform = '' })
+})
+
+// ---- tabs and loop ----
+document.querySelectorAll('.explain').forEach((e) => { e.classList.add('open'); e.onclick = () => e.classList.toggle('open') })
+let view = 'gravity'
+document.querySelectorAll('.tabs button').forEach((b) => b.onclick = () => {
+  view = b.dataset.v; document.querySelectorAll('.tabs button').forEach((x) => x.classList.toggle('on', x === b))
+  document.querySelectorAll('.view').forEach((v) => v.classList.toggle('on', v.id === 'v-' + view)); card.classList.remove('on'); showTip(null); document.querySelectorAll('.explain').forEach((e) => e.classList.remove('open'))
+})
+addEventListener('resize', () => { gg = fit(cg); gr = fit(cr) })
+function loop(ms) { const t = ms / 1000; if (view === 'gravity') drawGravity(t); else if (view === 'rivers') drawRivers(t); requestAnimationFrame(loop) }
+requestAnimationFrame(loop)
+</script>
+</body>
+</html>

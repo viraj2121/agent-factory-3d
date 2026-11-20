@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { actionFor, figureFor, filterRows, widgetCounts, widgetRows, FIGURE_PAINTS } from '../src/widgetRows'
+import { filterRows, widgetCounts, widgetRows } from '../src/widgetRows'
 import type { Project } from '../src/projects'
 
 const MIN = 60_000
@@ -59,33 +59,5 @@ describe('widgetCounts and filterRows', () => {
     expect(filterRows(rows, { state: 'all', tool: 'all', query: 'DOCS' }).map((r) => r.entry.id)).toEqual(['r2'])
     expect(filterRows(rows, { state: 'all', tool: 'all', query: 'shop' })).toHaveLength(4)
     expect(filterRows(rows, { state: 'all', tool: 'all', query: '  ' })).toHaveLength(4)
-  })
-})
-
-describe('figureFor', () => {
-  it('gives the same agent the same robot every time, a Visor or a Scout, with a paint from the list', () => {
-    const a = figureFor({ agent: 'claude-code', name: 'Backend-Dev' } as never)
-    expect(figureFor({ agent: 'claude-code', name: 'backend-dev' } as never)).toEqual(a)
-    expect(['visor', 'scout']).toContain(a.shape)
-    expect(FIGURE_PAINTS).toContain(a.paint)
-    expect(a.variant).toBeGreaterThanOrEqual(0)
-    expect(a.variant).toBeLessThan(3)
-  })
-  it('uses both shapes and several paints across many agents', () => {
-    const figs = Array.from({ length: 40 }, (_, i) => figureFor({ agent: 'codex', name: 'agent-' + i } as never))
-    expect(new Set(figs.map((f) => f.shape)).size).toBe(2)
-    expect(new Set(figs.map((f) => f.paint)).size).toBeGreaterThanOrEqual(4)
-  })
-})
-
-describe('actionFor', () => {
-  it('waves when it waits, rests when idle, and acts out what it is doing while it works', () => {
-    expect(actionFor('wait', null)).toBe('wave')
-    expect(actionFor('rest', null)).toBe('rest')
-    expect(actionFor('run', 'Edit')).toBe('type')
-    expect(actionFor('run', 'Bash')).toBe('work')
-    expect(actionFor('run', 'Read')).toBe('look')
-    expect(actionFor('run', null)).toBe('type')
-    expect(actionFor('run', 'mcp__github__create_issue')).toBe('work')
   })
 })

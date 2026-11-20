@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Desktop panel: five ideas</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --ink: #e9edf5; --dim: #8b93a7; --wait: #ffb547; --run: #5ee08a; --rest: #7d8597; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; color: var(--ink); font: 13px/1.4 "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+         background: radial-gradient(1200px 700px at 20% 10%, #2a3a6a, transparent 60%), radial-gradient(900px 600px at 90% 80%, #4a2a55, transparent 60%), #10131c; }
+  .note { max-width: 1180px; margin: 0 auto; padding: 96px 24px 8px; color: #c9cfdc; }
+  .note h1 { font-size: 20px; margin: 0 0 4px; font-weight: 600; color: var(--ink); }
+  .note p { margin: 0 0 4px; }
+  .note .sample { color: var(--wait); }
+  .row { display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; padding: 18px 24px 60px; }
+  .opt { display: flex; flex-direction: column; gap: 10px; width: 360px; }
+  .opt > h2 { margin: 0; font-size: 15px; font-weight: 600; } .opt > h2 b { color: #9cc7ff; margin-right: 6px; }
+  .opt > p { margin: 0; color: #b8bfce; font-size: 12.5px; min-height: 52px; }
+  /* the panel itself: a small always-on-top window */
+  .win { width: 360px; height: 600px; border-radius: 12px; overflow: hidden; background: #141822f2; border: 1px solid #ffffff1f;
+         box-shadow: 0 30px 70px #0009, 0 0 0 1px #0004; display: flex; flex-direction: column; transition: height .35s cubic-bezier(.2,.8,.2,1); }
+  .win.small { height: 58px; }
+  .tb { height: 34px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 6px 0 12px; font-size: 12px; color: var(--dim); }
+  .tb .t { color: var(--ink); } .tb .w { color: var(--wait); }
+  .tb button { margin-left: auto; background: none; border: 0; color: var(--dim); width: 28px; height: 26px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+  .tb button + button { margin-left: 0; } .tb button:hover { background: #ffffff14; color: var(--ink); }
+  .stage { position: relative; height: 230px; flex: none; }
+  .stage canvas { width: 100%; height: 100%; display: block; }
+  .bar { display: none; height: 24px; padding: 0 12px; align-items: center; gap: 10px; font-size: 12px; }
+  .win.small .bar { display: flex; } .win.small .stage, .win.small .list { display: none; }
+  .bar canvas { flex: 1; height: 20px; }
+  .list { flex: 1; overflow: auto; border-top: 1px solid #ffffff12; }
+  .it { display: flex; align-items: center; gap: 9px; padding: 8px 12px; cursor: pointer; border-left: 2px solid transparent; }
+  .it:hover { background: #ffffff0a; } .it.sel { background: #ffffff10; border-left-color: #9cc7ff; }
+  .it i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .it .n { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .it .n span { color: var(--dim); }
+  .it .tm { color: var(--dim); font-size: 11.5px; } .it.wait .tm { color: var(--wait); }
+  .det { padding: 4px 12px 10px 29px; color: var(--dim); font-size: 12px; display: none; } .it.sel + .det { display: block; }
+  .det b { color: var(--ink); font-weight: 400; }
+  /* C: the card stack */
+  .stack { position: absolute; inset: 16px 30px 10px; perspective: 900px; cursor: pointer; }
+  .sc { position: absolute; left: 0; right: 0; top: 0; height: 180px; border-radius: 14px; padding: 14px; background: linear-gradient(160deg, #222a3c, #121722);
+        border: 1px solid #ffffff1c; box-shadow: 0 12px 28px #0008; transition: transform .5s cubic-bezier(.2,.8,.2,1), opacity .5s; overflow: hidden; }
+  .sc::before { content: ''; position: absolute; right: -50px; top: -50px; width: 150px; height: 150px; border-radius: 50%; background: var(--tc); opacity: .22; filter: blur(24px); }
+  .sc.wait { border-color: #ffb54799; } .sc.wait.top { animation: knock 2.6s infinite; }
+  @keyframes knock { 0%, 78%, 100% { translate: 0 0; } 83% { translate: 0 -7px; } 88% { translate: 0 0; } 93% { translate: 0 -4px; } }
+  .sc h4 { margin: 0; font-size: 16px; } .sc .p { color: var(--dim); font-size: 12px; } .sc .d { margin-top: 12px; font-size: 13.5px; }
+  .sc .f { position: absolute; left: 14px; right: 14px; bottom: 12px; display: flex; justify-content: space-between; font-size: 11.5px; color: var(--dim); }
+  .sc .pill { padding: 1px 8px; border-radius: 999px; }
+  .hint { position: absolute; bottom: 4px; width: 100%; text-align: center; font-size: 11px; color: var(--dim); }
+  /* D: the strip at the top of the screen */
+  .strip { position: fixed; top: 0; left: 50%; translate: -50% 0; width: min(1100px, 96vw); z-index: 10; }
+  .strip .s { height: 50px; border-radius: 0 0 12px 12px; background: #141822f2; border: 1px solid #ffffff1f; border-top: 0; display: flex; align-items: center; gap: 12px; padding: 0 10px 0 14px; box-shadow: 0 12px 40px #0008; }
+  .strip .lbl { font-size: 11px; color: var(--dim); white-space: nowrap; } .strip .lbl b { color: var(--wait); font-size: 13px; }
+  .strip canvas { flex: 1; height: 50px; cursor: pointer; }
+  .strip .drop { background: #141822 !important; backdrop-filter: blur(16px); margin: 0 40px; max-height: 0; overflow: hidden; background: #141822f2; border: 1px solid #ffffff1f; border-top: 0; border-radius: 0 0 12px 12px; transition: max-height .35s; }
+  .strip.open .drop { max-height: 320px; }
+  .strip .tag { position: absolute; left: 14px; top: 56px; font-size: 11px; color: #9cc7ff; background: #0d1220cc; padding: 2px 8px; border-radius: 6px; pointer-events: none; }
+  .strip.open .tag { display: none; }
+</style>
+</head>
+<body>
+
+<div class="strip" id="strip">
+  <div class="s"><div class="lbl"><b id="sw">2</b> waiting · 3 working</div><canvas id="cs"></canvas></div>
+  <div class="drop list" id="sdrop"></div>
+  <div class="tag">E · Top strip (click it)</div>
+</div>
+
+<div class="note">
+  <h1>The desktop panel: five ideas of our own</h1>
+  <p>Each one is the small window that stays on top of your other windows, at its real size. The ⤡ button folds it into a slim bar (also shown). Clicking a row opens its details in place. For the full view, the 3D site opens as it does now.</p>
+  <p class="sample">Sample data, not your agents.</p>
+</div>
+
+<div class="row" id="row"></div>
+
+<script>
+const TOOL = { claude: { n: 'Claude Code', c: '#e8835f' }, codex: { n: 'Codex', c: '#5b8cff' }, copilot: { n: 'Copilot', c: '#a77bff' } }
+const SC = { wait: '#ffb547', run: '#5ee08a', rest: '#7d8597' }
+const SN = { wait: 'Waiting for you', run: 'Working', rest: 'Resting' }
+const CREW = [
+  { id: 1, name: 'Claude Code', tool: 'claude', project: 'Beacon Metrics', st: 'wait', mins: 12, doing: 'A step is waiting (maybe for your permission)', model: 'claude-sonnet', calls: 41, active: 38 },
+  { id: 2, name: 'test-runner', tool: 'codex', project: 'Relay Pipeline', st: 'wait', mins: 4, doing: 'Waiting for your reply', model: 'gpt-5-codex', calls: 17, active: 26 },
+  { id: 3, name: 'Copilot', tool: 'copilot', project: 'Atlas App', st: 'run', mins: 0, doing: 'Editing files', model: 'not reported', calls: 26, active: 30 },
+  { id: 4, name: 'Claude Code', tool: 'claude', project: 'Atlas App', st: 'run', mins: 0, doing: 'Running a command', model: 'claude-sonnet', calls: 88, active: 30 },
+  { id: 5, name: 'docs-writer', tool: 'claude', project: 'Pocket Kit', st: 'run', mins: 1, doing: 'Reading code', model: 'claude-haiku', calls: 12, active: 18 },
+  { id: 6, name: 'Codex', tool: 'codex', project: 'Relay Pipeline', st: 'rest', mins: 120, doing: 'Resting', model: 'gpt-5-codex', calls: 64, active: 0 },
+  { id: 7, name: 'reviewer', tool: 'claude', project: 'Atlas App', st: 'rest', mins: 48, doing: 'Resting', model: 'claude-opus', calls: 33, active: 0 },
+  { id: 8, name: 'Copilot', tool: 'copilot', project: 'Beacon Metrics', st: 'rest', mins: 180, doing: 'Resting', model: 'not reported', calls: 8, active: 0 },
+]
+const ago = (a) => a.st === 'wait' ? `waiting ${a.mins} min` : a.mins === 0 ? 'now' : a.mins < 60 ? `${a.mins} min ago` : `${Math.round(a.mins / 60)} h ago`
+const hash = (s) => { let h = 2166136261; for (const ch of s) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return h >>> 0 }
+const nW = CREW.filter((a) => a.st === 'wait').length
+
+function listHtml() {
+  return CREW.map((a) => `<div class="it ${a.st}" data-id="${a.id}"><i style="background:${SC[a.st]};box-shadow:0 0 8px ${SC[a.st]}88"></i><div class="n">${a.name} <span>· ${a.project}</span></div><div class="tm">${ago(a)}</div></div>
+    <div class="det"><b>${a.doing}</b><br>${TOOL[a.tool].n} · ${a.model} · ${a.calls} tool calls${a.active ? ` · active ${a.active} min` : ''}<br><u>Open in VS Code</u> · <u>Show in 3D hall</u></div>`).join('')
+}
+function wireList(el) { el.querySelectorAll('.it').forEach((r) => r.onclick = () => { const on = r.classList.contains('sel'); el.querySelectorAll('.it').forEach((x) => x.classList.remove('sel')); if (!on) r.classList.add('sel') }) }
+
+const OPTS = [
+  { k: 'orbit', t: 'Orbit', d: 'A small sky at the top: you in the middle, agents circling you. The ones that need you come close and pulse towards you; working ones leave a trail; resting ones drift at the edge.' },
+  { k: 'rivers', t: 'Rivers', d: 'The last 30 minutes as rivers flowing to "now". Busy agents are wide rivers, a waiting agent is dammed with an amber knot that grows, resting ones are a dotted trickle.' },
+  { k: 'stack', t: 'Card stack', d: 'A stack of agent cards. The ones that need you sit on top and knock. Click the stack to deal the next card to the back.' },
+  { k: 'halo', t: 'Halo', d: 'One ring, one piece per agent. Working pieces have a light running round, waiting ones stand out and glow amber, resting ones are dark. The middle names who needs you, in turn.' },
+]
+const row = document.getElementById('row')
+row.innerHTML = OPTS.map((o, i) => `<div class="opt"><h2><b>${'ABCD'[i]}</b>${o.t}</h2><p>${o.d}</p>
+  <div class="win" id="w-${o.k}"><div class="tb"><span class="t">Agents</span><span class="w">· ${nW} waiting</span><button title="Pin on top">📌</button><button class="fold" title="Fold to a bar">⤡</button></div>
+    <div class="bar"><span style="color:var(--wait)">${nW} waiting</span><span style="color:var(--run)">3 working</span><canvas id="b-${o.k}"></canvas></div>
+    <div class="stage" id="s-${o.k}">${o.k === 'stack' ? '' : `<canvas id="c-${o.k}"></canvas>`}</div><div class="list">${listHtml()}</div></div></div>`).join('')
+document.querySelectorAll('.win').forEach((w) => { wireList(w); w.querySelector('.fold').onclick = (e) => { w.classList.toggle('small'); e.target.textContent = w.classList.contains('small') ? '⤢' : '⤡' } })
+
+function ctx(cv) { const d = Math.min(devicePixelRatio, 2), r = cv.getBoundingClientRect(); cv.width = Math.max(1, r.width * d); cv.height = Math.max(1, r.height * d); const g = cv.getContext('2d'); g.setTransform(d, 0, 0, d, 0, 0); return [g, r.width, r.height] }
+function glowDot(g, x, y, r, c, a = 1) { const gr = g.createRadialGradient(x, y, 0, x, y, r * 2.4); gr.addColorStop(0, c + 'aa'); gr.addColorStop(1, c + '00'); g.globalAlpha = a; g.fillStyle = gr; g.beginPath(); g.arc(x, y, r * 2.4, 0, 7); g.fill()
+  const b = g.createRadialGradient(x - r * .3, y - r * .35, r * .1, x, y, r); b.addColorStop(0, '#fff'); b.addColorStop(.3, c); b.addColorStop(1, '#151020'); g.fillStyle = b; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); g.globalAlpha = 1 }
+
+// ---- A: orbit ----
+const orb = CREW.map((a) => ({ a, ang: (hash(a.name + a.project) % 628) / 100, spd: a.st === 'run' ? .5 : a.st === 'rest' ? .05 : 0 }))
+function drawOrbit(g, W, H, t) {
+  const cx = W / 2, cy = H / 2 + 4, k = .62
+  g.clearRect(0, 0, W, H)
+  for (const [r, c] of [[48, SC.wait], [86, SC.run], [124, SC.rest]]) { g.strokeStyle = c + '33'; g.setLineDash([2, 5]); g.beginPath(); g.ellipse(cx, cy, r, r * k, 0, 0, 7); g.stroke() } g.setLineDash([])
+  const core = g.createRadialGradient(cx, cy, 0, cx, cy, 34 * (1 + .06 * Math.sin(t * 2.4))); core.addColorStop(0, '#fff'); core.addColorStop(.25, '#ffd9a0'); core.addColorStop(.6, '#ffb54733'); core.addColorStop(1, '#0000')
+  g.fillStyle = core; g.beginPath(); g.arc(cx, cy, 40, 0, 7); g.fill(); g.fillStyle = '#1a1206'; g.font = '600 9px Segoe UI'; g.textAlign = 'center'; g.fillText('YOU', cx, cy + 3)
+  for (const o of orb) { const a = o.a; o.ang += o.spd * .016
+    let r = a.st === 'wait' ? 48 - Math.min(a.mins, 12) * 1.2 + Math.sin(t * 1.7 + a.id) * 2 : a.st === 'run' ? 86 : 124
+    const x = cx + Math.cos(o.ang) * r, y = cy + Math.sin(o.ang) * r * k, c = TOOL[a.tool].c
+    if (a.st === 'run') for (let j = 1; j < 18; j++) { const aa = o.ang - j * .04; g.globalAlpha = (1 - j / 18) * .45; g.fillStyle = c; g.beginPath(); g.arc(cx + Math.cos(aa) * r, cy + Math.sin(aa) * r * k, 3.5 * (1 - j / 22), 0, 7); g.fill() }
+    g.globalAlpha = 1
+    if (a.st === 'wait') { for (let j = 0; j < 2; j++) { const f = (t * .6 + j / 2 + a.id * .2) % 1; g.globalAlpha = Math.sin(f * Math.PI); g.fillStyle = SC.wait; g.beginPath(); g.arc(x + (cx - x) * f, y + (cy - y) * f, 1.8, 0, 7); g.fill() }
+      const f = (t * .8 + a.id * .3) % 1; g.globalAlpha = 1 - f; g.strokeStyle = SC.wait; g.lineWidth = 1.5; g.beginPath(); g.arc(x, y, 7 + f * 16, 0, 7); g.stroke(); g.globalAlpha = 1 }
+    glowDot(g, x, y, a.st === 'rest' ? 4.5 : 6.5, c, a.st === 'rest' ? .5 : 1)
+    g.strokeStyle = SC[a.st]; g.lineWidth = 1.5; g.globalAlpha = a.st === 'rest' ? .5 : 1; g.beginPath(); g.arc(x, y, (a.st === 'rest' ? 4.5 : 6.5) + 2.5, 0, 7); g.stroke(); g.globalAlpha = 1
+  }
+  g.textAlign = 'left'
+}
+// ---- B: rivers ----
+const SPAN = 30
+const act = (a, m) => { if (a.st !== 'run' && m < a.mins) return 0; if (a.st === 'rest' || m > a.mins + a.active) return 0; const s = hash(a.name + a.project) % 100; return Math.max(.12, Math.min(1, .5 + .3 * Math.sin(m * .5 + s) + .2 * Math.sin(m * 1.3 + s * 2))) }
+const ord = [...CREW].sort((p, q) => ({ wait: 0, run: 1, rest: 2 }[p.st] - { wait: 0, run: 1, rest: 2 }[q.st]))
+function drawRivers(g, W, H, t) {
+  g.clearRect(0, 0, W, H)
+  const L = 14, R = W - 44, top = 22, lane = (H - top - 8) / ord.length, X = (m) => R - m / SPAN * (R - L)
+  g.font = '10px Segoe UI'; g.fillStyle = '#8b93a7'; for (const m of [30, 20, 10]) { g.fillText(`-${m}m`, X(m) - 8, 13); g.strokeStyle = '#ffffff0c'; g.beginPath(); g.moveTo(X(m), top - 4); g.lineTo(X(m), H - 6); g.stroke() }
+  g.fillStyle = '#cfe8ff'; g.font = '600 10px Segoe UI'; g.fillText('NOW', R - 10, 13); g.strokeStyle = '#cfe8ffaa'; g.beginPath(); g.moveTo(R, top - 4); g.lineTo(R, H - 6); g.stroke()
+  ord.forEach((a, i) => { const y = top + lane * (i + .5), c = TOOL[a.tool].c, mw = lane * .42
+    g.fillStyle = c + (a.st === 'rest' ? '40' : 'cc'); g.beginPath(); g.moveTo(L, y)
+    const pts = []; for (let m = SPAN; m >= 0; m -= .5) pts.push([X(m), act(a, m) * mw]); for (const [x, w] of pts) g.lineTo(x, y - w * (1 + .1 * Math.sin(x * .05 + t * 2))); for (let j = pts.length - 1; j >= 0; j--) g.lineTo(pts[j][0], y + pts[j][1] * (1 + .1 * Math.sin(pts[j][0] * .05 + t * 2))); g.closePath(); g.fill()
+    if (a.st === 'run') for (let j = 0; j < 6; j++) { const f = (t * .12 + j / 6 + a.id * .07) % 1, m = SPAN * (1 - f), v = act(a, m); if (!v) continue; g.fillStyle = '#fff'; g.globalAlpha = .8; g.beginPath(); g.arc(X(m), y + Math.sin(j * 7) * v * mw * .6, 1.1, 0, 7); g.fill(); g.globalAlpha = 1 }
+    if (a.st !== 'run') { g.setLineDash([2, 4]); g.strokeStyle = SC[a.st] + '99'; g.beginPath(); g.moveTo(Math.max(L, X(a.mins)), y); g.lineTo(R, y); g.stroke(); g.setLineDash([]) }
+    if (a.st === 'wait') { g.fillStyle = SC.wait; g.fillRect(X(a.mins) - 1.5, y - mw, 3, mw * 2); glowDot(g, R, y, 3.5 + a.mins * .25 + Math.sin(t * 3 + a.id) * .6, SC.wait); g.fillStyle = SC.wait; g.font = '600 10px Segoe UI'; g.fillText(`${a.mins}m`, R + 10, y + 3) }
+    else if (a.st === 'run') glowDot(g, R, y, 3, c)
+    else { g.fillStyle = '#7d8597'; g.font = '10px Segoe UI'; g.fillText(ago(a).replace(' ago', ''), R + 6, y + 3) }
+  })
+}
+// ---- E: halo ----
+let haloI = 0
+function drawHalo(g, W, H, t) {
+  g.clearRect(0, 0, W, H)
+  const cx = W / 2, cy = H / 2, R = 88, n = CREW.length, gap = .07
+  CREW.forEach((a, i) => { const a0 = -Math.PI / 2 + i * 2 * Math.PI / n + gap / 2, a1 = a0 + 2 * Math.PI / n - gap, c = TOOL[a.tool].c
+    const out = a.st === 'wait' ? 8 + 2 * Math.sin(t * 3 + i) : 0, w = a.st === 'rest' ? 6 : 12
+    g.lineCap = 'round'; g.lineWidth = w; g.strokeStyle = a.st === 'rest' ? '#2a2f3c' : a.st === 'wait' ? SC.wait : c + '88'
+    if (a.st === 'wait') { g.shadowColor = SC.wait; g.shadowBlur = 18 } g.beginPath(); g.arc(cx, cy, R + out, a0, a1); g.stroke(); g.shadowBlur = 0
+    if (a.st === 'run') { const p = a0 + ((t * .35 + i * .21) % 1) * (a1 - a0); g.strokeStyle = '#fff'; g.lineWidth = w - 4; g.beginPath(); g.arc(cx, cy, R, Math.max(a0, p - .12), p); g.stroke() }
+    const mid = (a0 + a1) / 2; g.fillStyle = a.st === 'rest' ? '#5a6070' : '#c9cfdc'; g.font = '10px Segoe UI'; g.textAlign = 'center'
+    g.fillText(a.name.length > 11 ? a.name.slice(0, 10) + '…' : a.name, cx + Math.cos(mid) * (R + 28 + out), cy + Math.sin(mid) * (R + 22 + out) + 3) })
+  const ws = CREW.filter((a) => a.st === 'wait'), cur = ws[Math.floor(t / 3) % ws.length], f = (t / 3) % 1
+  g.globalAlpha = Math.min(1, f * 5, (1 - f) * 5); g.textAlign = 'center'
+  g.fillStyle = SC.wait; g.font = '600 26px Segoe UI'; g.fillText(`${cur.mins} min`, cx, cy - 2)
+  g.fillStyle = '#e9edf5'; g.font = '600 12px Segoe UI'; g.fillText(cur.name, cx, cy + 18); g.fillStyle = '#8b93a7'; g.font = '11px Segoe UI'; g.fillText(cur.project, cx, cy + 33)
+  g.globalAlpha = 1; g.fillStyle = '#8b93a7'; g.font = '10px Segoe UI'; g.fillText(`needs you · ${ws.indexOf(cur) + 1} of ${ws.length}`, cx, cy - 30); g.textAlign = 'left'
+}
+// ---- C: the card stack ----
+const stackEl = document.getElementById('s-stack'); let deckOrder = [...ord]
+function renderStack() {
+  stackEl.innerHTML = `<div class="stack">${deckOrder.slice(0, 4).map((a, i) => `<div class="sc ${a.st} ${i === 0 ? 'top' : ''}" style="--tc:${TOOL[a.tool].c};z-index:${10 - i};transform:translateY(${i * 9}px) scale(${1 - i * .05});opacity:${a.st === 'rest' && i ? .7 : 1 - i * .12};filter:${a.st === 'rest' ? 'saturate(.3) brightness(.8)' : 'none'}">
+    <h4>${a.name}</h4><div class="p">${TOOL[a.tool].n} · ${a.project}</div><div class="d">${a.doing}</div>
+    <div class="f"><span class="pill" style="background:${SC[a.st]}22;color:${SC[a.st]}">${SN[a.st]}</span><span>${ago(a)}</span></div></div>`).join('')}</div><div class="hint">${deckOrder.indexOf(ord[0]) + 1}… click to deal the next card · ${ord.length} cards</div>`
+  stackEl.querySelector('.hint').textContent = `click to deal the next card · ${ord.length} cards`
+}
+renderStack(); stackEl.onclick = () => { const top = stackEl.querySelector('.sc.top'); top.style.transform = 'translate(120%, -10px) rotate(14deg)'; top.style.opacity = 0; setTimeout(() => { deckOrder.push(deckOrder.shift()); renderStack() }, 380) }
+// ---- folded bars: a tiny version of each idea ----
+function drawBar(k, g, W, H, t) {
+  g.clearRect(0, 0, W, H); const y = H / 2
+  if (k === 'rivers') { ord.slice(0, 5).forEach((a, i) => { g.fillStyle = TOOL[a.tool].c + (a.st === 'wait' ? 'ff' : '99'); const w = a.st === 'wait' ? W * .5 : W * .8; g.fillRect(W - w, 2 + i * 3.4, w * (a.st === 'wait' ? .8 : 1), 2) }); return }
+  CREW.forEach((a, i) => { const x = 10 + i * (W - 20) / (CREW.length - 1), c = a.st === 'wait' ? SC.wait : a.st === 'run' ? TOOL[a.tool].c : '#3a4050'
+    const r = a.st === 'wait' ? 5 + Math.sin(t * 3 + i) : a.st === 'run' ? 4 : 3
+    if (k === 'halo') { g.strokeStyle = c; g.lineWidth = 3; g.lineCap = 'round'; g.beginPath(); g.moveTo(x - 8, y + (a.st === 'wait' ? -3 : 0)); g.lineTo(x + 8, y + (a.st === 'wait' ? -3 : 0)); g.stroke() }
+    else glowDot(g, x, y + (k === 'stack' && a.st === 'wait' ? -Math.abs(Math.sin(t * 2.5 + i)) * 3 : 0), r, c, a.st === 'rest' ? .6 : 1) })
+}
+// ---- D: ticker strip ----
+const strip = document.getElementById('strip'), sdrop = document.getElementById('sdrop'); sdrop.innerHTML = listHtml(); wireList(sdrop)
+document.getElementById('cs').onclick = () => strip.classList.toggle('open')
+function drawStrip(g, W, H, t) {
+  g.clearRect(0, 0, W, H); let x = 6
+  for (const a of ord) { const c = a.st === 'wait' ? SC.wait : TOOL[a.tool].c
+    const label = a.st === 'wait' ? `${a.name} · ${a.project} · waiting ${a.mins} min` : a.st === 'run' ? `${a.name} · ${a.doing.toLowerCase()}` : a.name
+    g.font = a.st === 'wait' ? '600 12px Segoe UI' : '12px Segoe UI'; const w = g.measureText(label).width + 30
+    if (a.st === 'wait') { g.fillStyle = `rgba(255,181,71,${.12 + .06 * Math.sin(t * 3 + a.id)})`; g.beginPath(); g.roundRect(x, 11, w, 28, 14); g.fill(); g.strokeStyle = '#ffb54788'; g.stroke() }
+    glowDot(g, x + 14, H / 2, a.st === 'rest' ? 3 : 4.5, c, a.st === 'rest' ? .5 : 1)
+    if (a.st === 'run') { g.strokeStyle = c; g.globalAlpha = .6; g.beginPath(); g.arc(x + 14, H / 2, 8, t * 4, t * 4 + 2); g.stroke(); g.globalAlpha = 1 }
+    g.fillStyle = a.st === 'wait' ? SC.wait : a.st === 'run' ? '#e9edf5' : '#6b7285'; g.fillText(label, x + 24, H / 2 + 4); x += w + 10 }
+}
+
+const canv = { orbit: [document.getElementById('c-orbit'), drawOrbit], rivers: [document.getElementById('c-rivers'), drawRivers], halo: [document.getElementById('c-halo'), drawHalo] }
+let size = {}
+function resize() { for (const k in canv) size[k] = ctx(canv[k][0]); for (const k of ['orbit', 'rivers', 'stack', 'halo']) size['b' + k] = ctx(document.getElementById('b-' + k)); size.strip = ctx(document.getElementById('cs')) }
+addEventListener('resize', resize)
+document.querySelectorAll('.fold').forEach((b) => b.addEventListener('click', () => setTimeout(resize, 50)))
+resize()
+function loop(ms) { const t = ms / 1000
+  for (const k in canv) { const [g, W, H] = size[k]; if (W > 1) canv[k][1](g, W, H, t) }
+  for (const k of ['orbit', 'rivers', 'stack', 'halo']) { const [g, W, H] = size['b' + k]; if (W > 1) drawBar(k, g, W, H, t) }
+  const [g, W, H] = size.strip; drawStrip(g, W, H, t)
+  requestAnimationFrame(loop) }
+requestAnimationFrame(loop)
+</script>
+</body>
+</html>

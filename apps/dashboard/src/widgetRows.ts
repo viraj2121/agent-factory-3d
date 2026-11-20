@@ -1,5 +1,4 @@
-import { hashString } from './bayShapes'
-import { toolPhrase, workLine } from './crew'
+import { workLine } from './crew'
 import { inboxWords, STALE_AFTER_MS, type ToolFilter } from './inbox'
 import type { Project } from './projects'
 import type { RosterEntry } from './live/wire'
@@ -8,16 +7,6 @@ import type { RosterEntry } from './live/wire'
 // words what the agent service already reports. Agent files that never ran ("standing by") are not sessions and are left out.
 
 export type WidgetState = 'wait' | 'run' | 'rest'
-
-/** The little robot of a row: a Visor or a Scout, its paint and one of three small variations. Decoration, stable per agent. */
-export interface FigureSpec {
-  shape: 'visor' | 'scout'
-  paint: string
-  variant: number
-}
-
-/** What the robot acts out. Decoration that mirrors the inferred state, never a claim about the agent. */
-export type FigureAction = 'type' | 'work' | 'look' | 'wave' | 'rest'
 
 export interface WidgetRow {
   /** Stable between scans: project and roster id. */
@@ -36,30 +25,10 @@ export interface WidgetRow {
   sinceMs: number | null
   /** A wait longer than ten minutes. */
   stale: boolean
-  figure: FigureSpec
-  action: FigureAction
 }
-
-/** Paint finishes for the robots: pearl white, graphite, champagne, slate blue, warm grey, deep teal, soft sand. */
-export const FIGURE_PAINTS = ['#e9e6e1', '#5a5f6b', '#d8c7a6', '#7d8fb0', '#b9b2aa', '#3f6f73', '#d9cdb4']
 
 const STATE_OF: Partial<Record<RosterEntry['state'], WidgetState>> = { 'needs-you': 'wait', running: 'run', idle: 'rest' }
 const ORDER: Record<WidgetState, number> = { wait: 0, run: 1, rest: 2 }
-
-export function figureFor(entry: Pick<RosterEntry, 'agent' | 'name'>): FigureSpec {
-  const h = hashString(`${entry.agent}:${entry.name.toLowerCase()}`)
-  return { shape: h % 2 === 0 ? 'visor' : 'scout', paint: FIGURE_PAINTS[(h >>> 1) % FIGURE_PAINTS.length], variant: (h >>> 4) % 3 }
-}
-
-export function actionFor(state: WidgetState, tool: string | null): FigureAction {
-  if (state === 'wait') return 'wave'
-  if (state === 'rest') return 'rest'
-  if (!tool) return 'type'
-  const words = toolPhrase(tool)
-  if (words === 'editing files' || words === 'updating its plan') return 'type'
-  if (words === 'reading code' || words === 'searching the web') return 'look'
-  return 'work'
-}
 
 export function widgetRows(projects: Project[], now: number): WidgetRow[] {
   const rows: WidgetRow[] = []
@@ -83,8 +52,6 @@ export function widgetRows(projects: Project[], now: number): WidgetRow[] {
         detail,
         sinceMs,
         stale: state === 'wait' && sinceMs !== null && sinceMs > STALE_AFTER_MS,
-        figure: figureFor(entry),
-        action: actionFor(state, entry.currentTool),
       })
     }
   }
