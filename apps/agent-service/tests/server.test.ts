@@ -21,6 +21,8 @@ let service: Service
 let store: SettingsStore
 let settingsFile = ''
 let port = 0
+const windowCalls: unknown[] = []
+let windowAnswer: { ok: true } | { ok: false; status: number; error: string } = { ok: true }
 
 function call(method: string, path: string, opts: { headers?: Record<string, string>; body?: string; host?: string } = {}) {
   return new Promise<{ status: number; headers: Record<string, string | string[] | undefined>; text: string }>((resolve, reject) => {
@@ -50,7 +52,7 @@ beforeAll(async () => {
   writeFileSync(join(project, '.mcp.json'), JSON.stringify({ mcpServers: { demo: { command: 'node', args: ['s.js', '--token', 'SECRETTOKEN'], env: { K: 'SECRETENV' } } } }))
   settingsFile = join(root, 'ai-factory', 'settings.json')
   store = new SettingsStore(settingsFile)
-  service = createService({ scanner: new Scanner({ home, vscodeUser, settings: () => store.get() }), token: TOKEN, origins: allowedOrigins(undefined), intervalMs: 100, settings: store })
+  service = createService({ scanner: new Scanner({ home, vscodeUser, settings: () => store.get() }), token: TOKEN, origins: allowedOrigins(undefined), intervalMs: 100, settings: store, windowControl: async (r) => { windowCalls.push(r); return windowAnswer } })
   port = await service.listen(0)
 })
 
@@ -195,3 +197,34 @@ describe('settings over HTTP', () => {
   })
 })
 
+
+describe('POST /api/window (the desktop widget pins or resizes its own window)', () => {
+  const origin = 'http://localhost:5173'
+  it('refuses a request that is neither from the dashboard page nor carries the token', async () => {
+    const r = await call('POST', '/api/window', { body: JSON.stringify({ pin: true }), headers: { 'content-type': 'application/json' } })
+    expect(r.status).toBe(403)
+  })
+  it('passes a checked request on from the dashboard page', async () => {
+    windowCalls.length = 0
+    const r = await call('POST', '/api/window', { body: JSON.stringify({ pin: false, width: 380, height: 96 }), headers: { origin, 'content-type': 'application/json' } })
+    expect(r.status).toBe(200)
+    expect(windowCalls).toEqual([{ pin: false, width: 380, height: 96 }])
+  })
+  it('accepts the bearer token too', async () => {
+    const r = await call('POST', '/api/window', { body: JSON.stringify({ pin: true }), headers: { authorization: `Bearer ${TOKEN}` } })
+    expect(r.status).toBe(200)
+  })
+  it('refuses a bad request without calling anything', async () => {
+    windowCalls.length = 0
+    const r = await call('POST', '/api/window', { body: JSON.stringify({ pin: true, run: 'calc.exe' }), headers: { origin } })
+    expect(r.status).toBe(400)
+    expect(windowCalls).toEqual([])
+  })
+  it('says when the widget window is not open', async () => {
+    windowAnswer = { ok: false, status: 404, error: 'The widget window is not open.' }
+    const r = await call('POST', '/api/window', { body: JSON.stringify({ pin: true }), headers: { origin } })
+    windowAnswer = { ok: true }
+    expect(r.status).toBe(404)
+    expect(JSON.parse(r.text).error).toMatch(/not open/)
+  })
+})

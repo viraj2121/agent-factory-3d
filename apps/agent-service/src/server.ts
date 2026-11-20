@@ -5,6 +5,7 @@ import type { Snapshot } from './model.ts'
 import { fingerprint, type Scanner } from './scanner.ts'
 import { checkRequest, tokenMatches } from './security.ts'
 import type { SettingsStore } from './settings.ts'
+import { parseWindowRequest, windowControl as defaultWindowControl, type WindowControl } from './window.ts'
 
 export interface ServiceOptions {
   scanner: Scanner
@@ -14,6 +15,8 @@ export interface ServiceOptions {
   intervalMs?: number
   /** The settings file. Without it /api/settings answers 404. */
   settings?: SettingsStore
+  /** Pins or resizes the desktop widget's own window (tests pass a fake). */
+  windowControl?: WindowControl
 }
 
 const MAX_BODY = 16 * 1024
@@ -25,7 +28,7 @@ export interface Service {
   close(): Promise<void>
 }
 
-export function createService({ scanner, token, origins, intervalMs = 2000, settings }: ServiceOptions): Service {
+export function createService({ scanner, token, origins, intervalMs = 2000, settings, windowControl = defaultWindowControl }: ServiceOptions): Service {
   const clients = new Set<ServerResponse>()
   let latest: Snapshot | null = null
   let latestPrint = ''
@@ -121,6 +124,25 @@ export function createService({ scanner, token, origins, intervalMs = 2000, sett
         if (!result.ok) return send(res, 400, { error: result.error }, cors)
         await freshScan()
         return send(res, 200, view(), cors)
+      }
+      if (req.method === 'POST' && url.pathname === '/api/window') {
+        // only the dashboard page (an allowed browser Origin, checked above) or the token may change the widget window
+        if (!origin && !tokenMatches(req.headers.authorization, token)) return send(res, 403, { error: 'Changing the widget window needs the dashboard page or the bearer token.' }, cors)
+        const body = await readBody(req)
+        if (body === null) {
+          res.once('finish', () => req.destroy())
+          return send(res, 413, { error: 'Body too large or unreadable.' }, { ...cors, Connection: 'close' })
+        }
+        let json: unknown
+        try {
+          json = JSON.parse(body)
+        } catch {
+          return send(res, 400, { error: 'Body must be JSON.' }, cors)
+        }
+        const parsed = parseWindowRequest(json)
+        if (!parsed.ok) return send(res, 400, { error: parsed.error }, cors)
+        const result = await windowControl(parsed.request)
+        return result.ok ? send(res, 200, { ok: true }, cors) : send(res, result.status, { error: result.error }, cors)
       }
       if (req.method === 'POST' && url.pathname === '/api/hook') {
         if (!tokenMatches(req.headers.authorization, token)) return send(res, 401, { error: 'A valid bearer token is required (see ~/.ai-factory/token).' }, cors)

@@ -53,6 +53,18 @@ page flips to LIVE by itself.
 
 More: [getting started](docs/getting-started.md), [keys and guides](docs/guides), [troubleshooting](docs/guides/troubleshooting.md).
 
+## Desktop widget (Windows)
+
+A small window that stays on top of your other windows and lists every agent session on this computer, each with a little
+3D robot: who is waiting for you, who is working, who is resting. Click a session to see its details right there.
+
+- Start: double-click `start-widget.cmd` (installs nothing; the first run downloads the packages). It starts the service
+  and the dashboard in the background and opens the widget at the top right.
+- 📌 keeps it on top (or not), ⤡ collapses it to a slim bar with the counts, ⤢ opens it again.
+- Stop: double-click `stop-widget.cmd`.
+- It uses Microsoft Edge in app mode, as a guest (no account, nothing kept), and PowerShell to keep the window on top. If
+  your computer blocks either, the widget still opens, just without that part.
+
 ## Will it work with my setup?
 
 Short answer: yes for **GitHub Copilot Chat in VS Code** and **Claude Code** on Windows, macOS and Linux, if they run on the same computer as this dashboard. It reads the files those tools already write; it does not need an account, a login or any change to them.
